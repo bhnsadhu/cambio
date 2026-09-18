@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { useGame } from "@/lib/client/useGame";
 import { api, RequestError } from "@/lib/client/api";
-import { lastName, rememberName, saveSession } from "@/lib/client/session";
+import { saveSession, storeName } from "@/lib/client/session";
+import { useStoredName } from "@/lib/client/useStoredName";
 import { Lobby } from "./Lobby";
 import { Table } from "./Table";
 import { Button, Chip, Field, inputClass, Wordmark } from "./ui";
@@ -53,7 +54,7 @@ export function GameScreen({ code }: { code: string }) {
 }
 
 function JoinForm({ code, onJoined }: { code: string; onJoined: (s: { playerId: string; token: string; name: string }) => void }) {
-  const [name, setName] = useState(() => lastName());
+  const [name, setName] = useStoredName();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const submit = async (e: FormEvent) => {
@@ -62,7 +63,7 @@ function JoinForm({ code, onJoined }: { code: string; onJoined: (s: { playerId: 
     setError(null);
     try {
       const seat = await api.join(code, name);
-      rememberName(name.trim());
+      storeName(name.trim());
       const s = { playerId: seat.playerId, token: seat.token, name: name.trim() };
       saveSession(code, s);
       onJoined(s);

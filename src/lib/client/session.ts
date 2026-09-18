@@ -58,3 +58,22 @@ export function subscribeSession(listener: () => void): () => void {
   listeners.add(listener);
   return () => { listeners.delete(listener); };
 }
+
+/* Remembered display name, readable during render without hydration drift. */
+const nameListeners = new Set<() => void>();
+let nameCache: string | null = null;
+
+export function getStoredName(): string {
+  if (nameCache === null) nameCache = lastName();
+  return nameCache;
+}
+export function getServerStoredName(): string { return ""; }
+export function subscribeStoredName(l: () => void): () => void {
+  nameListeners.add(l);
+  return () => { nameListeners.delete(l); };
+}
+export function storeName(name: string) {
+  rememberName(name);
+  nameCache = name;
+  for (const l of nameListeners) l();
+}

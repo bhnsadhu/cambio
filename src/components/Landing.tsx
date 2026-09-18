@@ -3,12 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { api, RequestError } from "@/lib/client/api";
-import { lastName, rememberName, saveSession } from "@/lib/client/session";
+import { saveSession, storeName } from "@/lib/client/session";
+import { useStoredName } from "@/lib/client/useStoredName";
 import { Button, Field, inputClass, PlayerName, Wordmark } from "./ui";
 
 export function Landing() {
   const router = useRouter();
-  const [name, setName] = useState(() => (typeof window === "undefined" ? "" : lastName()));
+  const [name, setName] = useStoredName();
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState<"create" | "join" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +19,7 @@ export function Landing() {
     setBusy("create"); setError(null);
     try {
       const seat = await api.create(name);
-      rememberName(name.trim());
+      storeName(name.trim());
       saveSession(seat.code, { playerId: seat.playerId, token: seat.token, name: name.trim() });
       router.push(`/g/${seat.code}`);
     } catch (err) {
@@ -33,7 +34,7 @@ export function Landing() {
     const c = code.toUpperCase().replace(/[^A-Z0-9]/g, "");
     try {
       const seat = await api.join(c, name);
-      rememberName(name.trim());
+      storeName(name.trim());
       saveSession(c, { playerId: seat.playerId, token: seat.token, name: name.trim() });
       router.push(`/g/${c}`);
     } catch (err) {
