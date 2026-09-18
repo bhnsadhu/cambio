@@ -24,7 +24,7 @@ export function HowToPlay({ open, onClose, onReplay }: { open: boolean; onClose:
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 animate-fade" role="dialog" aria-modal aria-label="How to play">
-      <button type="button" aria-label="Close" className="absolute inset-0 bg-ink/15" onClick={onClose} />
+      <button type="button" aria-label="Close" className="absolute inset-0 bg-black/60" onClick={onClose} />
       <aside className="absolute inset-y-0 right-0 flex w-[380px] flex-col bg-surface shadow-float" style={{ animation: "slide-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both" }}>
         <header className="flex items-center justify-between px-6 pt-5 pb-4">
           <h2 className="t-headline">How to play</h2>

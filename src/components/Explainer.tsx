@@ -47,7 +47,7 @@ export function Explainer({ onDone }: { onDone: () => void }) {
   }, [onDone]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/25 p-6 animate-fade" role="dialog" aria-modal aria-label="How Cambio works">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6 animate-fade" role="dialog" aria-modal aria-label="How Cambio works">
       <div className="w-full max-w-[560px] animate-rise overflow-hidden rounded-panel bg-surface shadow-float hairline">
         <div className="flex h-[220px] items-center justify-center bg-bg" key={i}>
           <div className="animate-pop">{step.art}</div>

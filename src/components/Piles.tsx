@@ -41,7 +41,7 @@ export function Piles({
             aria-label={canDraw ? "draw a card" : "deck"}
           >
             {canDraw ? (
-              <span className="absolute inset-x-0 bottom-2 text-center text-[10.5px] font-semibold uppercase tracking-[0.08em] text-bg/90">Draw</span>
+              <span className="absolute inset-x-2 bottom-2 rounded-full bg-card-ink/90 py-0.5 text-center text-[10.5px] font-semibold uppercase tracking-[0.08em] text-card">Draw</span>
             ) : null}
           </button>
           <span className="t-footnote tnum text-ink-3">{deckCount === 0 ? "Deck empty" : `${deckCount} left`}</span>
@@ -51,7 +51,7 @@ export function Piles({
             {discardTop && !hideDiscard ? (
               <FaceCard key={discardTop.id} card={discardTop} size="lg" className="animate-settle" />
             ) : discardTop ? null : (
-              <div className="flex h-full w-full items-center justify-center rounded-[var(--tile-r)] border-[1.5px] border-dashed border-line-strong">
+              <div className="flex h-full w-full items-center justify-center rounded-[var(--tile-r)] border-[1.5px] border-dashed border-white/20">
                 <span className="t-footnote text-center text-ink-3">Nothing played yet</span>
               </div>
             )}

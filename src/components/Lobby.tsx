@@ -28,7 +28,7 @@ export function Lobby({ view, me, busy, onStart }: { view: PublicView; me: strin
         <div>
           <p className="t-caption text-ink-3">Join code</p>
           <div className="mt-2 flex items-center gap-4">
-            <span className="tnum text-[60px] font-semibold leading-none tracking-[0.06em]">{view.code}</span>
+            <span className="t-money text-[64px] leading-none tracking-[0.08em]">{view.code}</span>
             <Button variant="secondary" size="sm" onClick={copy}>{copied ? "Copied" : "Copy link"}</Button>
           </div>
           <p className="t-body mt-4 max-w-[440px] text-ink-2">

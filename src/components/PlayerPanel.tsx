@@ -27,7 +27,7 @@ export interface PanelProps {
 
 export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCard, cueFor, selectedCardId, onCard, revealed, hidden, holding, positions }: PanelProps) {
   const ring = isCaller ? "ring-accent" : isTurn ? "ring-turn" : "hairline";
-  const surface = isTurn ? "bg-card" : "bg-surface";
+  const surface = isTurn ? "bg-surface-2" : "bg-surface";
   const stageText = isTurn
     ? turnStage === "draw" ? "to draw" : turnStage === "decide" ? "deciding" : turnStage === "power" ? "using a power" : ""
     : "";

@@ -26,7 +26,7 @@ export function Scoreboard({ view, me, busy, onPlayAgain }: { view: PublicView; 
     : <><PlayerName name={winners[0].name} isBot={winners[0].isBot} /> takes round {result.round}</>;
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-ink/25 p-6 animate-fade">
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/75 p-6 animate-fade">
       <div className="w-full max-w-[760px] animate-rise rounded-panel bg-surface p-8 shadow-float hairline">
         <header className="flex items-start justify-between gap-6">
           <div>
@@ -69,14 +69,14 @@ export function Scoreboard({ view, me, busy, onPlayAgain }: { view: PublicView; 
                   <td className="border-t border-line py-3.5 pr-4 align-middle">
                     <div className="flex flex-wrap gap-1.5">
                       {cards.length ? cards.map((c, i) => (
-                        <FaceCard key={c.id} card={c} size="sm" className="animate-flip-in" style={{ animationDelay: `${base + i * 70}ms` }} />
+                        <FaceCard key={c.id} card={c} size="md" className="animate-flip-in" style={{ animationDelay: `${base + i * 70}ms` }} />
                       )) : <span className="t-sub text-ink-3">No cards</span>}
                     </div>
                   </td>
-                  <td className={`tnum border-t border-line py-3.5 text-right align-middle text-[19px] font-semibold ${won ? "text-accent-ink" : ""}`}>
+                  <td className={`t-money border-t border-line py-3.5 text-right align-middle text-[26px] ${won ? "text-accent" : ""}`}>
                     <CountUp value={score} delay={base + cards.length * 70} />
                   </td>
-                  <td className="tnum border-t border-line py-3.5 text-right align-middle text-[15px] text-ink-2">
+                  <td className="t-money border-t border-line py-3.5 text-right align-middle text-[17px] text-ink-2">
                     <CountUp value={totals.get(player.id) ?? 0} delay={base + cards.length * 70 + 120} />
                   </td>
                 </tr>

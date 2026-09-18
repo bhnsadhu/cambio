@@ -16,9 +16,9 @@ export function Button({
     "disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30";
   const sizes = { sm: "h-8 px-3.5 text-[13px]", md: "h-10 px-4.5 text-[14px]", lg: "h-12 px-6 text-[15px]" }[size];
   const variants: Record<Variant, string> = {
-    primary: "bg-ink text-bg hover:bg-tile-2 shadow-rest",
-    secondary: "bg-surface text-ink hairline hover:bg-surface-2",
-    accent: "bg-accent text-white hover:bg-accent-ink shadow-rest",
+    primary: "bg-ink text-bg hover:bg-tile-2",
+    secondary: "bg-surface-2 text-ink hover:bg-surface-3",
+    accent: "bg-accent text-black hover:brightness-110",
     ghost: "bg-transparent text-ink-2 hover:text-ink hover:bg-surface-2",
   };
   return (
@@ -47,7 +47,7 @@ export function Wordmark({ className = "" }: { className?: string }) {
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
       <span className="relative inline-block h-5 w-4 rounded-[4px] card-back" aria-hidden />
-      <span className="text-[17px] font-semibold tracking-[-0.01em]">Cambio</span>
+      <span className="t-headline">Cambio</span>
     </span>
   );
 }
@@ -75,5 +75,5 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 }
 
 export const inputClass =
-  "h-11 w-full rounded-[10px] bg-card px-3.5 text-[15px] text-ink outline-none hairline placeholder:text-ink-3 " +
+  "h-11 w-full rounded-[12px] bg-surface-2 px-3.5 text-[15px] text-ink outline-none placeholder:text-ink-3 " +
   "focus:hairline-strong transition-shadow duration-150";

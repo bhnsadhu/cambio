@@ -15,18 +15,18 @@ export type CardSize = keyof typeof SIZES;
 /** A face up card. The only place a value is ever drawn on screen. */
 export function FaceCard({ card, size = "md", className = "", elRef, style }: { card: Card; size?: CardSize; className?: string; elRef?: Ref<HTMLDivElement>; style?: CSSProperties }) {
   const s = SIZES[size];
-  const color = isRed(card.suit) ? "text-red" : "text-ink";
+  const color = isRed(card.suit) ? "text-red" : "text-card-ink";
   return (
     <div ref={elRef} style={style} className={`relative ${s.box} ${s.pad} flex flex-col justify-between bg-card shadow-card ${color} ${className}`}>
       {card.rank === "JOKER" ? (
         <>
-          <span className={`${s.rank} font-semibold leading-none tracking-[-0.02em] text-ink`}>J</span>
-          <span className="self-end text-[9px] font-medium uppercase leading-none tracking-[0.12em] text-ink-3">Joker</span>
+          <span className={`${s.rank} font-medium leading-none tracking-[-0.02em] text-card-ink`}>J</span>
+          <span className="self-end text-[9px] font-medium uppercase leading-none tracking-[0.12em] text-card-ink/45">Joker</span>
         </>
       ) : (
         <>
-          <span className={`${s.rank} tnum font-semibold leading-none tracking-[-0.02em]`}>{card.rank}</span>
-          <span className={`${s.suit} self-end leading-none`}>{card.suit ? SUIT_SYMBOL[card.suit] : ""}</span>
+          <span className={`${s.rank} tnum font-medium leading-none tracking-[-0.02em]`}>{card.rank}</span>
+          <span className={`${s.suit} self-start leading-none`}>{card.suit ? SUIT_SYMBOL[card.suit] : ""}</span>
         </>
       )}
     </div>
@@ -65,7 +65,7 @@ export function CardTile({ empty, selectable, selected, cue, onClick, face, hidd
     return (
       <div
         ref={slotRef}
-        className="h-[var(--tile-h)] w-[var(--tile-w)] rounded-[var(--tile-r)] border-[1.5px] border-dashed border-line-strong"
+        className="h-[var(--tile-h)] w-[var(--tile-w)] rounded-[var(--tile-r)] border-[1.5px] border-dashed border-white/20"
         aria-label="empty slot"
       />
     );
@@ -95,7 +95,7 @@ export function CardTile({ empty, selectable, selected, cue, onClick, face, hidd
           ].join(" ")}
         >
           {interactive && cue ? (
-            <span className="pointer-events-none absolute inset-x-0 bottom-0 z-10 translate-y-full bg-bg/95 py-1 text-center text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ink transition-transform duration-200 ease-out group-hover:translate-y-0">
+            <span className="pointer-events-none absolute inset-x-0 bottom-0 z-10 translate-y-full bg-card-ink/92 py-1 text-center text-[10.5px] font-semibold uppercase tracking-[0.08em] text-card transition-transform duration-200 ease-out group-hover:translate-y-0">
               {cue}
             </span>
           ) : null}

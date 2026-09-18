@@ -181,7 +181,7 @@ function Toasts({ toasts }: { toasts: { id: number; text: string; tone: string }
   return (
     <div className="pointer-events-none fixed right-8 top-16 z-50 flex flex-col gap-2">
       {toasts.map((t) => (
-        <div key={t.id} className={`animate-rise rounded-full px-4 py-2 text-[13px] font-medium shadow-float ${t.tone === "bad" ? "bg-accent text-white" : "bg-ink text-bg"}`}>
+        <div key={t.id} className={`animate-rise rounded-full px-4 py-2 text-[13px] font-medium shadow-float ${t.tone === "bad" ? "bg-surface-2 text-ink hairline-strong" : "bg-ink text-bg"}`}>
           {t.text}
         </div>
       ))}
