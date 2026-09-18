@@ -39,6 +39,15 @@ supabase/          schema and RPCs (see migration in the Supabase project)
 
 **Least-privilege database access.** The browser only holds the anon key and can read `game_views`. The server proves itself with a shared secret checked inside `SECURITY DEFINER` functions; nothing else can read `games`. (Supabase's linter flags those functions as anon-executable — that is the design: they are callable, but do nothing without the secret. `games` deliberately has RLS enabled with no policies.)
 
+## Design
+
+- **Type** is the system stack, the same one Apple and Notion ship: SF Pro on a Mac, Segoe on Windows. Sizes follow Apple's text styles (28, 22, 17, 15, 13, 11) with tracking that tightens above 20px.
+- **Colour** is Notion's ink, `rgb(55 53 47)`, with its opacity ladder for secondary text (0.62), tertiary (0.42) and hairlines (0.09 and 0.16), on a warm ground. One accent, terracotta, appears only for Cambio and the winner.
+- **Shadows** come from one light, above, at three depths: rest, card, lift, float. Corner radii scale with the tile so the proportions hold at every viewport.
+- **Motion** is derived, not scripted. Every view change is diffed by card id and the cards that moved are flown from where they were to where they are, with the Web Animations API: deals stagger 60ms apart from the deck, draws land in the action bar, swaps cross, sticks arrive on the pile face up, handed cards travel between hands. Everything runs 280ms on an ease out curve. Reveals turn the tile on its axis and turn it back when the timer ends.
+- **Copy** is short and declarative, with no exclamation marks and no dashes anywhere in the interface.
+- **Onboarding** is a four step walkthrough on first visit, hints inside the first peek and the first power, and a How to play sheet that opens beside the table.
+
 ## Rules decisions worth knowing
 
 - Cambio is called *instead of* drawing, at the start of your turn — the standard rule, which prevents "draw a great card, swap it in, then call".
