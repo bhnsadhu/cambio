@@ -222,8 +222,9 @@ function describeStatus(
   }
 
   if (pub.turn?.playerId === mine.id && pub.turn.stage === "draw") {
-    const last = pub.phase === "final" ? "This is your last turn. " : "";
-    return { title: `${last}Your turn.`, detail: pub.phase === "final" ? "Draw from the deck, then keep or place the card." : "Draw from the deck, or call Cambio to end the round after everyone else's next turn." };
+    return pub.phase === "final"
+      ? { title: "Your last turn.", detail: "Draw from the deck, then keep or place the card." }
+      : { title: "Your turn.", detail: "Draw from the deck, or call Cambio to end the round after everyone else's next turn." };
   }
   const detail = pub.cambio
     ? <>{name(pub.players.find((p) => p.id === pub.cambio!.callerId) ?? null)} {pub.cambio.reason === "zero" ? "is out of cards" : "called Cambio"}. {pub.cambio.remaining.length ? <>Still to play: {pub.cambio.remaining.map((id) => pub.players.find((p) => p.id === id)?.name).join(", ")}.</> : "Final turn in progress."}</>
