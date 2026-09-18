@@ -58,7 +58,7 @@ export function Lobby({ view, me, busy, onStart }: { view: PublicView; me: strin
           {seats.map((p, seat) => {
             const botName = p ? null : BOT_NAMES[botIdx++];
             return (
-              <li key={seat} className={`flex min-h-[136px] flex-col justify-between rounded-panel px-5 py-4 transition-[box-shadow,background-color] duration-300 ${p ? "bg-surface hairline animate-pop" : "border-[1.5px] border-dashed border-line-strong"}`}>
+              <li key={seat} className={`flex min-h-[136px] flex-col justify-between rounded-panel border-[1.5px] px-5 py-4 transition-[box-shadow,background-color] duration-300 ${p ? "border-transparent bg-surface hairline animate-pop" : "border-dashed border-line-strong"}`}>
                 <p className="t-caption text-ink-3">Seat {seat + 1}</p>
                 {p ? (
                   <div>
