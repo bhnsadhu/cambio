@@ -32,7 +32,7 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             <h3 className="truncate text-[15px] font-medium tracking-[-0.005em]">
-              <PlayerName name={player.name} isBot={player.isBot} />
+              <span><PlayerName name={player.name} isBot={player.isBot} /></span>
             </h3>
             {isMe ? <Chip tone="ink">You</Chip> : null}
           </div>

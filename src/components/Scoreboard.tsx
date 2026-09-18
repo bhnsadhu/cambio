@@ -48,7 +48,7 @@ export function Scoreboard({ view, me, busy, onPlayAgain }: { view: PublicView; 
                 <tr key={player.id} className="border-t border-line">
                   <td className="border-t border-line py-3 pr-4 align-middle">
                     <div className="flex items-center gap-2 text-[15px] font-medium">
-                      <PlayerName name={player.name} isBot={player.isBot} />
+                      <span><PlayerName name={player.name} isBot={player.isBot} /></span>
                       {won ? <Chip tone="accent">Winner</Chip> : null}
                       {player.id === me ? <Chip tone="ink">You</Chip> : null}
                     </div>
