@@ -62,8 +62,8 @@ export function Scoreboard({ view, me, busy, onPlayAgain }: { view: PublicView; 
               <th className="w-10 pb-2.5 font-medium">#</th>
               <th className="pb-2.5 font-medium">Player</th>
               <th className="pb-2.5 font-medium">Final hand</th>
-              <th className="pb-2.5 text-right font-medium">Hand total</th>
-              <th className="pb-2.5 text-right font-medium">Rounds won</th>
+              <th className="pb-2.5 pl-6 text-right font-medium">Hand total</th>
+              <th className="pb-2.5 pl-8 text-right font-medium">Rounds won</th>
               <th className="pb-2.5 pl-6 text-right font-medium">Each round</th>
             </tr>
           </thead>
@@ -94,10 +94,10 @@ export function Scoreboard({ view, me, busy, onPlayAgain }: { view: PublicView; 
                       )) : <span className="t-sub text-ink-3">No cards</span>}
                     </div>
                   </td>
-                  <td className={`t-money border-t border-line py-3.5 text-right align-middle text-[26px] ${won ? "text-accent" : ""}`}>
+                  <td className={`t-money border-t border-line py-3.5 pl-6 text-right align-middle text-[26px] ${won ? "text-accent" : ""}`}>
                     <CountUp value={score} delay={base + cards.length * 70} />
                   </td>
-                  <td className="t-money border-t border-line py-3.5 text-right align-middle text-[17px] text-ink-2">
+                  <td className="t-money border-t border-line py-3.5 pl-8 text-right align-middle text-[17px] text-ink-2">
                     {wins}<span className="t-sub text-ink-3"> of {view.results.length}</span>
                   </td>
                   <td className="tnum border-t border-line py-3.5 pl-6 text-right align-middle">
