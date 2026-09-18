@@ -1,33 +1,41 @@
 "use client";
 
+import { useState, type CSSProperties, type Ref } from "react";
 import type { Card } from "@/lib/game/types";
 import { isRed, SUIT_SYMBOL } from "@/lib/game/cards";
 
 const SIZES = {
-  sm: { w: "w-9", h: "h-[52px]", rank: "text-[13px]", suit: "text-[12px]", pad: "p-1.5" },
-  md: { w: "w-14", h: "h-20", rank: "text-[17px]", suit: "text-[15px]", pad: "p-2" },
-  lg: { w: "w-[var(--tile-w)]", h: "h-[var(--tile-h)]", rank: "text-[24px]", suit: "text-[20px]", pad: "p-2.5" },
+  sm: { box: "w-9 h-[51px] rounded-[5px]", rank: "text-[13px]", suit: "text-[12px]", pad: "p-1.5" },
+  md: { box: "w-14 h-20 rounded-[8px]", rank: "text-[17px]", suit: "text-[15px]", pad: "p-2" },
+  lg: { box: "w-[var(--tile-w)] h-[var(--tile-h)] rounded-[var(--tile-r)]", rank: "text-[24px]", suit: "text-[20px]", pad: "p-2.5" },
 } as const;
 
-/** A face-up card. The only place a card value is ever drawn on screen. */
-export function FaceCard({ card, size = "md", className = "" }: { card: Card; size?: keyof typeof SIZES; className?: string }) {
+export type CardSize = keyof typeof SIZES;
+
+/** A face up card. The only place a value is ever drawn on screen. */
+export function FaceCard({ card, size = "md", className = "", elRef, style }: { card: Card; size?: CardSize; className?: string; elRef?: Ref<HTMLDivElement>; style?: CSSProperties }) {
   const s = SIZES[size];
-  const red = isRed(card.suit);
-  const color = red ? "text-red" : "text-ink";
-  if (card.rank === "JOKER") {
-    return (
-      <div className={`relative ${s.w} ${s.h} ${s.pad} flex flex-col justify-between rounded-[10px] bg-card hairline ${className}`}>
-        <span className={`${s.rank} font-semibold leading-none tracking-[-0.02em] text-ink`}>J</span>
-        <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-ink-3">Joker</span>
-      </div>
-    );
-  }
+  const color = isRed(card.suit) ? "text-red" : "text-ink";
   return (
-    <div className={`relative ${s.w} ${s.h} ${s.pad} flex flex-col justify-between rounded-[10px] bg-card hairline ${color} ${className}`}>
-      <span className={`${s.rank} tnum font-semibold leading-none tracking-[-0.02em]`}>{card.rank}</span>
-      <span className={`${s.suit} self-end leading-none`}>{card.suit ? SUIT_SYMBOL[card.suit] : ""}</span>
+    <div ref={elRef} style={style} className={`relative ${s.box} ${s.pad} flex flex-col justify-between bg-card shadow-card ${color} ${className}`}>
+      {card.rank === "JOKER" ? (
+        <>
+          <span className={`${s.rank} font-semibold leading-none tracking-[-0.02em] text-ink`}>J</span>
+          <span className="self-end text-[9px] font-medium uppercase leading-none tracking-[0.12em] text-ink-3">Joker</span>
+        </>
+      ) : (
+        <>
+          <span className={`${s.rank} tnum font-semibold leading-none tracking-[-0.02em]`}>{card.rank}</span>
+          <span className={`${s.suit} self-end leading-none`}>{card.suit ? SUIT_SYMBOL[card.suit] : ""}</span>
+        </>
+      )}
     </div>
   );
+}
+
+/** A plain face down card, used by flights and the deck. */
+export function CardBack({ size = "lg", className = "", elRef }: { size?: CardSize; className?: string; elRef?: Ref<HTMLDivElement> }) {
+  return <div ref={elRef} className={`relative ${SIZES[size].box} card-back ${className}`} />;
 }
 
 export interface TileProps {
@@ -36,34 +44,66 @@ export interface TileProps {
   selected?: boolean;
   cue?: string;
   onClick?: () => void;
-  size?: "md" | "lg";
+  /** when set, the tile turns over to show this card; when cleared it turns back */
+  face?: Card | null;
+  /** keeps the slot's space but shows nothing (a card is in flight to it) */
+  hidden?: boolean;
+  slotRef?: (el: HTMLElement | null) => void;
 }
 
-/** A face-down card tile (or an empty slot). Never shows a value. */
-export function CardTile({ empty, selectable, selected, cue, onClick, size = "md" }: TileProps) {
-  const dims = size === "lg" ? "w-[var(--tile-w)] h-[var(--tile-h)]" : "w-16 h-[88px]";
+/**
+ * A card tile in a hand. Face down at rest; turns on its axis for a timed
+ * reveal; dashed when the slot is empty.
+ */
+export function CardTile({ empty, selectable, selected, cue, onClick, face, hidden, slotRef }: TileProps) {
+  // Keep the last face so the value stays readable while the tile turns back.
+  // Once turned, the back side is invisible, so a stale face never shows.
+  const [shown, setShown] = useState<Card | null>(face ?? null);
+  if (face && face !== shown) setShown(face);
+
   if (empty) {
-    return <div className={`${dims} rounded-[10px] border-[1.5px] border-dashed border-line-strong/80`} aria-label="empty slot" />;
+    return (
+      <div
+        ref={slotRef}
+        className="h-[var(--tile-h)] w-[var(--tile-w)] rounded-[var(--tile-r)] border-[1.5px] border-dashed border-line-strong"
+        aria-label="empty slot"
+      />
+    );
   }
-  const interactive = selectable && onClick;
+  const interactive = !!(selectable && onClick && !face);
   return (
     <button
       type="button"
+      ref={slotRef as (el: HTMLButtonElement | null) => void}
       disabled={!interactive}
       onClick={onClick}
+      style={hidden ? { visibility: "hidden" } : undefined}
       className={[
-        "group relative rounded-[10px] card-back overflow-hidden transition-[transform,box-shadow] duration-150",
-        dims,
-        interactive ? "cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_6px_18px_-8px_rgba(0,0,0,0.45)]" : "cursor-default",
-        selected ? "ring-accent -translate-y-0.5" : "",
+        "flip group relative h-[var(--tile-h)] w-[var(--tile-w)] rounded-[var(--tile-r)] transition-[transform,box-shadow] duration-200 ease-out",
+        interactive ? "cursor-pointer hover:-translate-y-1.5" : "cursor-default",
+        selected ? "-translate-y-1.5" : "",
       ].join(" ")}
-      aria-label={cue ? `${cue} this card` : "face-down card"}
+      data-face={face ? "up" : "down"}
+      aria-label={face ? `revealed ${face.rank}` : cue ? `${cue} this card` : "face down card"}
     >
-      {interactive && cue ? (
-        <span className="pointer-events-none absolute inset-x-0 bottom-0 z-10 translate-y-full bg-bg/95 py-1 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-ink transition-transform duration-150 group-hover:translate-y-0">
-          {cue}
+      <span className="flip-inner block">
+        <span
+          className={[
+            "flip-side front card-back block overflow-hidden rounded-[var(--tile-r)] transition-shadow duration-200",
+            interactive ? "group-hover:shadow-lift" : "",
+            selected ? "ring-accent" : "",
+          ].join(" ")}
+        >
+          {interactive && cue ? (
+            <span className="pointer-events-none absolute inset-x-0 bottom-0 z-10 translate-y-full bg-bg/95 py-1 text-center text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ink transition-transform duration-200 ease-out group-hover:translate-y-0">
+              {cue}
+            </span>
+          ) : null}
         </span>
-      ) : null}
+        <span className="flip-side back block">
+          {shown ? <FaceCard card={shown} size="lg" className="shadow-lift" /> : null}
+        </span>
+      </span>
     </button>
   );
 }

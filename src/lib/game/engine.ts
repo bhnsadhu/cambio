@@ -226,7 +226,7 @@ function fillBots(state: GameState, ctx: EngineCtx) {
   }
   state.players.sort((a, b) => a.seat - b.seat);
   const bots = state.players.filter((p) => p.isBot).map((p) => p.name);
-  if (bots.length) addLog(state, ctx, `${joinNames(bots)} sat down to fill the table.`);
+  if (bots.length) addLog(state, ctx, `${joinNames(bots)} filled the empty seats.`);
 }
 
 function dealRound(state: GameState, ctx: EngineCtx) {
@@ -253,7 +253,7 @@ function dealRound(state: GameState, ctx: EngineCtx) {
     if (p.isBot) remember(state, p.id, bottom);
     else addReveal(state, ctx, p.id, "opening", bottom, state.openingPeekUntil);
   }
-  addLog(state, ctx, `Round ${state.round} dealt. Memorise your bottom two cards.`, "accent");
+  addLog(state, ctx, `Round ${state.round}. Cards dealt.`, "accent");
 }
 
 function doAdvance(state: GameState, ctx: EngineCtx): boolean {
@@ -288,13 +288,13 @@ function doPlace(state: GameState, actor: Player, ctx: EngineCtx) {
   state.turn!.drawnCardId = null;
   toDiscard(state, id);
   const power = powerOf(card);
-  addLog(state, ctx, `${actor.name} placed ${shortLabel(card)}${power ? " — power" : ""}.`, power ? "accent" : "neutral");
+  addLog(state, ctx, power ? `${actor.name} placed ${shortLabel(card)}, a power card.` : `${actor.name} placed ${shortLabel(card)}.`, power ? "accent" : "neutral");
   if (power && powerIsUsable(state, actor, power)) {
     state.pendingPower = { playerId: actor.id, kind: power };
     state.turn!.stage = "power";
     return;
   }
-  if (power) addLog(state, ctx, `No valid target for the power — it fizzles.`);
+  if (power) addLog(state, ctx, `No valid target for the power. It fizzles.`);
   endTurn(state, ctx);
 }
 
@@ -307,14 +307,14 @@ function doSwap(state: GameState, actor: Player, cardId: string, ctx: EngineCtx)
   actor.hand[slot] = drawn;
   state.turn!.drawnCardId = null;
   toDiscard(state, cardId);
-  addLog(state, ctx, `${actor.name} swapped the drawn card in, discarding ${shortLabel(old)}.`);
+  addLog(state, ctx, `${actor.name} swapped the drawn card in and let go of ${shortLabel(old)}.`);
   endTurn(state, ctx);
 }
 
 function doCallCambio(state: GameState, actor: Player, ctx: EngineCtx) {
   requirePhase(state, ["playing"]);
   requireTurn(state, actor, "draw");
-  addLog(state, ctx, `${actor.name} called Cambio. Everyone else gets one last turn.`, "accent");
+  addLog(state, ctx, `${actor.name} called Cambio. Everyone else gets one more turn.`, "accent");
   startCambio(state, actor.id, "called", actor.id);
   endTurn(state, ctx);
 }
@@ -354,7 +354,7 @@ function doBlindSwap(state: GameState, actor: Player, myCardId: string, theirCar
   if (!theirs || theirs.player.id === actor.id) throw new GameError("INVALID_TARGET", "Pick a card from another player.");
   actor.hand[mine] = theirCardId;
   theirs.player.hand[theirs.slot] = myCardId;
-  addLog(state, ctx, `${actor.name} blind-swapped a card with ${theirs.player.name}.`);
+  addLog(state, ctx, `${actor.name} swapped a card blind with ${theirs.player.name}.`);
   endTurn(state, ctx);
 }
 
@@ -367,7 +367,7 @@ function doKingLook(state: GameState, actor: Player, aId: string, bId: string, c
   if (a.player.id === b.player.id) throw new GameError("INVALID_TARGET", "The two cards must belong to different players.");
   state.pendingPower!.looked = { a: aId, b: bId };
   reveal(state, ctx, actor, "kingLook", [aId, bId], ctx.now + KING_LOOK_MS);
-  addLog(state, ctx, `${actor.name} is looking at a card of ${a.player.name}'s and one of ${b.player.name}'s.`);
+  addLog(state, ctx, `${actor.name} is looking at one of ${a.player.name}'s cards and one of ${b.player.name}'s.`);
 }
 
 function doKingDecide(state: GameState, actor: Player, swap: boolean, ctx: EngineCtx) {
@@ -381,9 +381,9 @@ function doKingDecide(state: GameState, actor: Player, swap: boolean, ctx: Engin
     if (a && b) {
       a.player.hand[a.slot] = looked.b;
       b.player.hand[b.slot] = looked.a;
-      addLog(state, ctx, `${actor.name} swapped the two cards (${a.player.name} ↔ ${b.player.name}).`);
+      addLog(state, ctx, `${actor.name} swapped the two cards, ${a.player.name}'s for ${b.player.name}'s.`);
     } else {
-      addLog(state, ctx, `${actor.name} wanted to swap, but one of the cards was stuck away first.`);
+      addLog(state, ctx, `${actor.name} wanted to swap, but one of the cards had already gone.`);
     }
   } else {
     addLog(state, ctx, `${actor.name} left both cards where they were.`);
@@ -443,7 +443,7 @@ function doStick(state: GameState, actor: Player, cardId: string, ctx: EngineCtx
     throw new GameError("CANT_STICK", "Finish your turn before sticking.");
   }
   const owner = ownerOf(state, cardId);
-  if (!owner) throw new GameError("TOO_LATE", "Too late — that card is already gone.");
+  if (!owner) throw new GameError("TOO_LATE", "Too late. That card is already gone.");
   const card = state.cards[cardId];
   const top = state.cards[state.discard[state.discard.length - 1]];
   const own = owner.player.id === actor.id;
@@ -507,7 +507,7 @@ function handleZero(state: GameState, player: Player, ctx: EngineCtx) {
     state.cambio.remaining = state.cambio.remaining.filter((id) => id !== player.id);
     addLog(state, ctx, `${player.name} is out of cards.`, "accent");
   } else {
-    addLog(state, ctx, `${player.name} is out of cards — Cambio!`, "accent");
+    addLog(state, ctx, `${player.name} is out of cards. Cambio.`, "accent");
     const anchorId = state.turn ? state.turn.playerId : player.id;
     startCambio(state, player.id, "zero", anchorId);
   }
@@ -622,7 +622,7 @@ function reshuffle(state: GameState, ctx: EngineCtx) {
   });
   for (const c of fresh) state.cards[c.id] = c;
   state.deck = shuffle(fresh.map((c) => c.id), ctx.rng);
-  addLog(state, ctx, `Deck ran out — ${fresh.length} discards reshuffled under ${shortLabel(state.cards[top])}.`);
+  addLog(state, ctx, `Deck ran out. ${fresh.length} cards reshuffled under ${shortLabel(state.cards[top])}.`);
 }
 
 function reveal(state: GameState, ctx: EngineCtx, to: Player, kind: Reveal["kind"], cardIds: string[], until: number) {

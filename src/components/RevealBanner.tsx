@@ -6,18 +6,20 @@ import { Button } from "./ui";
 import { OPENING_PEEK_MS, PEEK_REVEAL_MS } from "@/lib/game/engine";
 
 /**
- * The only way a card value ever reaches the screen: a floating callout that
- * names the card(s), counts down, and leaves nothing behind.
+ * Names what you are allowed to see and counts down. The tiles themselves
+ * turn over for the same window; when this closes, everything is face down.
  */
 export function RevealBanner({
   view,
   now,
   busy,
+  hint,
   onKingDecide,
 }: {
   view: PlayerView;
   now: number;
   busy: boolean;
+  hint: string | null;
   onKingDecide: (swap: boolean) => void;
 }) {
   const reveals = view.private?.reveals ?? [];
@@ -26,35 +28,37 @@ export function RevealBanner({
   const ownerOf = (cardId: string) => view.public.players.find((p) => p.hand.includes(cardId));
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-28 z-30 flex justify-center px-6">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[132px] z-30 flex justify-center px-6">
       <div className="pointer-events-auto flex max-w-[720px] flex-col gap-3">
         {reveals.map((r) => {
           const total = r.kind === "opening" ? OPENING_PEEK_MS : PEEK_REVEAL_MS;
           const left = Math.max(0, r.until - now);
-          const pct = r.kind === "kingLook" ? null : Math.min(100, (left / total) * 100);
+          const isKing = r.kind === "kingLook";
+          const pct = isKing ? null : Math.min(100, (left / total) * 100);
           const title =
             r.kind === "opening" ? "Your bottom two cards" :
             r.kind === "peekOwn" ? "One of your cards" :
             r.kind === "peekOther" ? `${names.get(ownerOf(r.cardIds[0])?.id ?? "") ?? "Their"}'s card` :
-            "Two cards, your call";
-          const isKing = r.kind === "kingLook";
+            "Two cards. Your call.";
           const kingPending = isKing && view.public.pendingPower?.playerId === view.private?.playerId && view.public.pendingPower?.lookedDone;
           return (
-            <div key={r.id} className="animate-rise rounded-panel bg-ink px-5 py-4 text-bg shadow-[0_18px_50px_-20px_rgba(0,0,0,0.5)]">
+            <div key={r.id} className="animate-rise rounded-panel bg-ink px-5 py-4 text-bg shadow-float">
               <div className="flex items-center gap-5">
-                <div className="min-w-[150px]">
-                  <p className="text-[12px] font-medium uppercase tracking-[0.1em] text-bg/60">{title}</p>
-                  <p className="mt-1 text-[14px] text-bg/85">
-                    {isKing ? "Swap them, or leave them where they are." : "Memorise it — it disappears in"}
-                    {!isKing ? <span className="tnum ml-1 font-semibold text-bg">{(left / 1000).toFixed(1)}s</span> : null}
+                <div className="min-w-[170px]">
+                  <p className="t-caption text-bg/60">{title}</p>
+                  <p className="t-callout mt-1 text-bg/85">
+                    {isKing ? "Swap them, or leave them." : (
+                      <>Face down again in <span className="tnum font-semibold text-bg">{(left / 1000).toFixed(1)}s</span></>
+                    )}
                   </p>
+                  {hint ? <p className="t-footnote mt-2 max-w-[220px] text-bg/60">{hint}</p> : null}
                 </div>
                 <div className="flex items-center gap-3">
                   {r.cards.map((c, i) => (
                     <div key={c.id} className="flex flex-col items-center gap-1.5">
-                      <FaceCard card={c} size="lg" className="animate-pop" />
+                      <FaceCard card={c} size="lg" className="animate-flip-in" />
                       {isKing ? (
-                        <span className="text-[11px] text-bg/70">{ownerOf(r.cardIds[i])?.id === view.private?.playerId ? "Yours" : names.get(ownerOf(r.cardIds[i])?.id ?? "")}</span>
+                        <span className="t-footnote text-bg/70">{ownerOf(r.cardIds[i])?.id === view.private?.playerId ? "Yours" : names.get(ownerOf(r.cardIds[i])?.id ?? "")}</span>
                       ) : null}
                     </div>
                   ))}

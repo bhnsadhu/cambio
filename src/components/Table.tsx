@@ -1,14 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { Action, PlayerPublic, PlayerView, PowerKind } from "@/lib/game/types";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { Action, Card, PlayerPublic, PlayerView, PowerKind } from "@/lib/game/types";
 import { shortLabel } from "@/lib/game/cards";
 import type { GameHook } from "@/lib/client/useGame";
+import { usePositions } from "@/lib/client/positions";
+import { setPref, usePrefs } from "@/lib/client/prefs";
 import { PlayerPanel } from "./PlayerPanel";
 import { Piles } from "./Piles";
 import { EventFeed } from "./EventFeed";
 import { RevealBanner } from "./RevealBanner";
 import { Scoreboard } from "./Scoreboard";
+import { FlightLayer, useFlights } from "./FlightLayer";
 import { FaceCard } from "./cards";
 import { Button, PlayerName } from "./ui";
 
@@ -23,6 +26,9 @@ export function Table({ game }: { game: GameHook }) {
   const view = game.view!;
   const pub = view.public;
   const me = game.me;
+  const positions = usePositions();
+  const prefs = usePrefs();
+  const { specs, hidden, onLanded, version } = useFlights(view, me);
   const [sel, setSel] = useState<{ cardId: string; key: string } | null>(null);
 
   const mine = pub.players.find((p) => p.id === me) ?? null;
@@ -50,6 +56,27 @@ export function Table({ game }: { game: GameHook }) {
   const selected = sel && sel.key === modeKey ? sel.cardId : null;
   const setSelected = (cardId: string | null) => setSel(cardId ? { cardId, key: modeKey } : null);
 
+  // Cards this viewer may see right now, shown turned over on the table.
+  const revealed = useMemo(() => {
+    const m = new Map<string, Card>();
+    for (const r of view.private?.reveals ?? []) if (r.until > game.now) for (const c of r.cards) m.set(c.id, c);
+    return m;
+  }, [view, game.now]);
+
+  // One time hints, taught in context.
+  const peekHint = pub.phase === "peek" && !prefs.sawPeekHint && !!mine;
+  const powerHint = mode.kind === "power" && !prefs.sawPowerHint;
+  const prevPhase = useRef(pub.phase);
+  const prevMode = useRef(mode.kind);
+  useEffect(() => {
+    if (prevPhase.current === "peek" && pub.phase !== "peek") setPref("sawPeekHint", true);
+    prevPhase.current = pub.phase;
+  }, [pub.phase]);
+  useEffect(() => {
+    if (prevMode.current === "power" && mode.kind !== "power") setPref("sawPowerHint", true);
+    prevMode.current = mode.kind;
+  }, [mode.kind]);
+
   const cueFor = (cardId: string): string | null => {
     if (!mine || game.busy) return null;
     const own = mine.hand.includes(cardId);
@@ -76,7 +103,7 @@ export function Table({ game }: { game: GameHook }) {
   const fire = async (action: Action) => {
     setSelected(null);
     const res = await game.send(action);
-    if (res?.note?.kind === "stick") game.toast(res.note.correct ? "Stuck it." : "Wrong card. Penalty drawn.", res.note.correct ? "good" : "bad");
+    if (res?.note?.kind === "stick") game.toast(res.note.correct ? "Stuck." : "Not a match. Penalty card drawn.", res.note.correct ? "good" : "bad");
   };
 
   const onCard = (cardId: string) => {
@@ -104,7 +131,9 @@ export function Table({ game }: { game: GameHook }) {
     }
   };
 
-  const status = describeStatus(view, mine, turnPlayer, mode, selected);
+  const status = describeStatus(view, mine, turnPlayer, mode, selected, powerHint);
+  const showDrawnSlot = myTurn && (pub.turn?.stage === "draw" || pub.turn?.stage === "decide");
+  const drawn = view.private?.drawnCard ?? null;
 
   return (
     <div className="grid h-[calc(100vh-56px)] grid-cols-[minmax(0,1fr)_240px] gap-5 pb-6">
@@ -122,6 +151,10 @@ export function Table({ game }: { game: GameHook }) {
               cueFor={cueFor}
               selectedCardId={selected}
               onCard={onCard}
+              revealed={revealed}
+              hidden={hidden}
+              holding={pub.turn?.playerId === p.id && pub.turn.stage === "decide" && p.id !== me}
+              positions={positions}
             />
           ))}
           <Piles
@@ -130,18 +163,26 @@ export function Table({ game }: { game: GameHook }) {
             discardCount={pub.discardCount}
             canDraw={myTurn && pub.turn?.stage === "draw" && !game.busy}
             onDraw={() => void fire({ type: "draw" })}
+            hideDiscard={hidden.has("discard")}
+            positions={positions}
           />
         </div>
 
         {/* Action bar */}
-        <div className="mt-auto flex min-h-[84px] items-center justify-between gap-6 rounded-panel bg-surface px-6 py-4 hairline">
+        <div className="mt-auto flex min-h-[92px] items-center justify-between gap-6 rounded-panel bg-surface px-6 py-4 hairline">
           <div className="flex items-center gap-5">
-            {view.private?.drawnCard && myTurn && pub.turn?.stage === "decide" ? (
-              <FaceCard key={view.private.drawnCard.id} card={view.private.drawnCard} size="lg" className="animate-pop" />
+            {showDrawnSlot ? (
+              <div ref={positions.register("drawn")} className="h-[var(--tile-h)] w-[var(--tile-w)] shrink-0">
+                {drawn && !hidden.has("drawn") ? (
+                  <FaceCard key={drawn.id} card={drawn} size="lg" className="animate-flip-in shadow-lift" />
+                ) : (
+                  <div className="h-full w-full rounded-[var(--tile-r)] border-[1.5px] border-dashed border-line-strong" />
+                )}
+              </div>
             ) : null}
             <div>
-              <p className="text-[16px] font-medium tracking-[-0.005em]">{status.title}</p>
-              {status.detail ? <p className="mt-0.5 text-[13.5px] text-ink-2">{status.detail}</p> : null}
+              <p className="t-headline">{status.title}</p>
+              {status.detail ? <p className="t-callout mt-0.5 text-ink-2">{status.detail}</p> : null}
             </div>
           </div>
           <div className="flex items-center gap-2.5">
@@ -150,16 +191,16 @@ export function Table({ game }: { game: GameHook }) {
                 {pub.phase === "playing" ? (
                   <Button variant="accent" disabled={game.busy} onClick={() => void fire({ type: "callCambio" })}>Call Cambio</Button>
                 ) : null}
-                <Button variant="primary" size="lg" disabled={game.busy} onClick={() => void fire({ type: "draw" })}>Draw a card</Button>
+                <Button variant="primary" size="lg" disabled={game.busy} onClick={() => void fire({ type: "draw" })}>Draw</Button>
               </>
             ) : null}
             {mine && mode.kind === "decide" ? (
               <Button variant="primary" size="lg" disabled={game.busy} onClick={() => void fire({ type: "place" })}>
-                Place {view.private?.drawnCard ? shortLabel(view.private.drawnCard) : ""} on the pile
+                Place {drawn ? shortLabel(drawn) : ""} on the pile
               </Button>
             ) : null}
             {mine && mode.kind === "power" && !mode.lookedDone ? (
-              <Button variant="ghost" disabled={game.busy} onClick={() => void fire({ type: "skipPower" })}>Skip power</Button>
+              <Button variant="ghost" disabled={game.busy} onClick={() => void fire({ type: "skipPower" })}>Skip the power</Button>
             ) : null}
             {mine && mode.kind === "power" && mode.lookedDone ? (
               <>
@@ -173,7 +214,14 @@ export function Table({ game }: { game: GameHook }) {
 
       <EventFeed log={pub.log} />
 
-      <RevealBanner view={view} now={game.now} busy={game.busy} onKingDecide={(swap) => void fire({ type: "kingDecide", swap })} />
+      <FlightLayer specs={specs} onLanded={onLanded} version={version} />
+      <RevealBanner
+        view={view}
+        now={game.now}
+        busy={game.busy}
+        hint={peekHint ? "These two are yours. When the timer ends they turn back over and stay that way. Everything else on the table is already face down." : null}
+        onKingDecide={(swap) => void fire({ type: "kingDecide", swap })}
+      />
       {pub.phase === "scoring" ? (
         <Scoreboard view={pub} me={me} busy={game.busy} onPlayAgain={() => void fire({ type: "playAgain" })} />
       ) : null}
@@ -187,36 +235,39 @@ function describeStatus(
   turnPlayer: PlayerPublic | null,
   mode: Mode,
   selected: string | null,
+  powerHint: boolean,
 ): { title: React.ReactNode; detail?: React.ReactNode } {
   const pub = view.public;
-  const name = (p: PlayerPublic | null) => (p ? <PlayerName name={p.name} isBot={p.isBot} /> : "—");
-  const top = pub.discardTop ? shortLabel(pub.discardTop) : null;
-  const stickHint = top && mine && mine.cardCount > 0 ? <>Sticking is live: click any card you believe is a {pub.discardTop!.rank === "JOKER" ? "Joker" : pub.discardTop!.rank}.</> : null;
+  const name = (p: PlayerPublic | null) => (p ? <PlayerName name={p.name} isBot={p.isBot} /> : "Someone");
+  const topRank = pub.discardTop ? (pub.discardTop.rank === "JOKER" ? "joker" : pub.discardTop.rank) : null;
+  const stickHint = topRank && mine && mine.cardCount > 0
+    ? <>Sticking is open. Click any card you believe is a {topRank}, in any hand.</>
+    : null;
+  const firstPower = powerHint ? " This is your first power. Powers only fire when you place the drawn card. Swapping it in gives them up." : "";
 
   if (pub.phase === "peek") {
-    const left = Math.max(0, (pub.openingPeekUntil ?? 0) - pub.serverNow);
-    return { title: "Memorise your bottom two cards.", detail: mine ? "The round starts when the countdown ends." : `Play starts in about ${Math.ceil(left / 1000)}s.` };
+    return { title: "Memorise your bottom two cards.", detail: mine ? "Play starts when the timer ends." : "Play starts in a few seconds." };
   }
   if (pub.phase === "scoring") return { title: "Round over." };
-  if (!mine) return { title: <>Spectating. {name(turnPlayer)} is up.</> };
+  if (!mine) return { title: <>Watching. {name(turnPlayer)} is up.</>, detail: "Open your own table from the top of the page." };
 
   switch (mode.kind) {
     case "give":
-      return { title: <>Good stick. Hand {name(mode.to)} one of your cards.</>, detail: "Click the card you want to give away. They will not see it." };
+      return { title: <>Good stick. Hand {name(mode.to)} one of your cards.</>, detail: "Click the card to give. They will not see it." };
     case "decide":
-      return { title: "Keep it or place it?", detail: "Click one of your cards to swap this in (its power is lost), or place it on the pile." };
+      return { title: "Keep it or place it?", detail: "Click one of your cards to swap this in. Its power is lost. Or place it on the pile." };
     case "power":
       switch (mode.power) {
-        case "peekOwn": return { title: "Peek at one of your own cards.", detail: "Click a card in your hand. You will see it for a few seconds." };
-        case "peekOther": return { title: "Peek at someone else's card.", detail: "Click any card in another player's hand." };
+        case "peekOwn": return { title: "Look at one of your own cards.", detail: `Click a card in your hand. You see it for a few seconds.${firstPower}` };
+        case "peekOther": return { title: "Look at someone else's card.", detail: `Click any card in another player's hand.${firstPower}` };
         case "blindSwap": return selected
-          ? { title: "Now pick the card you want in return.", detail: "Click a card in another player's hand. Neither of you sees either card." }
-          : { title: "Blind swap: pick one of your cards to give away.", detail: "Then pick any card of another player's to take." };
+          ? { title: "Now pick the card to take.", detail: "Click a card in another player's hand. Neither of you sees either card." }
+          : { title: "Blind swap. Pick one of your cards to give away.", detail: `Then pick any card of another player's to take.${firstPower}` };
         case "kingLook": return mode.lookedDone
           ? { title: "You have seen both cards.", detail: "Swap them, or leave them." }
           : selected
-            ? { title: "Pick a second card from a different player.", detail: "You will see both, then decide whether to swap them." }
-            : { title: "Black king: look at any two cards from two different players.", detail: "Then choose whether to swap them." };
+            ? { title: "Pick a second card from a different player.", detail: "You see both, then decide whether to swap them." }
+            : { title: "Black king. Look at any two cards from two different players.", detail: `Then choose whether to swap them.${firstPower}` };
       }
     default: break;
   }
@@ -224,7 +275,7 @@ function describeStatus(
   if (pub.turn?.playerId === mine.id && pub.turn.stage === "draw") {
     return pub.phase === "final"
       ? { title: "Your last turn.", detail: "Draw from the deck, then keep or place the card." }
-      : { title: "Your turn.", detail: "Draw from the deck, or call Cambio to end the round after everyone else's next turn." };
+      : { title: "Your turn.", detail: "Draw from the deck, or call Cambio to make this the final round." };
   }
   const detail = pub.cambio
     ? <>{name(pub.players.find((p) => p.id === pub.cambio!.callerId) ?? null)} {pub.cambio.reason === "zero" ? "is out of cards" : "called Cambio"}. {pub.cambio.remaining.length ? <>Still to play: {pub.cambio.remaining.map((id) => pub.players.find((p) => p.id === id)?.name).join(", ")}.</> : "Final turn in progress."}</>

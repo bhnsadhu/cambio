@@ -12,13 +12,13 @@ export function Button({
   ...rest
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; size?: "sm" | "md" | "lg"; children: ReactNode }) {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-full font-medium transition-[background-color,color,transform,opacity] duration-150 " +
-    "disabled:opacity-40 disabled:pointer-events-none active:scale-[0.98] select-none whitespace-nowrap";
+    "press inline-flex items-center justify-center gap-2 rounded-full font-medium select-none whitespace-nowrap " +
+    "disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30";
   const sizes = { sm: "h-8 px-3.5 text-[13px]", md: "h-10 px-4.5 text-[14px]", lg: "h-12 px-6 text-[15px]" }[size];
   const variants: Record<Variant, string> = {
-    primary: "bg-ink text-bg hover:bg-tile-2",
+    primary: "bg-ink text-bg hover:bg-tile-2 shadow-rest",
     secondary: "bg-surface text-ink hairline hover:bg-surface-2",
-    accent: "bg-accent text-white hover:bg-accent-ink",
+    accent: "bg-accent text-white hover:bg-accent-ink shadow-rest",
     ghost: "bg-transparent text-ink-2 hover:text-ink hover:bg-surface-2",
   };
   return (
@@ -35,7 +35,12 @@ export function Chip({ tone = "neutral", children }: { tone?: "neutral" | "ink" 
     accent: "bg-accent-soft text-accent-ink",
     muted: "bg-transparent text-ink-3 hairline",
   }[tone];
-  return <span className={`inline-flex h-5.5 items-center rounded-full px-2 text-[11.5px] font-medium tracking-[0.01em] ${cls}`}>{children}</span>;
+  return <span className={`inline-flex h-[22px] items-center gap-1.5 rounded-full px-2 text-[11.5px] font-medium ${cls}`}>{children}</span>;
+}
+
+/** A small breathing dot: "something is happening here". */
+export function Pip({ className = "" }: { className?: string }) {
+  return <span aria-hidden className={`pip inline-block h-1.5 w-1.5 rounded-full bg-current ${className}`} />;
 }
 
 export function Wordmark({ className = "" }: { className?: string }) {
@@ -47,7 +52,7 @@ export function Wordmark({ className = "" }: { className?: string }) {
   );
 }
 
-/** Bot names carry the brand: the "Cam" is always bold. */
+/** Bot names carry the brand: the Cam is always bold. */
 export function PlayerName({ name, isBot }: { name: string; isBot: boolean }) {
   if (isBot && /^cam/i.test(name)) {
     return (
@@ -63,7 +68,7 @@ export function PlayerName({ name, isBot }: { name: string; isBot: boolean }) {
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[12.5px] font-medium text-ink-2">{label}</span>
+      <span className="t-sub mb-1.5 block font-medium text-ink-2">{label}</span>
       {children}
     </label>
   );
@@ -71,4 +76,4 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 
 export const inputClass =
   "h-11 w-full rounded-[10px] bg-card px-3.5 text-[15px] text-ink outline-none hairline placeholder:text-ink-3 " +
-  "focus:hairline-strong transition-shadow";
+  "focus:hairline-strong transition-shadow duration-150";
