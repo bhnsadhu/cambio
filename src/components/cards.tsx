@@ -6,7 +6,7 @@ import { isRed, SUIT_SYMBOL } from "@/lib/game/cards";
 const SIZES = {
   sm: { w: "w-9", h: "h-[52px]", rank: "text-[13px]", suit: "text-[12px]", pad: "p-1.5" },
   md: { w: "w-14", h: "h-20", rank: "text-[17px]", suit: "text-[15px]", pad: "p-2" },
-  lg: { w: "w-[76px]", h: "h-[108px]", rank: "text-[24px]", suit: "text-[20px]", pad: "p-2.5" },
+  lg: { w: "w-[var(--tile-w)]", h: "h-[var(--tile-h)]", rank: "text-[24px]", suit: "text-[20px]", pad: "p-2.5" },
 } as const;
 
 /** A face-up card. The only place a card value is ever drawn on screen. */
@@ -41,7 +41,7 @@ export interface TileProps {
 
 /** A face-down card tile (or an empty slot). Never shows a value. */
 export function CardTile({ empty, selectable, selected, cue, onClick, size = "md" }: TileProps) {
-  const dims = size === "lg" ? "w-[76px] h-[108px]" : "w-16 h-[88px]";
+  const dims = size === "lg" ? "w-[var(--tile-w)] h-[var(--tile-h)]" : "w-16 h-[88px]";
   if (empty) {
     return <div className={`${dims} rounded-[10px] border-[1.5px] border-dashed border-line-strong/80`} aria-label="empty slot" />;
   }

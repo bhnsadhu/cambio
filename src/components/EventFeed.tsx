@@ -11,7 +11,7 @@ export function EventFeed({ log }: { log: LogEntry[] }) {
     if (el) el.scrollTop = el.scrollHeight;
   }, [lastSeq]);
   return (
-    <aside className="flex min-h-0 flex-col rounded-panel bg-surface hairline" aria-label="table log">
+    <aside className="flex min-h-0 min-w-0 flex-col rounded-panel bg-surface hairline" aria-label="table log">
       <header className="px-5 pt-4 pb-3">
         <h3 className="text-[15px] font-medium">What happened</h3>
       </header>

@@ -42,6 +42,12 @@
 
 html { color-scheme: light; }
 
+:root {
+  /* Card tiles scale with the viewport so four hands, the pile and the log fit from 1280px up. */
+  --tile-w: clamp(56px, 5vw, 78px);
+  --tile-h: calc(var(--tile-w) * 1.42);
+}
+
 body {
   background: var(--color-bg);
   color: var(--color-ink);

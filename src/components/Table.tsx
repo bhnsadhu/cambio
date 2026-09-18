@@ -107,9 +107,9 @@ export function Table({ game }: { game: GameHook }) {
   const status = describeStatus(view, mine, turnPlayer, mode, selected);
 
   return (
-    <div className="grid h-[calc(100vh-56px)] grid-cols-[1fr_280px] gap-5 pb-6">
+    <div className="grid h-[calc(100vh-56px)] grid-cols-[minmax(0,1fr)_240px] gap-5 pb-6">
       <div className="flex min-h-0 flex-col gap-5">
-        <div className="grid grid-cols-[repeat(4,minmax(196px,1fr))_auto] gap-4">
+        <div className="grid grid-cols-[repeat(4,minmax(0,1fr))_auto] gap-4">
           {pub.players.map((p) => (
             <PlayerPanel
               key={p.id}

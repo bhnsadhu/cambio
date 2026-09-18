@@ -17,7 +17,7 @@ export function Piles({
   onDraw: () => void;
 }) {
   return (
-    <section className="flex flex-col gap-4 rounded-panel bg-surface px-5 pt-4 pb-5 hairline" aria-label="deck and discard pile">
+    <section className="flex min-w-0 flex-col gap-4 rounded-panel bg-surface px-4 pt-4 pb-5 hairline" aria-label="deck and discard pile">
       <header>
         <h3 className="text-[15px] font-medium">Table</h3>
         <p className="mt-0.5 text-[12px] text-ink-3">Deck and discard</p>
@@ -29,7 +29,7 @@ export function Piles({
             disabled={!canDraw}
             onClick={onDraw}
             className={[
-              "relative h-[108px] w-[76px] rounded-[10px] card-back transition-[transform,box-shadow] duration-150",
+              "relative h-[var(--tile-h)] w-[var(--tile-w)] rounded-[10px] card-back transition-[transform,box-shadow] duration-150",
               canDraw ? "cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_8px_20px_-10px_rgba(0,0,0,0.5)] ring-turn" : "cursor-default",
             ].join(" ")}
             aria-label={canDraw ? "draw a card" : "deck"}
@@ -44,7 +44,7 @@ export function Piles({
           {discardTop ? (
             <FaceCard key={discardTop.id} card={discardTop} size="lg" className="animate-pop" />
           ) : (
-            <div className="h-[108px] w-[76px] rounded-[10px] border-[1.5px] border-dashed border-line-strong/80" />
+            <div className="h-[var(--tile-h)] w-[var(--tile-w)] rounded-[10px] border-[1.5px] border-dashed border-line-strong/80" />
           )}
           <span className="tnum text-[12px] text-ink-3">{discardCount ? `${discardCount} discarded` : "Empty pile"}</span>
         </div>

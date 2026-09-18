@@ -25,7 +25,7 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
     : "";
   return (
     <section
-      className={`relative flex min-w-[196px] flex-col gap-4 rounded-panel bg-surface px-5 pt-4 pb-5 transition-[box-shadow] duration-200 ${ring}`}
+      className={`relative flex min-w-0 flex-col gap-4 rounded-panel bg-surface px-4 pt-4 pb-5 transition-[box-shadow] duration-200 ${ring}`}
       aria-label={`${player.name}'s hand`}
     >
       <header className="flex items-start justify-between gap-3">
@@ -47,18 +47,19 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
         </div>
       </header>
 
-      <div className="grid grid-cols-2 gap-2.5 justify-items-center">
+      <div className="grid grid-cols-2 gap-3 justify-items-center">
         {player.hand.map((cardId, i) =>
           cardId ? (
             <CardTile
               key={cardId}
+              size="lg"
               cue={cueFor(cardId) ?? undefined}
               selectable={!!cueFor(cardId)}
               selected={selectedCardId === cardId}
               onClick={() => onCard(cardId)}
             />
           ) : (
-            <CardTile key={`empty-${i}`} empty />
+            <CardTile key={`empty-${i}`} empty size="lg" />
           ),
         )}
       </div>
