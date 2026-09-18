@@ -45,9 +45,10 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
             <h3 className="t-headline truncate">
               <span><PlayerName name={player.name} isBot={player.isBot} /></span>
             </h3>
-            {isMe ? <Chip tone="ink">You</Chip> : null}
           </div>
-          <p className="t-footnote mt-0.5 text-ink-3">
+          <p className="t-footnote mt-0.5 truncate text-ink-3">
+            {isMe ? <span className="font-medium text-ink">You</span> : null}
+            {isMe ? " · " : ""}
             {player.isBot ? "House bot" : player.isHost ? "Host" : "Player"}
             {stageText ? <span className="text-ink-2"> · {stageText}</span> : null}
           </p>
