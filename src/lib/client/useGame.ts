@@ -99,10 +99,22 @@ export function useGame(code: string): GameHook {
 
   // Realtime subscription + fallback poll + reconnect refresh.
   useEffect(() => {
-    const stop = subscribeGame(code, acceptPublic, (s) => {
-      setConnection(s);
-      if (s === "live") void refresh();
-    });
+    const stop = subscribeGame(
+      code,
+      (pub) => {
+        const prev = viewRef.current?.public;
+        acceptPublic(pub);
+        // A fresh deal is the one private change that comes from someone
+        // else's action (the host's): fetch our opening peek right away.
+        if (sessionRef.current && prev && (pub.round !== prev.round || (pub.phase === "peek" && prev.phase !== "peek"))) {
+          void refresh();
+        }
+      },
+      (s) => {
+        setConnection(s);
+        if (s === "live") void refresh();
+      },
+    );
     const poll = setInterval(() => void refresh(), POLL_MS);
     const onVisible = () => { if (document.visibilityState === "visible") void refresh(); };
     document.addEventListener("visibilitychange", onVisible);
