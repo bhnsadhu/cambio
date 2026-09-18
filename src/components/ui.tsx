@@ -38,9 +38,14 @@ export function Chip({ tone = "neutral", children }: { tone?: "neutral" | "ink" 
   return <span className={`inline-flex h-[22px] items-center gap-1.5 rounded-full px-2 text-[11.5px] font-medium ${cls}`}>{children}</span>;
 }
 
-/** A small breathing dot: "something is happening here". */
+/** The one status dot. Green and breathing means live or active, everywhere. */
 export function Pip({ className = "" }: { className?: string }) {
-  return <span aria-hidden className={`pip inline-block h-1.5 w-1.5 rounded-full bg-current ${className}`} />;
+  return <span aria-hidden className={`pip inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-accent ${className}`} />;
+}
+
+/** Its counterpart for a state that is not live: still, and gray. */
+export function DotOff({ className = "" }: { className?: string }) {
+  return <span aria-hidden className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-ink-3 ${className}`} />;
 }
 
 export function Wordmark({ className = "" }: { className?: string }) {

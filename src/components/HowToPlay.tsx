@@ -9,7 +9,7 @@ const SECTIONS: { title: string; lines: string[] }[] = [
   { title: "Powers", lines: ["Only a placed card has a power. A swapped one gives it up.", "7 or 8: look at one of your cards.", "9 or 10: look at one of someone else's.", "Jack or queen: swap one of yours for one of theirs, unseen.", "Black king: look at two cards from two different players, then swap them or not."] },
   { title: "Sticking", lines: ["Whenever a card lands on the pile, anyone can click a card they believe matches it, from any hand.", "Right, and the card leaves the game. If it was someone else's, you hand them one of yours.", "Wrong, and you draw a penalty card.", "The player mid turn cannot stick until their card is down."] },
   { title: "Cambio", lines: ["Call it at the start of your turn instead of drawing. Everyone else gets one more turn.", "Running out of cards calls it for you."] },
-  { title: "Scores", lines: ["Hands are revealed and totalled. Ties stand.", "The winner leads the next round at the same table."] },
+  { title: "Scores", lines: ["Hands are revealed and totaled. Ties stand.", "The winner leads the next round at the same table."] },
 ];
 
 /** A quiet reference that slides in beside the table. */

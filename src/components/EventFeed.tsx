@@ -12,13 +12,13 @@ export function EventFeed({ log }: { log: LogEntry[] }) {
   }, [lastSeq]);
   return (
     <aside className="flex min-h-0 min-w-0 flex-col rounded-panel bg-surface hairline" aria-label="table log">
-      <header className="px-5 pt-4 pb-3">
+      <header className="px-4 pt-4 pb-3">
         <h3 className="t-headline">Table log</h3>
       </header>
       {log.length === 0 ? (
-        <p className="t-sub px-5 pb-5 text-ink-3">Quiet so far. Moves show up here as they happen.</p>
+        <p className="t-sub px-4 pb-5 text-ink-3">Quiet so far. Moves show up here as they happen.</p>
       ) : (
-        <ol ref={ref} className="flex-1 space-y-2 overflow-y-auto px-5 pb-5">
+        <ol ref={ref} className="flex-1 space-y-2 overflow-y-auto px-4 pb-5">
           {log.map((e) => (
             <li
               key={e.seq}

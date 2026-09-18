@@ -43,7 +43,7 @@ supabase/          schema and RPCs (see migration in the Supabase project)
 
 The visual language is after Offsuit, the poker app, sampled from its live store screenshots and offsuit.app rather than approximated:
 
-- **Ground** is true black. No felt, no neon, no glass. Surfaces are a cool charcoal (`#202028`, the colour of Offsuit's action pills and stat card), lighter on hover.
+- **Ground** is true black. No felt, no neon, no glass. Surfaces are a cool charcoal (`#202028`, the color of Offsuit's action pills and stat card), lighter on hover.
 - **Cards** are white (`#f8f8f8`) with a black rank and a left aligned suit pip; red suits are `#ff5a52`. Face down cards are white with a fine black diagonal hatch inside a white frame, Offsuit's signature back.
 - **Accent** is a single mint, `#4ff0a8`, reserved for money and the number that matters: scores, the Cambio call, the winner, the countdown.
 - **Type**: Plus Jakarta Sans for headlines (the brand face on offsuit.app), the system font for labels and numbers, which is what the native app draws with. Big numbers are set light with tabular figures.

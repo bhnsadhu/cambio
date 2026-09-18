@@ -53,6 +53,8 @@ export interface PendingGive {
   from: string;
   /** the player whose card was stuck */
   to: string;
+  /** when the debt was created (idle humans are resolved after a timeout) */
+  since?: number;
 }
 
 export interface Reveal {
@@ -100,7 +102,7 @@ export interface GameState {
   deck: string[];
   /** discard pile; top is the LAST element */
   discard: string[];
-  turn: { playerId: string; stage: TurnStage; drawnCardId: string | null } | null;
+  turn: { playerId: string; stage: TurnStage; drawnCardId: string | null; startedAt: number } | null;
   /** seat that leads the round */
   leadSeat: number;
   /** count of completed turns this round (used by bots to avoid calling cambio too early) */
@@ -141,7 +143,9 @@ export type Action =
   | { type: "skipPower" }
   | { type: "stick"; cardId: string }
   | { type: "give"; cardId: string }
-  | { type: "playAgain" };
+  | { type: "playAgain" }
+  /** an idle human's turn (or owed card) is resolved for them; anyone may report it */
+  | { type: "timeout" };
 
 export type ActionType = Action["type"];
 
@@ -176,9 +180,11 @@ export interface PublicView {
   deckCount: number;
   discardCount: number;
   discardTop: Card | null;
-  turn: { playerId: string; stage: TurnStage } | null;
+  turn: { playerId: string; stage: TurnStage; startedAt: number } | null;
   pendingPower: { playerId: string; kind: PowerKind; lookedDone: boolean } | null;
   pendingGives: PendingGive[];
+  /** epoch ms after which the current human turn is forfeited */
+  turnDeadline: number | null;
   cambio: { callerId: string; reason: "called" | "zero"; remaining: string[] } | null;
   openingPeekUntil: number | null;
   results: RoundResult[];

@@ -4,7 +4,7 @@
  * Pure and deterministic: `applyAction(state, envelope, ctx)` returns a new
  * state (never mutates the input) or throws a `GameError`. All randomness and
  * time come from `ctx`, so the engine is fully unit-testable and the server
- * can serialise actions with optimistic concurrency (see server/store.ts).
+ * can serialize actions with optimistic concurrency (see server/store.ts).
  */
 
 import {
@@ -30,7 +30,9 @@ import type {
 
 export const SEATS = 4;
 export const BOT_NAMES = ["Camryn", "Camron", "Cami"] as const;
-export const OPENING_PEEK_MS = 10_000;
+export const OPENING_PEEK_MS = 5_000;
+/** An idle human forfeits the turn and draws a penalty after this long. */
+export const TURN_TIMEOUT_MS = 30_000;
 export const PEEK_REVEAL_MS = 6_000;
 export const KING_LOOK_MS = 120_000;
 export const MAX_LOG = 40;
@@ -181,6 +183,10 @@ export function applyAction(input: GameState, env: ActionEnvelope, ctx: EngineCt
     case "stick": note = doStick(state, actor, a.cardId, ctx); break;
     case "give": doGive(state, actor, a.cardId, ctx); break;
     case "playAgain": doPlayAgain(state, actor, ctx); break;
+    case "timeout": {
+      if (!doTimeout(state, ctx)) return { state: input, changed: false };
+      break;
+    }
     default: {
       const never: never = a;
       throw new GameError("INVALID_TARGET", `Unknown action ${(never as Action).type}`);
@@ -262,7 +268,7 @@ function doAdvance(state: GameState, ctx: EngineCtx): boolean {
   state.phase = "playing";
   state.reveals = state.reveals.filter((r) => r.kind !== "opening");
   const lead = state.players.find((p) => p.seat === state.leadSeat) ?? state.players[0];
-  state.turn = { playerId: lead.id, stage: "draw", drawnCardId: null };
+  state.turn = { playerId: lead.id, stage: "draw", drawnCardId: null, startedAt: ctx.now };
   addLog(state, ctx, `Cards down. ${lead.name} leads.`);
   return true;
 }
@@ -453,7 +459,7 @@ function doStick(state: GameState, actor: Player, cardId: string, ctx: EngineCtx
     trimHand(owner.player);
     toDiscard(state, cardId);
     addLog(state, ctx, `${actor.name} stuck ${own ? "their own" : `${owner.player.name}'s`} ${shortLabel(card)}.`, "good");
-    if (!own) state.pendingGives.push({ from: actor.id, to: owner.player.id });
+    if (!own) state.pendingGives.push({ from: actor.id, to: owner.player.id, since: ctx.now });
     if (cardCount(owner.player) === 0) handleZero(state, owner.player, ctx);
     return { kind: "stick", correct: true };
   }
@@ -484,6 +490,63 @@ function doGive(state: GameState, actor: Player, cardId: string, ctx: EngineCtx)
   addLog(state, ctx, `${actor.name} handed a card to ${to.name}.`);
   if (cardCount(actor) === 0) handleZero(state, actor, ctx);
   maybeEndRound(state, ctx);
+}
+
+/* ------------------------------------------------------------------ */
+/* Idle humans                                                         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Resolves whatever an idle human is holding the table up with. Returns
+ * false when nothing is overdue, so the action is a harmless no-op that
+ * any client or the bot runner may fire on a timer.
+ */
+function doTimeout(state: GameState, ctx: EngineCtx): boolean {
+  if (state.phase !== "playing" && state.phase !== "final") return false;
+  let acted = false;
+
+  // An owed card that was never handed over: give one at random.
+  for (const give of state.pendingGives.slice()) {
+    const from = state.players.find((p) => p.id === give.from)!;
+    if (from.isBot || give.since === undefined || ctx.now - give.since < TURN_TIMEOUT_MS) continue;
+    const to = state.players.find((p) => p.id === give.to)!;
+    const ids = from.hand.filter((id): id is string => !!id);
+    if (ids.length) {
+      const cardId = ids[Math.floor(ctx.rng() * ids.length)];
+      from.hand[from.hand.indexOf(cardId)] = null;
+      trimHand(from);
+      addToHand(to, cardId);
+      addLog(state, ctx, `${from.name} ran out of time. A card went to ${to.name} for them.`, "bad");
+    }
+    state.pendingGives.splice(state.pendingGives.indexOf(give), 1);
+    acted = true;
+    if (cardCount(from) === 0) handleZero(state, from, ctx);
+  }
+
+  const t = state.turn;
+  if (t) {
+    const player = state.players.find((p) => p.id === t.playerId)!;
+    if (!player.isBot && ctx.now - t.startedAt >= TURN_TIMEOUT_MS) {
+      // A drawn card that was never decided on lands on the pile with no power.
+      if (t.drawnCardId) {
+        const drawn = t.drawnCardId;
+        t.drawnCardId = null;
+        toDiscard(state, drawn);
+      }
+      const penalty = drawFromDeck(state, ctx);
+      if (penalty) addToHand(player, penalty);
+      addLog(state, ctx, penalty
+        ? `${player.name} ran out of time. Turn skipped, penalty card drawn.`
+        : `${player.name} ran out of time. Turn skipped.`, "bad");
+      state.reveals = state.reveals.filter((r) => !(r.kind === "kingLook" && r.toPlayerId === player.id));
+      endTurn(state, ctx);
+      acted = true;
+    }
+  }
+
+  if (!acted) return false;
+  maybeEndRound(state, ctx);
+  return true;
 }
 
 /* ------------------------------------------------------------------ */
@@ -525,7 +588,7 @@ function endTurn(state: GameState, ctx: EngineCtx) {
     while (rem.length && cardCount(state.players.find((p) => p.id === rem[0])!) === 0) rem.shift();
     const next = rem.shift();
     if (!next) { maybeEndRound(state, ctx); return; }
-    state.turn = { playerId: next, stage: "draw", drawnCardId: null };
+    state.turn = { playerId: next, stage: "draw", drawnCardId: null, startedAt: ctx.now };
     return;
   }
 
@@ -533,7 +596,7 @@ function endTurn(state: GameState, ctx: EngineCtx) {
   for (let i = 1; i <= SEATS; i++) {
     const p = state.players.find((x) => x.seat === (cur.seat + i) % SEATS);
     if (p && cardCount(p) > 0) {
-      state.turn = { playerId: p.id, stage: "draw", drawnCardId: null };
+      state.turn = { playerId: p.id, stage: "draw", drawnCardId: null, startedAt: ctx.now };
       return;
     }
   }

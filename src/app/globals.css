@@ -128,8 +128,8 @@ body {
   position: absolute;
   inset: 7.5%;
   border-radius: calc(var(--tile-r) * 0.55);
-  background-image: repeating-linear-gradient(135deg, #141418 0 1.4px, transparent 1.4px 5px);
-  opacity: 0.92;
+  background-image: repeating-linear-gradient(135deg, #1a1a1f 0 1.2px, transparent 1.2px 5.4px);
+  opacity: 0.85;
 }
 
 /* Two sided card that turns on its own axis. */

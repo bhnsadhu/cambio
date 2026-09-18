@@ -16,7 +16,7 @@ const STEPS = [
   },
   {
     title: "Look once. Then remember.",
-    body: "At the start you get ten seconds with your bottom two cards. After that, every card on the table is face down.",
+    body: "At the start you get five seconds with your bottom two cards. After that, every card on the table is face down.",
     art: <Art2 />,
   },
   {

@@ -32,11 +32,22 @@ export function useFlights(view: PlayerView | null, me: string | null) {
   }, [view, positions]);
 
   const version = view?.public.version ?? -1;
+  // Landings are collected and flushed once per frame so a sixteen card deal
+  // costs one render, not sixteen.
+  const pendingLandings = useRef<string[]>([]);
+  const flush = useRef<number | null>(null);
   const onLanded = useCallback((id: string) => {
-    setLanded((cur) => {
-      const ids = cur.version === version ? new Set(cur.ids) : new Set<string>();
-      ids.add(id);
-      return { version, ids };
+    pendingLandings.current.push(id);
+    if (flush.current !== null) return;
+    flush.current = requestAnimationFrame(() => {
+      flush.current = null;
+      const batch = pendingLandings.current;
+      pendingLandings.current = [];
+      setLanded((cur) => {
+        const ids = cur.version === version ? new Set(cur.ids) : new Set<string>();
+        for (const b of batch) ids.add(b);
+        return { version, ids };
+      });
     });
   }, [version]);
 
@@ -83,11 +94,11 @@ function Flight({ spec, onLanded, version }: { spec: FlightSpec; onLanded: (id: 
     const lift = Math.min(36, Math.max(14, Math.hypot(dx, dy) * 0.08));
     const anim = el.animate(
       [
-        { transform: "translate(0px, 0px) scale(1, 1)", opacity: 1, offset: 0 },
-        { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - lift}px) scale(${((1 + sx) / 2) * 1.05}, ${((1 + sy) / 2) * 1.05})`, opacity: 1, offset: 0.5 },
-        { transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`, opacity: 1, offset: 1 },
+        { transform: "translate3d(0px, 0px, 0) scale(1, 1)", opacity: 1, offset: 0 },
+        { transform: `translate3d(${dx * 0.5}px, ${dy * 0.5 - lift}px, 0) scale(${((1 + sx) / 2) * 1.05}, ${((1 + sy) / 2) * 1.05})`, opacity: 1, offset: 0.5 },
+        { transform: `translate3d(${dx}px, ${dy}px, 0) scale(${sx}, ${sy})`, opacity: 1, offset: 1 },
       ],
-      { duration: spec.duration, delay: spec.delay, easing: EASE_OUT, fill: "both" },
+      { duration: spec.duration, delay: spec.delay, easing: EASE_OUT, fill: "both", composite: "replace" },
     );
     let finished = false;
     anim.onfinish = () => { finished = true; setDone(true); landedRef.current(spec.id); };
@@ -98,7 +109,7 @@ function Flight({ spec, onLanded, version }: { spec: FlightSpec; onLanded: (id: 
 
   if (done) return null;
   return (
-    <div ref={ref} className="absolute origin-top-left will-change-transform" style={{ opacity: 0 }}>
+    <div ref={ref} className="absolute origin-top-left will-change-transform" style={{ opacity: 0, contain: "layout paint" }}>
       {spec.face ? (
         <FaceCard card={spec.face} size="lg" className="h-full! w-full! shadow-lift" />
       ) : (

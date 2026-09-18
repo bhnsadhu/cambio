@@ -12,14 +12,14 @@
  */
 
 import { cardValue, powerOf } from "./cards";
-import { canStick, cardCount } from "./engine";
+import { canStick, cardCount, TURN_TIMEOUT_MS } from "./engine";
 import type { Action, Card, GameState, Player } from "./types";
 
 export interface BotPlan {
   playerId: string;
   action: Action;
   delayMs: number;
-  /** stable key so a runner can recognise "the same intent" across re-plans */
+  /** stable key so a runner can recognize "the same intent" across re-plans */
   intent: string;
 }
 
@@ -40,6 +40,19 @@ export function planBots(state: GameState, now: number, jitter: Jitter): BotPlan
     return plans;
   }
   if (state.phase !== "playing" && state.phase !== "final") return plans;
+
+  // Idle humans: the table does not wait forever. Any seat may report it.
+  const reporter = bots[0] ?? state.players[0];
+  let due: number | null = null;
+  const t = state.turn;
+  if (t && !state.players.find((p) => p.id === t.playerId)?.isBot) due = t.startedAt + TURN_TIMEOUT_MS;
+  for (const g of state.pendingGives) {
+    const from = state.players.find((p) => p.id === g.from);
+    if (from && !from.isBot && g.since !== undefined) due = due === null ? g.since + TURN_TIMEOUT_MS : Math.min(due, g.since + TURN_TIMEOUT_MS);
+  }
+  if (due !== null) {
+    plans.push({ playerId: reporter.id, action: { type: "timeout" }, delayMs: Math.max(0, due - now), intent: `timeout:${due}` });
+  }
 
   for (const bot of bots) {
     // 1. Owed cards after a correct stick of someone else's card.

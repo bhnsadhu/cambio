@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useGame } from "@/lib/client/useGame";
 import { api, RequestError } from "@/lib/client/api";
 import { saveSession, storeName } from "@/lib/client/session";
@@ -12,15 +13,26 @@ import { Lobby } from "./Lobby";
 import { Table } from "./Table";
 import { Explainer } from "./Explainer";
 import { HowToPlay } from "./HowToPlay";
-import { Button, Chip, Field, inputClass, Pip, Wordmark } from "./ui";
+import { Button, Chip, DotOff, Field, inputClass, Pip, Wordmark } from "./ui";
 
 export function GameScreen({ code }: { code: string }) {
   const game = useGame(code);
   const prefs = usePrefs();
+  const router = useRouter();
   const view = game.view;
   const [help, setHelp] = useState(false);
   const [replay, setReplay] = useState(false);
   const [watching, setWatching] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  useEffect(() => {
+    if (!leaving) return;
+    const id = window.setTimeout(() => setLeaving(false), 4000);
+    return () => window.clearTimeout(id);
+  }, [leaving]);
+  const leave = () => {
+    game.setSession(null);
+    router.push("/");
+  };
 
   const seated = !!game.session;
   const showExplainer = replay || (seated && !!view && prefs.onboarded !== true);
@@ -58,8 +70,21 @@ export function GameScreen({ code }: { code: string }) {
           <div className="flex items-center gap-3">
             {game.session ? <span className="t-sub text-ink-2">Playing as <span className="font-medium text-ink">{game.session.name}</span></span> : null}
             <Button variant="ghost" size="sm" onClick={() => setHelp(true)}>How to play</Button>
-            <Chip tone={game.connection === "live" ? "neutral" : "muted"}>
-              {game.connection === "live" ? <span className="inline-block h-1.5 w-1.5 rounded-full bg-ink" /> : <Pip className="text-ink-3" />}
+            {game.session ? (
+              leaving ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="t-sub text-ink-2">Leave this table?</span>
+                  <Button variant="secondary" size="sm" onClick={leave}>Leave</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setLeaving(false)}>Stay</Button>
+                </span>
+              ) : (
+                <Button variant="ghost" size="sm" onClick={() => setLeaving(true)}>Leave</Button>
+              )
+            ) : (
+              <Link href="/"><Button variant="ghost" size="sm">Home</Button></Link>
+            )}
+            <Chip tone="neutral">
+              {game.connection === "live" ? <Pip /> : <DotOff />}
               {game.connection === "live" ? "Live" : game.connection === "connecting" ? "Connecting" : "Reconnecting"}
             </Chip>
           </div>

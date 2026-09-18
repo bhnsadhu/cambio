@@ -1,6 +1,7 @@
 "use client";
 
 import type { PlayerView } from "@/lib/game/types";
+import { useClock } from "@/lib/client/useClock";
 import { FaceCard } from "./cards";
 import { Button } from "./ui";
 import { OPENING_PEEK_MS, PEEK_REVEAL_MS } from "@/lib/game/engine";
@@ -11,17 +12,21 @@ import { OPENING_PEEK_MS, PEEK_REVEAL_MS } from "@/lib/game/engine";
  */
 export function RevealBanner({
   view,
-  now,
+  skew,
   busy,
   hint,
   onKingDecide,
 }: {
   view: PlayerView;
-  now: number;
+  skew: number;
   busy: boolean;
   hint: string | null;
   onKingDecide: (swap: boolean) => void;
 }) {
+  const hasReveals = (view.private?.reveals.length ?? 0) > 0;
+  const tick = useClock(100, hasReveals);
+  const now = tick + skew;
+  if (!hasReveals || tick === 0) return null;
   // Drop a reveal a beat before its deadline so the callout never lingers at zero.
   const reveals = (view.private?.reveals ?? []).filter((r) => r.kind === "kingLook" || r.until - now > 150);
   if (!reveals.length) return null;

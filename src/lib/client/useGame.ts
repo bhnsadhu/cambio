@@ -16,8 +16,8 @@ export interface GameHook {
   connection: ConnectionStatus;
   busy: boolean;
   toasts: Toast[];
-  /** server-clock-adjusted "now" */
-  now: number;
+  /** milliseconds to add to Date.now() to get the server's clock */
+  skew: number;
   send: (action: Action) => Promise<ActionResponse | null>;
   refresh: () => Promise<void>;
   setSession: (s: Session | null) => void;
@@ -35,7 +35,7 @@ export function useGame(code: string): GameHook {
   const [connection, setConnection] = useState<ConnectionStatus>("connecting");
   const [busy, setBusy] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [now, setNow] = useState(0);
+  const [skewState, setSkewState] = useState(0);
   const skew = useRef(0);
   const lastChange = useRef(0);
   const lastNudge = useRef(0);
@@ -68,6 +68,7 @@ export function useGame(code: string): GameHook {
 
   const acceptFull = useCallback((full: PlayerView, who: string | null) => {
     skew.current = full.public.serverNow - Date.now();
+    setSkewState((cur) => (Math.abs(cur - skew.current) > 250 ? skew.current : cur));
     setMe(who);
     setView((cur) => {
       if (cur && cur.public.version > full.public.version) return cur;
@@ -94,7 +95,8 @@ export function useGame(code: string): GameHook {
   // Initial load (and reload whenever the seat changes).
   useEffect(() => {
     sessionRef.current = session;
-    void refresh();
+    const t = window.setTimeout(() => { void refresh(); }, 0);
+    return () => window.clearTimeout(t);
   }, [session, refresh]);
 
   // Realtime subscription + fallback poll + reconnect refresh.
@@ -124,12 +126,6 @@ export function useGame(code: string): GameHook {
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [code, acceptPublic, refresh]);
-
-  // Clock tick for countdowns.
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now() + skew.current), 100);
-    return () => clearInterval(t);
-  }, []);
 
   const send = useCallback(async (action: Action): Promise<ActionResponse | null> => {
     const s = sessionRef.current;
@@ -161,12 +157,17 @@ export function useGame(code: string): GameHook {
     }
   }, [code, acceptFull, refresh, setSession, toast]);
 
-  // Watchdog: advance the opening peek on time, and nudge stalled bots.
+  // Watchdog: advance the opening peek on time, report idle turns, nudge stalled bots.
+  const reportedDeadline = useRef<number | null>(null);
   useEffect(() => {
     const t = setInterval(() => {
       const v = viewRef.current?.public;
       if (!v) return;
       const serverNow = Date.now() + skew.current;
+      if (v.turnDeadline !== null && serverNow >= v.turnDeadline + 700 && sessionRef.current && reportedDeadline.current !== v.turnDeadline) {
+        reportedDeadline.current = v.turnDeadline;
+        void send({ type: "timeout" });
+      }
       if (v.phase === "peek" && v.openingPeekUntil !== null && serverNow >= v.openingPeekUntil + 150) {
         const key = `${v.code}:${v.round}`;
         if (advancedFor.current !== key && sessionRef.current) {
@@ -176,6 +177,7 @@ export function useGame(code: string): GameHook {
       }
       const botMustAct =
         (v.turn && v.players.find((p) => p.id === v.turn!.playerId)?.isBot) ||
+        (v.turnDeadline !== null && serverNow > v.turnDeadline + 3000) ||
         (v.pendingPower && v.players.find((p) => p.id === v.pendingPower!.playerId)?.isBot) ||
         v.pendingGives.some((g) => v.players.find((p) => p.id === g.from)?.isBot) ||
         (v.phase === "peek" && v.openingPeekUntil !== null && serverNow > v.openingPeekUntil + 2000);
@@ -188,7 +190,7 @@ export function useGame(code: string): GameHook {
   }, [code, send]);
 
   return useMemo(
-    () => ({ status, view, me, session, connection, busy, toasts, now, send, refresh, setSession, toast }),
-    [status, view, me, session, connection, busy, toasts, now, send, refresh, setSession, toast],
+    () => ({ status, view, me, session, connection, busy, toasts, skew: skewState, send, refresh, setSession, toast }),
+    [status, view, me, session, connection, busy, toasts, skewState, send, refresh, setSession, toast],
   );
 }

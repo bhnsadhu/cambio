@@ -7,7 +7,7 @@ import type { Action } from "@/lib/game/types";
 
 const ACTION_TYPES = new Set<Action["type"]>([
   "start", "advance", "draw", "place", "swap", "callCambio", "peekOwn", "peekOther",
-  "blindSwap", "kingLook", "kingDecide", "skipPower", "stick", "give", "playAgain",
+  "blindSwap", "kingLook", "kingDecide", "skipPower", "stick", "give", "playAgain", "timeout",
 ]);
 
 export async function POST(req: Request, { params }: { params: Promise<{ code: string }> }) {
@@ -23,7 +23,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ code: s
     if (!me) return ok({ error: { code: "UNAUTHORISED", message: "You are not seated at this table." } }, { status: 401 });
 
     const { row: after, result } = await runAction(row.id, { actionId: body.actionId, playerId: me, action: body.action });
-    if (after.state.players.some((p) => p.isBot)) spawnBots(after.id);
+    spawnBots(after.id);
     return ok({ view: viewFor(after, me), me, note: result.note ?? null });
   } catch (e) {
     return fail(e);

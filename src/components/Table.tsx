@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useClock } from "@/lib/client/useClock";
 import type { Action, Card, PlayerPublic, PlayerView, PowerKind } from "@/lib/game/types";
 import { shortLabel } from "@/lib/game/cards";
 import type { GameHook } from "@/lib/client/useGame";
@@ -57,14 +58,24 @@ export function Table({ game }: { game: GameHook }) {
   const setSelected = (cardId: string | null) => setSel(cardId ? { cardId, key: modeKey } : null);
 
   // Cards this viewer may see right now, shown turned over on the table.
+  // A timer marks each reveal expired a beat before its deadline, so the
+  // tiles turn back with one render rather than on a ticking clock.
+  const [expired, setExpired] = useState<Set<string>>(() => new Set());
   const revealed = useMemo(() => {
     const m = new Map<string, Card>();
     for (const r of view.private?.reveals ?? []) {
-      if (r.kind !== "kingLook" && r.until - game.now <= 150) continue;
+      if (expired.has(r.id)) continue;
       for (const c of r.cards) m.set(c.id, c);
     }
     return m;
-  }, [view, game.now]);
+  }, [view, expired]);
+  useEffect(() => {
+    const now = Date.now() + game.skew;
+    const timers = (view.private?.reveals ?? [])
+      .filter((r) => r.kind !== "kingLook")
+      .map((r) => window.setTimeout(() => setExpired((cur) => (cur.has(r.id) ? cur : new Set(cur).add(r.id))), Math.max(0, r.until - 150 - now)));
+    return () => { for (const t of timers) window.clearTimeout(t); };
+  }, [view, game.skew]);
 
   // One time hints, taught in context.
   const peekHint = pub.phase === "peek" && !prefs.sawPeekHint && !!mine;
@@ -175,7 +186,7 @@ export function Table({ game }: { game: GameHook }) {
         <div className="flex min-h-0 flex-1 items-center justify-center">
           <RevealBanner
             view={view}
-            now={game.now}
+            skew={game.skew}
             busy={game.busy}
             hint={peekHint ? "These two are yours. When the timer ends they turn back over and stay that way." : null}
             onKingDecide={(swap) => void fire({ type: "kingDecide", swap })}
@@ -183,7 +194,7 @@ export function Table({ game }: { game: GameHook }) {
         </div>
 
         {/* Action bar */}
-        <div className="flex min-h-[92px] items-center justify-between gap-6 rounded-panel bg-surface px-6 py-4 hairline">
+        <div className="flex min-h-[92px] items-center justify-between gap-6 rounded-panel bg-surface px-5 py-4 hairline">
           <div className="flex items-center gap-5">
             {showDrawnSlot ? (
               <div ref={positions.register("drawn")} className="h-[var(--tile-h)] w-[var(--tile-w)] shrink-0">
@@ -199,7 +210,8 @@ export function Table({ game }: { game: GameHook }) {
               {status.detail ? <p className="t-callout mt-0.5 text-ink-2">{status.detail}</p> : null}
             </div>
           </div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-4">
+            {pub.turnDeadline !== null ? <TurnTimer deadline={pub.turnDeadline} skew={game.skew} mine={myTurn} /> : null}
             {mine && myTurn && pub.turn?.stage === "draw" ? (
               <>
                 {pub.phase === "playing" ? (
@@ -236,6 +248,24 @@ export function Table({ game }: { game: GameHook }) {
   );
 }
 
+/** Thirty seconds per human turn. Quiet until the last ten. */
+function TurnTimer({ deadline, skew, mine }: { deadline: number; skew: number; mine: boolean }) {
+  const tick = useClock(250);
+  if (tick === 0) return null;
+  const left = Math.max(0, deadline - (tick + skew));
+  const secs = Math.ceil(left / 1000);
+  const urgent = left < 10_000;
+  return (
+    <div className="flex items-center gap-2" aria-label={`${secs} seconds left on this turn`}>
+      <span className={`t-money text-[15px] ${urgent ? "text-accent" : "text-ink-3"}`}>{secs}s</span>
+      <span className="h-[3px] w-12 overflow-hidden rounded-full bg-white/10">
+        <span className={`block h-full rounded-full ${urgent ? "bg-accent" : "bg-ink-3"}`} style={{ width: `${Math.min(100, (left / 30_000) * 100)}%`, transition: "width 250ms linear" }} />
+      </span>
+      {mine && urgent ? <span className="t-footnote text-ink-3">or the turn is skipped</span> : null}
+    </div>
+  );
+}
+
 function describeStatus(
   view: PlayerView,
   mine: PlayerPublic | null,
@@ -253,7 +283,7 @@ function describeStatus(
   const firstPower = powerHint ? " This is your first power. Powers only fire when you place the drawn card. Swapping it in gives them up." : "";
 
   if (pub.phase === "peek") {
-    return { title: "Memorise your bottom two cards.", detail: mine ? "Play starts when the timer ends." : "Play starts in a few seconds." };
+    return { title: "Memorize your bottom two cards.", detail: mine ? "Play starts when the timer ends." : "Play starts in a few seconds." };
   }
   if (pub.phase === "scoring") return { title: "Round over." };
   if (!mine) return { title: <>Watching. {name(turnPlayer)} is up.</>, detail: "Open your own table from the top of the page." };

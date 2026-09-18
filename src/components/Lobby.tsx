@@ -44,14 +44,14 @@ export function Lobby({ view, me, busy, onStart }: { view: PublicView; me: strin
               </p>
             </>
           ) : (
-            <p className="t-sub inline-flex items-center gap-2 text-ink-2"><Pip className="text-ink-3" />Waiting for {host ? <PlayerName name={host.name} isBot={host.isBot} /> : "the host"} to start</p>
+            <p className="t-sub inline-flex items-center gap-2 text-ink-2"><Pip />Waiting for {host ? <PlayerName name={host.name} isBot={host.isBot} /> : "the host"} to start</p>
           )}
         </div>
       </header>
 
       <div>
         <p className="t-sub mb-3 inline-flex items-center gap-2 text-ink-2">
-          {open > 0 ? <Pip className="text-ink-3" /> : null}
+          {open > 0 ? <Pip /> : null}
           {humans.length} of 4 seats taken
         </p>
         <ol className="grid grid-cols-4 gap-4">

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyAction, canStick, cardCount, createGame, GameError, joinGame, OPENING_PEEK_MS, ownerOf } from "./engine";
+import { applyAction, canStick, cardCount, createGame, GameError, joinGame, OPENING_PEEK_MS, ownerOf, TURN_TIMEOUT_MS } from "./engine";
 import { cardValue, powerOf } from "./cards";
 import { projectFor } from "./view";
 import { act, card, makeCtx, player, rig, rigDeck, started, table } from "./testkit";
@@ -51,7 +51,7 @@ describe("lobby", () => {
     ctx.tick(OPENING_PEEK_MS);
     const s2 = act(s, host.id, { type: "advance" }, ctx);
     expect(s2.phase).toBe("playing");
-    expect(s2.turn).toEqual({ playerId: host.id, stage: "draw", drawnCardId: null });
+    expect(s2.turn).toMatchObject({ playerId: host.id, stage: "draw", drawnCardId: null, startedAt: ctx.now });
     expect(s2.reveals).toHaveLength(0);
     expect(applyAction(s2, { actionId: "adv2", playerId: host.id, action: { type: "advance" } }, ctx).changed).toBe(false);
   });
@@ -230,7 +230,7 @@ describe("sticking", () => {
     const { ctx, state, ids } = setup();
     let s = act(state, ids[2], { type: "stick", cardId: "e3" }, ctx); // P3 sticks P4's 7♦
     expect(player(s, ids[3]).hand).toEqual(["e1", "e2", null, "e4"]);
-    expect(s.pendingGives).toEqual([{ from: ids[2], to: ids[3] }]);
+    expect(s.pendingGives).toMatchObject([{ from: ids[2], to: ids[3] }]);
     expect(() => act(s, ids[2], { type: "stick", cardId: "b1" }, ctx)).toThrow(/Give a card away first/);
     s = act(s, ids[2], { type: "give", cardId: "c4" }, ctx);
     expect(player(s, ids[2]).hand).toEqual(["c1", "c2", "c3", null]);
@@ -292,7 +292,7 @@ describe("sticking", () => {
     expect(cardCount(player(s, ids[3]))).toBe(5);
     s = act(s, ids[3], { type: "stick", cardId: "b2" }, ctx); // P2's 2 → correct
     expect(cardCount(player(s, ids[1]))).toBe(3);
-    expect(s.pendingGives).toEqual([{ from: ids[3], to: ids[1] }]);
+    expect(s.pendingGives).toMatchObject([{ from: ids[3], to: ids[1] }]);
   });
 
   it("stick targets use card identity, so a card that moved is still the card you pointed at", () => {
@@ -310,7 +310,7 @@ describe("sticking", () => {
     s = act(s, ids[2], { type: "place" }, ctx);
     s = act(s, ids[2], { type: "skipPower" }, ctx);
     s = act(s, ids[0], { type: "stick", cardId: "b1" }, ctx); // now in P4's hand
-    expect(s.pendingGives).toEqual([{ from: ids[0], to: ids[3] }]);
+    expect(s.pendingGives).toMatchObject([{ from: ids[0], to: ids[3] }]);
     expect(player(s, ids[3]).hand[0]).toBeNull();
   });
 });
@@ -498,5 +498,172 @@ describe("idempotency", () => {
     const r2 = applyAction(r1.state, env, ctx);
     expect(r2.changed).toBe(false);
     expect(r2.state).toBe(r1.state);
+  });
+});
+
+
+describe("winner determination", () => {
+  /** Rig four hands, end the round by cambio, and return the result. */
+  const play = (hands: ReturnType<typeof card>[][]) => {
+    const ctx = makeCtx(3);
+    const { state, ids } = started(ctx);
+    let s = state;
+    hands.forEach((h, i) => { s = rig(s, ids[i], h); });
+    s = act(s, ids[0], { type: "callCambio" }, ctx);
+    for (const id of [ids[1], ids[2], ids[3]]) {
+      s = rigDeck(s, [card(`f${id}`, "2")]);
+      s = act(s, id, { type: "draw" }, ctx);
+      s = act(s, id, { type: "place" }, ctx);
+    }
+    expect(s.phase).toBe("scoring");
+    const r = s.results[0];
+    return { s, ids, r, score: (id: string) => r.scores.find((x) => x.playerId === id)!.score };
+  };
+
+  it("credits the lowest hand, not the first seat or the caller", () => {
+    const { ids, r, score } = play([
+      [card("a1", "9"), card("a2", "9")],                 // caller, 18
+      [card("b1", "5"), card("b2", "5"), card("b3", "5")], // 15
+      [card("c1", "Q"), card("c2", "2")],                  // 12
+      [card("d1", "3"), card("d2", "4")],                  // 7  <- winner, seat 3
+    ]);
+    expect(score(ids[3])).toBe(7);
+    expect(r.winnerIds).toEqual([ids[3]]);
+    expect(r.nextLeadSeat).toBe(3);
+  });
+
+  it("scores red kings negative and jokers zero, so a five card hand can still win", () => {
+    const { ids, r, score } = play([
+      [card("a1", "A")],                                                                        // 1
+      [card("b1", "K", "H"), card("b2", "K", "D"), card("b3", "JOKER", null), card("b4", "A"), card("b5", "A")], // -2 + 0 + 2 = 0
+      [card("c1", "JOKER", null), card("c2", "K", "S")],                                        // 0
+      [card("d1", "2")],                                                                        // 2
+    ]);
+    expect(score(ids[0])).toBe(1);
+    expect(score(ids[1])).toBe(0);
+    expect(score(ids[2])).toBe(0);
+    expect(score(ids[3])).toBe(2);
+    expect(r.winnerIds.sort()).toEqual([ids[1], ids[2]].sort());
+    expect(r.nextLeadSeat).toBe(1);
+  });
+
+  it("an empty hand scores zero and beats everyone with cards", () => {
+    const ctx = makeCtx(4);
+    const { state, ids } = started(ctx);
+    let s = rig(state, ids[2], [card("c1", "4", "H")]);
+    s = rig(s, ids[0], [card("a1", "A")]);
+    s = rigDeck(s, [card("d1", "4", "S")]);
+    s = act(s, ids[0], { type: "draw" }, ctx);
+    s = act(s, ids[0], { type: "place" }, ctx);
+    s = act(s, ids[2], { type: "stick", cardId: "c1" }, ctx); // P3 to zero
+    s = rigDeck(s, [card("n1", "3"), card("n2", "3"), card("n3", "3")]);
+    for (const id of [ids[1], ids[3], ids[0]]) {
+      s = act(s, id, { type: "draw" }, ctx);
+      s = act(s, id, { type: "place" }, ctx);
+    }
+    expect(s.phase).toBe("scoring");
+    const r = s.results[0];
+    expect(r.scores.find((x) => x.playerId === ids[2])!.score).toBe(0);
+    expect(r.winnerIds).toEqual([ids[2]]);
+  });
+
+  it("scores exactly the cards in each hand at the end, after gives and penalties", () => {
+    const ctx = makeCtx(5);
+    const { state, ids } = started(ctx);
+    let s = rig(state, ids[0], [card("a1", "5", "S"), card("a2", "9")]);
+    s = rig(s, ids[1], [card("b1", "5", "H"), card("b2", "3")]);
+    s = rig(s, ids[2], [card("c1", "8"), card("c2", "8")]);
+    s = rig(s, ids[3], [card("d1", "2"), card("d2", "2")]);
+    s = rigDeck(s, [card("pen", "10"), card("x1", "5", "D")]);
+    s = act(s, ids[0], { type: "draw" }, ctx);
+    s = act(s, ids[0], { type: "place" }, ctx);           // 5♦ on the pile, P2's turn
+    s = act(s, ids[3], { type: "stick", cardId: "b1" }, ctx); // P4 sticks P2's 5♥, owes a card
+    s = act(s, ids[3], { type: "give", cardId: "d1" }, ctx);  // P4 gives a 2 to P2
+    s = act(s, ids[2], { type: "stick", cardId: "c1" }, ctx); // P3 wrong: 8 vs 5 → penalty 10
+    s = act(s, ids[1], { type: "callCambio" }, ctx);
+    for (const id of [ids[2], ids[3], ids[0]]) {
+      s = rigDeck(s, [card(`f${id}`, "3")]);
+      s = act(s, id, { type: "draw" }, ctx);
+      s = act(s, id, { type: "place" }, ctx);
+    }
+    const r = s.results[0];
+    const score = (id: string) => r.scores.find((x) => x.playerId === id)!.score;
+    expect(score(ids[0])).toBe(5 + 9);
+    expect(score(ids[1])).toBe(3 + 2);
+    expect(score(ids[2])).toBe(8 + 8 + 10);
+    expect(score(ids[3])).toBe(2);
+    expect(r.winnerIds).toEqual([ids[3]]);
+    for (const p of s.players) {
+      const cards = r.scores.find((x) => x.playerId === p.id)!.cards.map((c) => c.id).sort();
+      expect(cards).toEqual(p.hand.filter((c): c is string => !!c).sort());
+    }
+  });
+});
+
+describe("idle timeout", () => {
+  it("opening peek is five seconds", () => {
+    expect(OPENING_PEEK_MS).toBe(5000);
+  });
+
+  it("does nothing before the deadline or for a bot's turn", () => {
+    const ctx = makeCtx(6);
+    const t = table(ctx, 1);
+    let s = act(t.state, t.hostId, { type: "start" }, ctx);
+    ctx.tick(OPENING_PEEK_MS + 1);
+    s = act(s, t.hostId, { type: "advance" }, ctx);
+    ctx.tick(TURN_TIMEOUT_MS - 1000);
+    expect(applyAction(s, { actionId: "t1", playerId: t.hostId, action: { type: "timeout" } }, ctx).changed).toBe(false);
+    // hand the turn to a bot and let 30s pass: bots are never timed out
+    s = rigDeck(s, [card("d1", "3")]);
+    s = act(s, t.hostId, { type: "draw" }, ctx);
+    s = act(s, t.hostId, { type: "place" }, ctx);
+    expect(s.players.find((p) => p.id === s.turn!.playerId)!.isBot).toBe(true);
+    ctx.tick(TURN_TIMEOUT_MS + 5000);
+    expect(applyAction(s, { actionId: "t2", playerId: t.hostId, action: { type: "timeout" } }, ctx).changed).toBe(false);
+  });
+
+  it("skips an idle human at the draw stage and hands them a penalty card", () => {
+    const ctx = makeCtx(7);
+    const { state, ids } = started(ctx);
+    let s = rigDeck(state, [card("pen", "9")]);
+    ctx.tick(TURN_TIMEOUT_MS);
+    s = act(s, ids[2], { type: "timeout" }, ctx); // anyone may report it
+    expect(player(s, ids[0]).hand).toContain("pen");
+    expect(cardCount(player(s, ids[0]))).toBe(5);
+    expect(s.turn?.playerId).toBe(ids[1]);
+    expect(s.turn?.startedAt).toBe(ctx.now);
+    expect(s.log.at(-1)?.text).toMatch(/ran out of time/);
+  });
+
+  it("an undecided drawn card goes to the pile with no power, plus the penalty", () => {
+    const ctx = makeCtx(8);
+    const { state, ids } = started(ctx);
+    let s = rigDeck(state, [card("pen", "4"), card("d1", "8")]);
+    s = act(s, ids[0], { type: "draw" }, ctx);
+    ctx.tick(TURN_TIMEOUT_MS);
+    s = act(s, ids[0], { type: "timeout" }, ctx);
+    expect(s.discard.at(-1)).toBe("d1");
+    expect(s.pendingPower).toBeNull();
+    expect(player(s, ids[0]).hand).toContain("pen");
+    expect(s.turn?.playerId).toBe(ids[1]);
+  });
+
+  it("an owed card that is never handed over is given at random after the timeout", () => {
+    const ctx = makeCtx(9);
+    const { state, ids } = started(ctx);
+    let s = rig(state, ids[1], [card("b1", "6", "H"), card("b2", "2")]);
+    s = rig(s, ids[2], [card("c1", "A"), card("c2", "3")]);
+    s = rigDeck(s, [card("d1", "6", "S")]);
+    s = act(s, ids[0], { type: "draw" }, ctx);
+    s = act(s, ids[0], { type: "place" }, ctx);
+    s = act(s, ids[2], { type: "stick", cardId: "b1" }, ctx);
+    expect(s.pendingGives).toHaveLength(1);
+    ctx.tick(TURN_TIMEOUT_MS);
+    s = act(s, ids[3], { type: "timeout" }, ctx);
+    expect(s.pendingGives).toHaveLength(0);
+    expect(cardCount(player(s, ids[2]))).toBe(1);
+    // P2 got the owed card and, being idle on their own turn, a penalty card too.
+    expect(cardCount(player(s, ids[1]))).toBe(3);
+    expect(s.turn?.playerId).toBe(ids[2]);
   });
 });

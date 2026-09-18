@@ -6,35 +6,47 @@ import { FaceCard } from "./cards";
 import { Button, Chip, PlayerName } from "./ui";
 
 /**
- * The payoff. Hands turn over one card at a time, totals count up, and the
- * winner is the only thing on the screen in colour.
+ * The payoff. Players are ranked from winner down, your own row says so,
+ * hands turn over one card at a time, and a running tally of rounds won
+ * builds across replays at the same table.
  */
 export function Scoreboard({ view, me, busy, onPlayAgain }: { view: PublicView; me: string | null; busy: boolean; onPlayAgain: () => void }) {
   const result = view.results[view.results.length - 1];
   if (!result) return null;
-  const totals = new Map<string, number>();
-  for (const r of view.results) for (const s of r.scores) totals.set(s.playerId, (totals.get(s.playerId) ?? 0) + s.score);
+
+  const roundsWon = new Map<string, number>();
+  const history = new Map<string, number[]>();
+  for (const r of view.results) {
+    for (const s of r.scores) history.set(s.playerId, [...(history.get(s.playerId) ?? []), s.score]);
+    for (const w of r.winnerIds) roundsWon.set(w, (roundsWon.get(w) ?? 0) + 1);
+  }
+
   const rows = view.players
     .map((p) => ({ player: p, ...result.scores.find((s) => s.playerId === p.id)! }))
-    .sort((a, b) => a.score - b.score || a.player.seat - b.player.seat);
+    .sort((a, b) => a.score - b.score || a.player.seat - b.player.seat)
+    .map((row, i, all) => ({ ...row, rank: all.findIndex((x) => x.score === row.score) + 1 }));
+
   const isHost = me === view.hostId;
   const host = view.players.find((p) => p.id === view.hostId);
   const winners = view.players.filter((p) => result.winnerIds.includes(p.id));
   const caller = view.cambio ? view.players.find((p) => p.id === view.cambio!.callerId) : null;
-  const headline = winners.length > 1
-    ? <>Tie between {winners.map((w, i) => <span key={w.id}>{i > 0 ? (i === winners.length - 1 ? " and " : ", ") : ""}<PlayerName name={w.name} isBot={w.isBot} /></span>)}</>
-    : <><PlayerName name={winners[0].name} isBot={winners[0].isBot} /> takes round {result.round}</>;
+  const meWon = !!me && result.winnerIds.includes(me);
+  const headline = meWon
+    ? (winners.length > 1 ? "You share the round" : "You take the round")
+    : winners.length > 1
+      ? <>Tie between {winners.map((w, i) => <span key={w.id}>{i > 0 ? (i === winners.length - 1 ? " and " : ", ") : ""}<PlayerName name={w.name} isBot={w.isBot} /></span>)}</>
+      : <><PlayerName name={winners[0].name} isBot={winners[0].isBot} /> takes the round</>;
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/75 p-6 animate-fade">
-      <div className="w-full max-w-[760px] animate-rise rounded-panel bg-surface p-8 shadow-float hairline">
+      <div className="w-full max-w-[860px] animate-rise rounded-panel bg-surface p-8 shadow-float hairline">
         <header className="flex items-start justify-between gap-6">
           <div>
-            <p className="t-caption text-ink-3">Round {result.round}</p>
+            <p className="t-caption text-ink-3">Round {result.round} of this table</p>
             <h2 className="t-title mt-1.5">{headline}</h2>
             <p className="t-callout mt-1.5 text-ink-2">
               {caller ? (view.cambio!.reason === "zero" ? <><PlayerName name={caller.name} isBot={caller.isBot} /> ran out of cards. </> : <><PlayerName name={caller.name} isBot={caller.isBot} /> called Cambio. </>) : null}
-              Lowest total wins. Ties stand.
+              Lowest hand wins. Ties share the win.
             </p>
           </div>
           {isHost ? (
@@ -47,23 +59,32 @@ export function Scoreboard({ view, me, busy, onPlayAgain }: { view: PublicView; 
         <table className="mt-7 w-full border-separate border-spacing-0">
           <thead>
             <tr className="t-caption text-left text-ink-3">
+              <th className="w-10 pb-2.5 font-medium">#</th>
               <th className="pb-2.5 font-medium">Player</th>
               <th className="pb-2.5 font-medium">Final hand</th>
-              <th className="tnum pb-2.5 text-right font-medium">Round</th>
-              <th className="tnum pb-2.5 text-right font-medium">Total</th>
+              <th className="pb-2.5 text-right font-medium">Hand total</th>
+              <th className="pb-2.5 text-right font-medium">Rounds won</th>
+              <th className="pb-2.5 pl-6 text-right font-medium">Each round</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map(({ player, score, cards }, row) => {
+            {rows.map(({ player, score, cards, rank }, row) => {
               const won = result.winnerIds.includes(player.id);
+              const isMe = player.id === me;
               const base = 240 + row * 220;
+              const wins = roundsWon.get(player.id) ?? 0;
+              const past = history.get(player.id) ?? [];
               return (
-                <tr key={player.id}>
+                <tr key={player.id} className={isMe ? "bg-surface-2/60" : ""}>
+                  <td className={`t-money border-t border-line py-3.5 pl-2 align-middle text-[17px] ${won ? "text-accent" : "text-ink-3"}`}>{rank}</td>
                   <td className="border-t border-line py-3.5 pr-4 align-middle">
                     <div className="flex items-center gap-2 text-[15px] font-medium">
-                      <span><PlayerName name={player.name} isBot={player.isBot} /></span>
+                      {isMe ? (
+                        <span>You <span className="t-sub font-normal text-ink-3">{player.name}</span></span>
+                      ) : (
+                        <span><PlayerName name={player.name} isBot={player.isBot} /></span>
+                      )}
                       {won ? <Chip tone="accent">Winner</Chip> : null}
-                      {player.id === me ? <Chip tone="ink">You</Chip> : null}
                     </div>
                   </td>
                   <td className="border-t border-line py-3.5 pr-4 align-middle">
@@ -77,7 +98,10 @@ export function Scoreboard({ view, me, busy, onPlayAgain }: { view: PublicView; 
                     <CountUp value={score} delay={base + cards.length * 70} />
                   </td>
                   <td className="t-money border-t border-line py-3.5 text-right align-middle text-[17px] text-ink-2">
-                    <CountUp value={totals.get(player.id) ?? 0} delay={base + cards.length * 70 + 120} />
+                    {wins}<span className="t-sub text-ink-3"> of {view.results.length}</span>
+                  </td>
+                  <td className="tnum border-t border-line py-3.5 pl-6 text-right align-middle">
+                    <span className="t-sub text-ink-3">{past.map((s, i) => `R${i + 1} ${s}`).join(" · ")}</span>
                   </td>
                 </tr>
               );

@@ -41,7 +41,7 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            {isTurn ? <Pip className="shrink-0 text-ink" /> : null}
+            {isTurn ? <Pip /> : null}
             <h3 className="t-headline truncate">
               <span><PlayerName name={player.name} isBot={player.isBot} /></span>
             </h3>

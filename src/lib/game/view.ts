@@ -6,6 +6,7 @@
  * the requesting player's drawn card and their unexpired reveals.
  */
 
+import { TURN_TIMEOUT_MS } from "./engine";
 import type { GameState, PlayerView, PrivateView, PublicView } from "./types";
 
 export function projectPublic(state: GameState, version: number, now: number): PublicView {
@@ -28,11 +29,12 @@ export function projectPublic(state: GameState, version: number, now: number): P
     deckCount: state.deck.length,
     discardCount: state.discard.length,
     discardTop: top ? { ...top } : null,
-    turn: state.turn ? { playerId: state.turn.playerId, stage: state.turn.stage } : null,
+    turn: state.turn ? { playerId: state.turn.playerId, stage: state.turn.stage, startedAt: state.turn.startedAt } : null,
+    turnDeadline: state.turn && !state.players.find((p) => p.id === state.turn!.playerId)?.isBot ? state.turn.startedAt + TURN_TIMEOUT_MS : null,
     pendingPower: state.pendingPower
       ? { playerId: state.pendingPower.playerId, kind: state.pendingPower.kind, lookedDone: !!state.pendingPower.looked }
       : null,
-    pendingGives: state.pendingGives.map((g) => ({ ...g })),
+    pendingGives: state.pendingGives.map((g) => ({ from: g.from, to: g.to })),
     cambio: state.cambio ? { callerId: state.cambio.callerId, reason: state.cambio.reason, remaining: state.cambio.remaining.slice() } : null,
     openingPeekUntil: state.openingPeekUntil,
     results: state.phase === "scoring" || state.results.length ? structuredClone(state.results) : [],
