@@ -41,11 +41,15 @@ supabase/          schema and RPCs (see migration in the Supabase project)
 
 ## Design
 
-- **Type** is the system stack, the same one Apple and Notion ship: SF Pro on a Mac, Segoe on Windows. Sizes follow Apple's text styles (28, 22, 17, 15, 13, 11) with tracking that tightens above 20px.
-- **Colour** is Notion's ink, `rgb(55 53 47)`, with its opacity ladder for secondary text (0.62), tertiary (0.42) and hairlines (0.09 and 0.16), on a warm ground. One accent, terracotta, appears only for Cambio and the winner.
-- **Shadows** come from one light, above, at three depths: rest, card, lift, float. Corner radii scale with the tile so the proportions hold at every viewport.
+The visual language is after Offsuit, the poker app, sampled from its live store screenshots and offsuit.app rather than approximated:
+
+- **Ground** is true black. No felt, no neon, no glass. Surfaces are a cool charcoal (`#202028`, the colour of Offsuit's action pills and stat card), lighter on hover.
+- **Cards** are white (`#f8f8f8`) with a black rank and a left aligned suit pip; red suits are `#ff5a52`. Face down cards are white with a fine black diagonal hatch inside a white frame, Offsuit's signature back.
+- **Accent** is a single mint, `#4ff0a8`, reserved for money and the number that matters: scores, the Cambio call, the winner, the countdown.
+- **Type**: Plus Jakarta Sans for headlines (the brand face on offsuit.app), the system font for labels and numbers, which is what the native app draws with. Big numbers are set light with tabular figures.
+- **Depth** comes from black shadows falling downward at three depths and a one pixel highlight along the top edge of raised surfaces. Corner radii scale with the tile.
 - **Motion** is derived, not scripted. Every view change is diffed by card id and the cards that moved are flown from where they were to where they are, with the Web Animations API: deals stagger 60ms apart from the deck, draws land in the action bar, swaps cross, sticks arrive on the pile face up, handed cards travel between hands. Everything runs 280ms on an ease out curve. Reveals turn the tile on its axis and turn it back when the timer ends.
-- **Copy** is short and declarative, with no exclamation marks and no dashes anywhere in the interface.
+- **Copy** is terse, in the register of "Call 4" and "Raise 8": short declaratives, no exclamation marks, no dashes anywhere in the interface.
 - **Onboarding** is a four step walkthrough on first visit, hints inside the first peek and the first power, and a How to play sheet that opens beside the table.
 
 ## Rules decisions worth knowing
