@@ -77,10 +77,14 @@ export function useGame(code: string): GameHook {
   }, []);
 
   const refresh = useCallback(async () => {
+    const token = sessionRef.current?.token ?? null;
     try {
-      const res = await api.state(code, sessionRef.current?.token ?? null);
+      const res = await api.state(code, token);
+      // A response for a different seat than the one we hold now is stale
+      // (hydration fires one fetch before the stored seat is known).
+      if ((sessionRef.current?.token ?? null) !== token) return;
       acceptFull(res.view, res.me);
-      if (sessionRef.current && !res.me) setSession(null);
+      if (token && !res.me) setSession(null);
       setStatus("ready");
     } catch (e) {
       if (e instanceof RequestError && e.status === 404) setStatus("notfound");
