@@ -40,7 +40,8 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
     >
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
+            {isTurn ? <Pip className="shrink-0 text-ink" /> : null}
             <h3 className="t-headline truncate">
               <span><PlayerName name={player.name} isBot={player.isBot} /></span>
             </h3>
@@ -51,19 +52,20 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
             {stageText ? <span className="text-ink-2"> · {stageText}</span> : null}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <span
-            ref={positions.register(heldKey)}
-            className={`relative h-[34px] w-6 rounded-[3px] transition-opacity duration-200 ${holding ? "opacity-100" : "opacity-0"}`}
-            style={hidden.has(heldKey) ? { visibility: "hidden" } : undefined}
-            aria-hidden
-          >
-            {holding ? <CardBack size="lg" className="h-full! w-full! rounded-[3px]! shadow-rest!" /> : null}
-          </span>
-          <div className="flex flex-col items-end gap-1">
-            {isCaller ? <Chip tone="accent">Cambio</Chip> : isTurn ? <Chip tone="ink"><Pip className="text-bg" />Turn</Chip> : null}
-            {owesCard ? <Chip tone="muted">Owes a card</Chip> : null}
-          </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          {holding ? (
+            <span
+              ref={positions.register(heldKey)}
+              className="relative block h-[34px] w-6 animate-fade"
+              style={hidden.has(heldKey) ? { visibility: "hidden" } : undefined}
+              aria-label="holding a drawn card"
+            >
+              <CardBack size="lg" className="h-full! w-full! rounded-[3px]! shadow-rest!" />
+            </span>
+          ) : isCaller ? (
+            <Chip tone="accent">Cambio</Chip>
+          ) : null}
+          {owesCard ? <Chip tone="muted">Owes a card</Chip> : null}
         </div>
       </header>
 

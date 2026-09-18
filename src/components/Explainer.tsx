@@ -52,7 +52,7 @@ export function Explainer({ onDone }: { onDone: () => void }) {
         <div className="flex h-[220px] items-center justify-center bg-bg" key={i}>
           <div className="animate-pop">{step.art}</div>
         </div>
-        <div className="px-8 pt-6 pb-7">
+        <div className="min-h-[236px] px-8 pt-6 pb-7">
           <p className="t-caption text-ink-3">{i + 1} of {STEPS.length}</p>
           <h2 className="t-title2 mt-2" key={`t${i}`}>{step.title}</h2>
           <p className="t-body mt-2 text-ink-2" key={`b${i}`}>{step.body}</p>

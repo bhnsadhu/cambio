@@ -28,8 +28,8 @@ export function RevealBanner({
   const ownerOf = (cardId: string) => view.public.players.find((p) => p.hand.includes(cardId));
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[132px] z-30 flex justify-center px-6">
-      <div className="pointer-events-auto flex max-w-[720px] flex-col gap-3">
+    <div className="flex justify-center px-6">
+      <div className="flex max-w-[720px] flex-col gap-3">
         {reveals.map((r) => {
           const total = r.kind === "opening" ? OPENING_PEEK_MS : PEEK_REVEAL_MS;
           const left = Math.max(0, r.until - now);
@@ -56,7 +56,7 @@ export function RevealBanner({
                 <div className="flex items-center gap-3">
                   {r.cards.map((c, i) => (
                     <div key={c.id} className="flex flex-col items-center gap-1.5">
-                      <FaceCard card={c} size="lg" className="animate-flip-in" />
+                      <FaceCard card={c} size="md" className="animate-flip-in" />
                       {isKing ? (
                         <span className="t-footnote text-bg/70">{ownerOf(r.cardIds[i])?.id === view.private?.playerId ? "Yours" : names.get(ownerOf(r.cardIds[i])?.id ?? "")}</span>
                       ) : null}

@@ -168,8 +168,19 @@ export function Table({ game }: { game: GameHook }) {
           />
         </div>
 
+        {/* The middle of the table: timed reveals live here, between the hands and the actions. */}
+        <div className="flex min-h-0 flex-1 items-center justify-center">
+          <RevealBanner
+            view={view}
+            now={game.now}
+            busy={game.busy}
+            hint={peekHint ? "These two are yours. When the timer ends they turn back over and stay that way." : null}
+            onKingDecide={(swap) => void fire({ type: "kingDecide", swap })}
+          />
+        </div>
+
         {/* Action bar */}
-        <div className="mt-auto flex min-h-[92px] items-center justify-between gap-6 rounded-panel bg-surface px-6 py-4 hairline">
+        <div className="flex min-h-[92px] items-center justify-between gap-6 rounded-panel bg-surface px-6 py-4 hairline">
           <div className="flex items-center gap-5">
             {showDrawnSlot ? (
               <div ref={positions.register("drawn")} className="h-[var(--tile-h)] w-[var(--tile-w)] shrink-0">
@@ -215,13 +226,6 @@ export function Table({ game }: { game: GameHook }) {
       <EventFeed log={pub.log} />
 
       <FlightLayer specs={specs} onLanded={onLanded} version={version} />
-      <RevealBanner
-        view={view}
-        now={game.now}
-        busy={game.busy}
-        hint={peekHint ? "These two are yours. When the timer ends they turn back over and stay that way. Everything else on the table is already face down." : null}
-        onKingDecide={(swap) => void fire({ type: "kingDecide", swap })}
-      />
       {pub.phase === "scoring" ? (
         <Scoreboard view={pub} me={me} busy={game.busy} onPlayAgain={() => void fire({ type: "playAgain" })} />
       ) : null}
