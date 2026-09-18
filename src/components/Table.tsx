@@ -59,7 +59,10 @@ export function Table({ game }: { game: GameHook }) {
   // Cards this viewer may see right now, shown turned over on the table.
   const revealed = useMemo(() => {
     const m = new Map<string, Card>();
-    for (const r of view.private?.reveals ?? []) if (r.until > game.now) for (const c of r.cards) m.set(c.id, c);
+    for (const r of view.private?.reveals ?? []) {
+      if (r.kind !== "kingLook" && r.until - game.now <= 150) continue;
+      for (const c of r.cards) m.set(c.id, c);
+    }
     return m;
   }, [view, game.now]);
 

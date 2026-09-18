@@ -22,7 +22,8 @@ export function RevealBanner({
   hint: string | null;
   onKingDecide: (swap: boolean) => void;
 }) {
-  const reveals = view.private?.reveals ?? [];
+  // Drop a reveal a beat before its deadline so the callout never lingers at zero.
+  const reveals = (view.private?.reveals ?? []).filter((r) => r.kind === "kingLook" || r.until - now > 150);
   if (!reveals.length) return null;
   const names = new Map(view.public.players.map((p) => [p.id, p.name]));
   const ownerOf = (cardId: string) => view.public.players.find((p) => p.hand.includes(cardId));
