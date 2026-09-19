@@ -14,6 +14,7 @@ import { Table } from "./Table";
 import { Explainer } from "./Explainer";
 import { HowToPlay } from "./HowToPlay";
 import { FlightLayer, useFlights } from "./FlightLayer";
+import { PauseButton, PauseOverlay } from "./Pause";
 import { Button, Chip, DotOff, Field, inputClass, Pip, Wordmark } from "./ui";
 
 /**
@@ -53,6 +54,12 @@ function GameShell({ code }: { code: string }) {
   const showExplainer = replay || (seated && !!view && prefs.onboarded !== true);
   const closeExplainer = useCallback(() => { setPref("onboarded", true); setReplay(false); }, []);
   const flights = useFlights(view, game.me);
+  const pause = {
+    me: game.me,
+    busy: game.busy,
+    onRequest: () => void game.send({ type: "pauseRequest" }),
+    onVote: (agree: boolean) => void game.send({ type: "pauseVote", agree }),
+  };
 
   let body: React.ReactNode;
   if (game.status === "notfound") {
@@ -85,6 +92,7 @@ function GameShell({ code }: { code: string }) {
           </div>
           <div className="flex items-center gap-3">
             {game.session ? <span className="t-sub text-ink-2">Playing as <span className="font-medium text-ink">{game.session.name}</span></span> : null}
+            {view ? <PauseButton view={view.public} {...pause} /> : null}
             <Button variant="ghost" size="sm" onClick={() => setHelp(true)}>How to play</Button>
             {game.session ? (
               leaving ? (
@@ -109,6 +117,7 @@ function GameShell({ code }: { code: string }) {
         {body}
 
         <FlightLayer specs={flights.specs} onLanded={flights.onLanded} version={flights.version} />
+        {view ? <PauseOverlay view={view.public} {...pause} /> : null}
         <Toasts toasts={game.toasts} />
         {showExplainer ? <Explainer onDone={closeExplainer} /> : null}
         <HowToPlay open={help} onClose={() => setHelp(false)} onReplay={() => { setHelp(false); setReplay(true); }} />

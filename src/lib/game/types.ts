@@ -66,6 +66,20 @@ export interface Reveal {
   until: number;
 }
 
+/**
+ * A request to pause or resume, waiting on unanimous agreement.
+ *
+ * Bots are added to `agreed` the moment the request is made, so the only
+ * seats a table ever waits on are human ones.
+ */
+export interface PauseVote {
+  kind: "pause" | "resume";
+  byId: string;
+  /** everyone who has agreed, the requester included */
+  agreed: string[];
+  at: number;
+}
+
 export interface CambioState {
   callerId: string;
   /** whether the caller called it manually or hit zero cards */
@@ -109,6 +123,14 @@ export interface GameState {
   turnsTaken: number;
   pendingPower: PendingPower | null;
   pendingGives: PendingGive[];
+  /** nothing may be played while true */
+  paused: boolean;
+  /** epoch ms the table went dark, so every clock can be shifted on resume */
+  pausedAt: number | null;
+  /** who asked for the pause the table agreed to */
+  pausedBy: string | null;
+  /** an open pause or resume request; the game plays on while one is pending */
+  pauseVote: PauseVote | null;
   cambio: CambioState | null;
   reveals: Reveal[];
   openingPeekUntil: number | null;
@@ -144,6 +166,9 @@ export type Action =
   | { type: "stick"; cardId: string }
   | { type: "give"; cardId: string }
   | { type: "playAgain" }
+  /** ask the table to pause, or to resume when it is already paused */
+  | { type: "pauseRequest" }
+  | { type: "pauseVote"; agree: boolean }
   /** an idle human's turn (or owed card) is resolved for them; anyone may report it */
   | { type: "timeout" };
 
@@ -183,6 +208,10 @@ export interface PublicView {
   turn: { playerId: string; stage: TurnStage; startedAt: number } | null;
   pendingPower: { playerId: string; kind: PowerKind; lookedDone: boolean } | null;
   pendingGives: PendingGive[];
+  paused: boolean;
+  pausedAt: number | null;
+  pausedBy: string | null;
+  pauseVote: PauseVote | null;
   /** epoch ms after which the current human turn is forfeited */
   turnDeadline: number | null;
   cambio: { callerId: string; reason: "called" | "zero"; remaining: string[] } | null;

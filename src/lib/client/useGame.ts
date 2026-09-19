@@ -164,12 +164,15 @@ export function useGame(code: string): GameHook {
       const v = viewRef.current?.public;
       if (!v) return;
       const serverNow = Date.now() + skew.current;
+      if (v.paused) return; // a paused table has no clocks to report on
       if (v.turnDeadline !== null && serverNow >= v.turnDeadline + 700 && sessionRef.current && reportedDeadline.current !== v.turnDeadline) {
         reportedDeadline.current = v.turnDeadline;
         void send({ type: "timeout" });
       }
       if (v.phase === "peek" && v.openingPeekUntil !== null && serverNow >= v.openingPeekUntil + 150) {
-        const key = `${v.code}:${v.round}`;
+        // The deadline is part of the key: a pause pushes it forward, and the
+        // resumed peek still needs someone to advance it.
+        const key = `${v.code}:${v.round}:${v.openingPeekUntil}`;
         if (advancedFor.current !== key && sessionRef.current) {
           advancedFor.current = key;
           void send({ type: "advance" });

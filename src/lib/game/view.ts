@@ -35,6 +35,10 @@ export function projectPublic(state: GameState, version: number, now: number): P
       ? { playerId: state.pendingPower.playerId, kind: state.pendingPower.kind, lookedDone: !!state.pendingPower.looked }
       : null,
     pendingGives: state.pendingGives.map((g) => ({ from: g.from, to: g.to })),
+    paused: state.paused ?? false,
+    pausedAt: state.pausedAt ?? null,
+    pausedBy: state.pausedBy ?? null,
+    pauseVote: state.pauseVote ? { ...state.pauseVote, agreed: state.pauseVote.agreed.slice() } : null,
     cambio: state.cambio ? { callerId: state.cambio.callerId, reason: state.cambio.reason, remaining: state.cambio.remaining.slice() } : null,
     openingPeekUntil: state.openingPeekUntil,
     results: state.phase === "scoring" || state.results.length ? structuredClone(state.results) : [],
@@ -46,6 +50,10 @@ export function projectPublic(state: GameState, version: number, now: number): P
 export function projectPrivate(state: GameState, playerId: string, now: number): PrivateView | null {
   const p = state.players.find((x) => x.id === playerId);
   if (!p) return null;
+  // A paused table freezes every clock, reveals included: a peek that was
+  // running keeps its remaining seconds instead of expiring behind the
+  // paused overlay.
+  if (state.paused && state.pausedAt !== null) now = Math.min(now, state.pausedAt);
   const drawn = state.turn && state.turn.playerId === playerId && state.turn.drawnCardId
     ? state.cards[state.turn.drawnCardId]
     : null;

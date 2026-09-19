@@ -11,6 +11,7 @@ import { PlayerPanel } from "./PlayerPanel";
 import { Piles } from "./Piles";
 import { EventFeed } from "./EventFeed";
 import { RevealBanner } from "./RevealBanner";
+import { PauseBanner } from "./Pause";
 import { Scoreboard } from "./Scoreboard";
 import type { useFlights } from "./FlightLayer";
 import { FaceCard } from "./cards";
@@ -60,22 +61,28 @@ export function Table({ game, flights }: { game: GameHook; flights: ReturnType<t
   // Cards this viewer may see right now, shown turned over on the table.
   // A timer marks each reveal expired a beat before its deadline, so the
   // tiles turn back with one render rather than on a ticking clock.
+  // Keyed by deadline as well as id: a pause pushes every reveal's deadline
+  // forward, and the peek that was running has to come back when play does.
   const [expired, setExpired] = useState<Set<string>>(() => new Set());
   const revealed = useMemo(() => {
     const m = new Map<string, Card>();
     for (const r of view.private?.reveals ?? []) {
-      if (expired.has(r.id)) continue;
+      if (expired.has(`${r.id}:${r.until}`)) continue;
       for (const c of r.cards) m.set(c.id, c);
     }
     return m;
   }, [view, expired]);
   useEffect(() => {
+    if (pub.paused) return; // reveals are held for the length of the pause
     const now = Date.now() + game.skew;
     const timers = (view.private?.reveals ?? [])
       .filter((r) => r.kind !== "kingLook")
-      .map((r) => window.setTimeout(() => setExpired((cur) => (cur.has(r.id) ? cur : new Set(cur).add(r.id))), Math.max(0, r.until - 150 - now)));
+      .map((r) => {
+        const key = `${r.id}:${r.until}`;
+        return window.setTimeout(() => setExpired((cur) => (cur.has(key) ? cur : new Set(cur).add(key))), Math.max(0, r.until - 150 - now));
+      });
     return () => { for (const t of timers) window.clearTimeout(t); };
-  }, [view, game.skew]);
+  }, [view, game.skew, pub.paused]);
 
   // One time hints, taught in context.
   const peekHint = pub.phase === "peek" && !prefs.sawPeekHint && !!mine;
@@ -182,8 +189,10 @@ export function Table({ game, flights }: { game: GameHook; flights: ReturnType<t
           />
         </div>
 
-        {/* The middle of the table: timed reveals live here, between the hands and the actions. */}
-        <div className="flex min-h-0 flex-1 items-center justify-center">
+        {/* The middle of the table: timed reveals and an open pause request
+            live here, between the hands and the actions. */}
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3">
+          <PauseBanner view={pub} me={me} busy={game.busy} onVote={(agree) => void game.send({ type: "pauseVote", agree })} />
           <RevealBanner
             view={view}
             skew={game.skew}
@@ -211,7 +220,7 @@ export function Table({ game, flights }: { game: GameHook; flights: ReturnType<t
             </div>
           </div>
           <div className="flex items-center gap-4">
-            {pub.turnDeadline !== null ? <TurnTimer deadline={pub.turnDeadline} skew={game.skew} mine={myTurn} /> : null}
+            {pub.turnDeadline !== null ? <TurnTimer deadline={pub.turnDeadline} skew={game.skew} mine={myTurn} frozenAt={pub.paused ? pub.pausedAt : null} /> : null}
             {mine && myTurn && pub.turn?.stage === "draw" ? (
               <>
                 {pub.phase === "playing" ? (
@@ -247,13 +256,13 @@ export function Table({ game, flights }: { game: GameHook; flights: ReturnType<t
   );
 }
 
-/** Thirty seconds per human turn. Quiet until the last ten. */
-function TurnTimer({ deadline, skew, mine }: { deadline: number; skew: number; mine: boolean }) {
-  const tick = useClock(250);
-  if (tick === 0) return null;
-  const left = Math.max(0, deadline - (tick + skew));
+/** Thirty seconds per human turn. Quiet until the last ten, stopped when the table is. */
+function TurnTimer({ deadline, skew, mine, frozenAt }: { deadline: number; skew: number; mine: boolean; frozenAt: number | null }) {
+  const tick = useClock(250, frozenAt === null);
+  if (frozenAt === null && tick === 0) return null;
+  const left = Math.max(0, deadline - (frozenAt ?? tick + skew));
   const secs = Math.ceil(left / 1000);
-  const urgent = left < 10_000;
+  const urgent = left < 10_000 && frozenAt === null;
   return (
     <div className="flex items-center gap-2" aria-label={`${secs} seconds left on this turn`}>
       <span className={`t-money text-[15px] ${urgent ? "text-accent" : "text-ink-3"}`}>{secs}s</span>

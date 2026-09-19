@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { applyAction, canStick, cardCount, createGame, GameError, joinGame, OPENING_PEEK_MS, ownerOf, TURN_TIMEOUT_MS } from "./engine";
 import { cardValue, powerOf } from "./cards";
 import { projectFor } from "./view";
+import { planBots } from "./bots";
 import { act, card, makeCtx, player, rig, rigDeck, started, table } from "./testkit";
 import type { GameState } from "./types";
 
@@ -665,5 +666,103 @@ describe("idle timeout", () => {
     // P2 got the owed card and, being idle on their own turn, a penalty card too.
     expect(cardCount(player(s, ids[1]))).toBe(3);
     expect(s.turn?.playerId).toBe(ids[2]);
+  });
+});
+
+describe("pausing", () => {
+  it("needs every seat, pauses on the last agreement, and freezes play", () => {
+    const ctx = makeCtx(20);
+    const { state, ids } = started(ctx, 3); // three humans, one bot
+    const bot = state.players.find((p) => p.isBot)!;
+
+    let s = act(state, ids[1], { type: "pauseRequest" }, ctx);
+    // the requester and every bot are counted straight away
+    expect(s.pauseVote).toMatchObject({ kind: "pause", byId: ids[1] });
+    expect(s.pauseVote!.agreed.slice().sort()).toEqual([ids[1], bot.id].sort());
+    expect(s.paused).toBe(false);
+    // play carries on while a request is open
+    expect(() => act(s, ids[0], { type: "draw" }, ctx)).not.toThrow();
+
+    s = act(s, ids[0], { type: "pauseVote", agree: true }, ctx);
+    expect(s.paused).toBe(false); // one human still to answer
+    s = act(s, ids[2], { type: "pauseVote", agree: true }, ctx);
+    expect(s.paused).toBe(true);
+    expect(s.pausedAt).toBe(ctx.now);
+    expect(s.pauseVote).toBeNull();
+
+    for (const a of [{ type: "draw" }, { type: "callCambio" }] as const) {
+      expect(() => act(s, ids[0], a, ctx)).toThrow(/paused/i);
+    }
+    expect(canStick(s, ids[1])).toBe(false);
+    expect(planBots(s, ctx.now, () => 0)).toEqual([]);
+  });
+
+  it("a single decline cancels the request and leaves the game running", () => {
+    const ctx = makeCtx(21);
+    const { state, ids } = started(ctx, 3);
+    let s = act(state, ids[0], { type: "pauseRequest" }, ctx);
+    s = act(s, ids[1], { type: "pauseVote", agree: true }, ctx);
+    s = act(s, ids[2], { type: "pauseVote", agree: false }, ctx);
+    expect(s.pauseVote).toBeNull();
+    expect(s.paused).toBe(false);
+    expect(s.log.at(-1)?.text).toMatch(/declined/);
+    expect(() => act(s, ids[0], { type: "draw" }, ctx)).not.toThrow();
+  });
+
+  it("resuming needs the same unanimity, and the turn clock picks up where it left off", () => {
+    const ctx = makeCtx(22);
+    const { state, ids } = started(ctx, 2); // two humans, two bots
+    ctx.tick(9_000); // nine seconds of this turn are already gone
+    const startedAt = state.turn!.startedAt;
+
+    let s = act(state, ids[0], { type: "pauseRequest" }, ctx);
+    s = act(s, ids[1], { type: "pauseVote", agree: true }, ctx);
+    expect(s.paused).toBe(true);
+
+    ctx.tick(120_000); // two minutes away from the table
+    expect(applyAction(s, { actionId: "t1", playerId: ids[0], action: { type: "timeout" } }, ctx).changed).toBe(false);
+
+    s = act(s, ids[1], { type: "pauseRequest" }, ctx);
+    expect(s.pauseVote!.kind).toBe("resume");
+    expect(s.paused).toBe(true); // still paused until the last seat agrees
+    s = act(s, ids[0], { type: "pauseVote", agree: true }, ctx);
+    expect(s.paused).toBe(false);
+    expect(s.pausedAt).toBeNull();
+    // the turn is 9s old again, not 129s old, so nobody is auto-skipped
+    expect(ctx.now - s.turn!.startedAt).toBe(9_000);
+    expect(s.turn!.startedAt).toBe(startedAt + 120_000);
+    expect(() => act(s, ids[0], { type: "draw" }, ctx)).not.toThrow();
+  });
+
+  it("holds the opening peek and its reveals for the length of the pause", () => {
+    const ctx = makeCtx(23);
+    const t = table(ctx, 2);
+    let s = act(t.state, t.hostId, { type: "start" }, ctx);
+    const peekUntil = s.openingPeekUntil!;
+    ctx.tick(1_000);
+    s = act(s, t.hostId, { type: "pauseRequest" }, ctx);
+    s = act(s, t.ids[1], { type: "pauseVote", agree: true }, ctx);
+    ctx.tick(60_000);
+    // the peek must not advance underneath a paused table
+    expect(applyAction(s, { actionId: "a1", playerId: t.hostId, action: { type: "advance" } }, ctx).changed).toBe(false);
+    const frozen = projectFor(s, 1, t.hostId, ctx.now);
+    expect(frozen.private!.reveals).toHaveLength(1);
+
+    s = act(s, t.hostId, { type: "pauseRequest" }, ctx);
+    s = act(s, t.ids[1], { type: "pauseVote", agree: true }, ctx);
+    expect(s.openingPeekUntil).toBe(peekUntil + 60_000);
+    expect(s.reveals[0].until).toBe(peekUntil + 60_000);
+  });
+
+  it("refuses a second request, a vote with nothing on the table, and a pause outside a round", () => {
+    const ctx = makeCtx(24);
+    const t = table(ctx, 2);
+    expect(() => act(t.state, t.hostId, { type: "pauseRequest" }, ctx)).toThrow(/nothing to pause/);
+    const { state, ids } = started(ctx, 3);
+    expect(() => act(state, ids[0], { type: "pauseVote", agree: true }, ctx)).toThrow(/no request/);
+    const s = act(state, ids[0], { type: "pauseRequest" }, ctx);
+    expect(() => act(s, ids[1], { type: "pauseRequest" }, ctx)).toThrow(/already a request/);
+    // agreeing twice is a no-op rather than an error
+    expect(applyAction(s, { actionId: "v2", playerId: ids[0], action: { type: "pauseVote", agree: true } }, ctx).changed).toBe(false);
   });
 });

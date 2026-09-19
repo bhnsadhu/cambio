@@ -24,9 +24,11 @@ export function RevealBanner({
   onKingDecide: (swap: boolean) => void;
 }) {
   const hasReveals = (view.private?.reveals.length ?? 0) > 0;
-  const tick = useClock(100, hasReveals);
-  const now = tick + skew;
-  if (!hasReveals || tick === 0) return null;
+  // A paused table stops this countdown where it stood.
+  const frozen = view.public.paused ? view.public.pausedAt : null;
+  const tick = useClock(100, hasReveals && frozen === null);
+  const now = frozen ?? tick + skew;
+  if (!hasReveals || (frozen === null && tick === 0)) return null;
   // Drop a reveal a beat before its deadline so the callout never lingers at zero.
   const reveals = (view.private?.reveals ?? []).filter((r) => r.kind === "kingLook" || r.until - now > 150);
   if (!reveals.length) return null;

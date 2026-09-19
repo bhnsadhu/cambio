@@ -22,6 +22,7 @@ import type {
   CambioState,
   GameState,
   LogEntry,
+  PauseVote,
   Player,
   PowerKind,
   Reveal,
@@ -59,6 +60,7 @@ export type ErrorCode =
   | "PENDING_GIVE"
   | "NO_POWER"
   | "EMPTY_DECK"
+  | "PAUSED"
   | "BAD_NAME";
 
 export class GameError extends Error {
@@ -105,6 +107,10 @@ export function createGame(
     turnsTaken: 0,
     pendingPower: null,
     pendingGives: [],
+    paused: false,
+    pausedAt: null,
+    pausedBy: null,
+    pauseVote: null,
     cambio: null,
     reveals: [],
     openingPeekUntil: null,
@@ -158,12 +164,21 @@ export function applyAction(input: GameState, env: ActionEnvelope, ctx: EngineCt
     return { state: input, changed: false };
   }
   const state = clone(input);
-  pruneReveals(state, ctx.now);
+  const a = env.action;
+  // A paused table is frozen: the only moves are the ones that unfreeze it.
+  // Reveals are not pruned either, so a peek that was running when the table
+  // went dark still has its remaining seconds when play resumes.
+  if (state.paused && a.type !== "pauseRequest" && a.type !== "pauseVote") {
+    // The watchdogs (any client, and the bot runner) keep firing these; they
+    // are no-ops rather than errors so nothing surfaces as a failure.
+    if (a.type === "timeout" || a.type === "advance") return { state: input, changed: false };
+    throw new GameError("PAUSED", "The game is paused. It resumes when everyone agrees.");
+  }
+  if (!state.paused) pruneReveals(state, ctx.now);
   const actor = state.players.find((p) => p.id === env.playerId);
   if (!actor) throw new GameError("NOT_FOUND", "You are not seated at this table.");
 
   let note: ApplyResult["note"];
-  const a = env.action;
   switch (a.type) {
     case "start": doStart(state, actor, ctx); break;
     case "advance": {
@@ -183,6 +198,11 @@ export function applyAction(input: GameState, env: ActionEnvelope, ctx: EngineCt
     case "stick": note = doStick(state, actor, a.cardId, ctx); break;
     case "give": doGive(state, actor, a.cardId, ctx); break;
     case "playAgain": doPlayAgain(state, actor, ctx); break;
+    case "pauseRequest": doPauseRequest(state, actor, ctx); break;
+    case "pauseVote": {
+      if (!doPauseVote(state, actor, a.agree, ctx)) return { state: input, changed: false };
+      break;
+    }
     case "timeout": {
       if (!doTimeout(state, ctx)) return { state: input, changed: false };
       break;
@@ -245,6 +265,10 @@ function dealRound(state: GameState, ctx: EngineCtx) {
   state.turnsTaken = 0;
   state.pendingPower = null;
   state.pendingGives = [];
+  state.paused = false;
+  state.pausedAt = null;
+  state.pausedBy = null;
+  state.pauseVote = null;
   state.cambio = null;
   state.reveals = [];
   state.botKnown = {};
@@ -429,6 +453,7 @@ export function describePower(kind: PowerKind): string {
 /* ------------------------------------------------------------------ */
 
 export function canStick(state: GameState, playerId: string): boolean {
+  if (state.paused) return false;
   if (state.phase !== "playing" && state.phase !== "final") return false;
   if (state.discard.length === 0) return false;
   const p = state.players.find((x) => x.id === playerId);
@@ -550,6 +575,73 @@ function doTimeout(state: GameState, ctx: EngineCtx): boolean {
 }
 
 /* ------------------------------------------------------------------ */
+/* Pausing                                                             */
+/* ------------------------------------------------------------------ */
+
+/** The phases where a pause means anything: a clock or a turn is running. */
+const PAUSABLE: GameState["phase"][] = ["peek", "playing", "final"];
+
+/**
+ * Pausing is unanimous, in both directions. A request opens a vote; play
+ * carries on normally while it is open, and only a full table turns it into
+ * an actual pause. One decline cancels it outright, so a request never sits
+ * in limbo. Bots agree the instant they are asked, so the only seats a table
+ * ever waits on are human ones.
+ */
+function doPauseRequest(state: GameState, actor: Player, ctx: EngineCtx) {
+  if (!PAUSABLE.includes(state.phase)) throw new GameError("WRONG_PHASE", "There is nothing to pause right now.");
+  if (state.pauseVote) throw new GameError("WRONG_STAGE", "There is already a request on the table.");
+  const kind: PauseVote["kind"] = state.paused ? "resume" : "pause";
+  const agreed = [actor.id, ...state.players.filter((p) => p.isBot && p.id !== actor.id).map((p) => p.id)];
+  state.pauseVote = { kind, byId: actor.id, agreed, at: ctx.now };
+  addLog(state, ctx, kind === "pause"
+    ? `${actor.name} asked to pause. Everyone has to agree.`
+    : `${actor.name} asked to resume. Everyone has to agree.`, "accent");
+  settlePause(state, ctx);
+}
+
+function doPauseVote(state: GameState, actor: Player, agree: boolean, ctx: EngineCtx): boolean {
+  const vote = state.pauseVote;
+  if (!vote) throw new GameError("WRONG_STAGE", "There is no request on the table.");
+  if (!agree) {
+    state.pauseVote = null;
+    addLog(state, ctx, vote.kind === "pause"
+      ? `${actor.name} declined the pause. Play continues.`
+      : `${actor.name} declined to resume. The table stays paused.`, "bad");
+    return true;
+  }
+  if (vote.agreed.includes(actor.id)) return false;
+  vote.agreed.push(actor.id);
+  addLog(state, ctx, `${actor.name} agreed to ${vote.kind}.`);
+  settlePause(state, ctx);
+  return true;
+}
+
+/** Applies an open request once every seat at the table has agreed to it. */
+function settlePause(state: GameState, ctx: EngineCtx) {
+  const vote = state.pauseVote!;
+  if (state.players.some((p) => !vote.agreed.includes(p.id))) return;
+  state.pauseVote = null;
+  if (vote.kind === "pause") {
+    state.paused = true;
+    state.pausedAt = ctx.now;
+    state.pausedBy = vote.byId;
+    addLog(state, ctx, "Everyone agreed. The table is paused.", "accent");
+    return;
+  }
+  // Every clock picks up where it left off rather than starting again.
+  const held = state.pausedAt === null ? 0 : Math.max(0, ctx.now - state.pausedAt);
+  if (state.turn) state.turn.startedAt += held;
+  for (const g of state.pendingGives) if (g.since !== undefined) g.since += held;
+  if (state.openingPeekUntil !== null) state.openingPeekUntil += held;
+  for (const r of state.reveals) r.until += held;
+  state.paused = false;
+  state.pausedAt = null;
+  state.pausedBy = null;
+  addLog(state, ctx, "Everyone agreed. Play resumes.", "accent");
+}
+
+/* ------------------------------------------------------------------ */
 /* Cambio / round end                                                  */
 /* ------------------------------------------------------------------ */
 
@@ -626,6 +718,10 @@ function scoreRound(state: GameState, ctx: EngineCtx) {
   state.turn = null;
   state.pendingPower = null;
   state.pendingGives = [];
+  state.paused = false;
+  state.pausedAt = null;
+  state.pausedBy = null;
+  state.pauseVote = null;
   state.reveals = [];
   const names = winners.map((w) => w.name);
   addLog(state, ctx, winners.length > 1

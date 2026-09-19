@@ -57,17 +57,20 @@ export function Wordmark({ className = "" }: { className?: string }) {
   );
 }
 
-/** Bot names carry the brand: the Cam is always bold. */
+/**
+ * Bot names carry the brand: the Cam is always bold. One element, never a
+ * fragment, so a flex parent cannot open a gap inside the name.
+ */
 export function PlayerName({ name, isBot }: { name: string; isBot: boolean }) {
   if (isBot && /^cam/i.test(name)) {
     return (
-      <>
+      <span>
         <b className="font-semibold">{name.slice(0, 3)}</b>
         {name.slice(3)}
-      </>
+      </span>
     );
   }
-  return <>{name}</>;
+  return <span>{name}</span>;
 }
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {

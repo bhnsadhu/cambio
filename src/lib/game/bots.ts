@@ -30,6 +30,9 @@ export type Jitter = (intent: string) => number; // [0,1)
 
 export function planBots(state: GameState, now: number, jitter: Jitter): BotPlan[] {
   const plans: BotPlan[] = [];
+  // A paused table has nothing for a bot to do: they already agreed to the
+  // pause when it was asked for, and they cannot play until it is lifted.
+  if (state.paused) return plans;
   const bots = state.players.filter((p) => p.isBot);
 
   // Anyone may advance the opening peek once its window has closed.
