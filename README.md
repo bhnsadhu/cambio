@@ -7,12 +7,13 @@ The memory card game (also known as Cabo), playable in a browser with friends in
 ## How it plays
 
 - Four seats, always. 52 cards plus two jokers; four cards each, laid out 2×2 and face down for the whole round.
-- A ten-second opening window reveals your bottom two cards, then everything is face down for everyone. The app never becomes a cheat sheet: the only time a value is ever drawn on screen is a timed reveal banner.
+- A five-second opening window reveals your bottom two cards, then everything is face down for everyone. The app never becomes a cheat sheet: the only time a value is ever drawn on screen is a timed reveal banner.
 - On your turn, draw from the deck, then either **place** the card on the pile (firing its power) or **swap** it into your hand (which kills the power).
 - Powers: 7/8 peek at one of yours · 9/10 peek at someone else's · J/Q blind swap · black K look at any two cards from two different players, then swap or not. Red kings have no power.
 - **Sticking** is live for everyone except the player mid-turn: click any card you believe matches the top of the pile. Right, and it leaves the game (you hand the owner one of yours if it wasn't your own). Wrong, and you draw a penalty card. Sticks resolve independently in the order they arrive.
 - Reaching zero cards triggers Cambio automatically; you can also call it at the start of your turn. Everyone else gets exactly one more turn.
 - Scoring: number cards face value, J/Q 10, A 1, red K −1, black K and jokers 0. Lowest wins; ties stand. The winner leads the next round.
+- **Pausing** is unanimous. Anyone can ask; everyone has to agree before the table actually stops, and the house bots agree the moment they are asked. One decline cancels the request and play carries on. While the table is paused nothing can be drawn, swapped, stuck or powered, and every clock stops with it — the turn timer picks up where it left off rather than restarting, so nobody is skipped for being away. Resuming asks the same question in reverse.
 
 ## Architecture
 
@@ -58,6 +59,7 @@ The visual language is after Offsuit, the poker app, sampled from its live store
 - A wrong stick reveals nothing: the card stays where it is and the log does not name it.
 - During your own power resolution (after your card is down) you may stick, like anyone else.
 - If a card owed after a correct stick is still pending when the last turn ends, scoring waits for it.
+- A pause needs *every* seat, not a majority, in both directions — a table can only stop, or start again, when nobody objects.
 
 ## Running it
 
