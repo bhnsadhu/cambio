@@ -12,7 +12,7 @@ import { Piles } from "./Piles";
 import { EventFeed } from "./EventFeed";
 import { RevealBanner } from "./RevealBanner";
 import { Scoreboard } from "./Scoreboard";
-import { FlightLayer, useFlights } from "./FlightLayer";
+import type { useFlights } from "./FlightLayer";
 import { FaceCard } from "./cards";
 import { Button, PlayerName } from "./ui";
 
@@ -23,13 +23,13 @@ type Mode =
   | { kind: "decide" }
   | { kind: "stick" };
 
-export function Table({ game }: { game: GameHook }) {
+export function Table({ game, flights }: { game: GameHook; flights: ReturnType<typeof useFlights> }) {
   const view = game.view!;
   const pub = view.public;
   const me = game.me;
   const positions = usePositions();
   const prefs = usePrefs();
-  const { specs, hidden, onLanded, version } = useFlights(view, me);
+  const { hidden } = flights;
   const [sel, setSel] = useState<{ cardId: string; key: string } | null>(null);
 
   const mine = pub.players.find((p) => p.id === me) ?? null;
@@ -240,7 +240,6 @@ export function Table({ game }: { game: GameHook }) {
 
       <EventFeed log={pub.log} />
 
-      <FlightLayer specs={specs} onLanded={onLanded} version={version} />
       {pub.phase === "scoring" ? (
         <Scoreboard view={pub} me={me} busy={game.busy} onPlayAgain={() => void fire({ type: "playAgain" })} />
       ) : null}

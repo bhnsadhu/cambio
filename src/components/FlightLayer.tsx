@@ -17,8 +17,11 @@ export function useFlights(view: PlayerView | null, me: string | null) {
   const [landed, setLanded] = useState<{ version: number; ids: Set<string> }>({ version: -1, ids: new Set() });
 
   // Keep the view before this one so a change can be described as motion.
+  // Tracked by version, not object identity: the poll and every reconnect
+  // re-deliver the version we already hold, and swapping the tracked view for
+  // an identical one would recompute the specs and cancel cards mid-flight.
   const [track, setTrack] = useState<{ cur: PlayerView | null; prev: PlayerView | null }>({ cur: null, prev: null });
-  if (track.cur !== view) setTrack({ cur: view, prev: track.cur });
+  if (track.cur?.public.version !== view?.public.version) setTrack({ cur: view, prev: track.cur });
 
   const specs = useMemo(() => {
     const { prev, cur } = track;
@@ -102,7 +105,10 @@ function Flight({ spec, onLanded, version }: { spec: FlightSpec; onLanded: (id: 
     );
     let finished = false;
     anim.onfinish = () => { finished = true; setDone(true); landedRef.current(spec.id); };
-    return () => { if (!finished) { anim.cancel(); landedRef.current(spec.id); } };
+    // A cancelled flight reports nothing: its destination is governed by the
+    // specs that replaced it, and calling it landed here reveals the card
+    // early (visibly, under React's double-invoked effects in development).
+    return () => { if (!finished) anim.cancel(); };
     // A flight is defined entirely by its spec; positions is stable.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spec.id, version]);

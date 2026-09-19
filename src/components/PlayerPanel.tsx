@@ -73,6 +73,9 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
       <div className="grid grid-cols-2 gap-3 justify-items-center">
         {player.hand.map((cardId, i) => {
           const key = `slot:${player.id}:${i}`;
+          // A card still in the air keeps its tile face down, so the reveal
+          // turns over once it has landed instead of arriving already up.
+          const face = hidden.has(key) ? null : revealed.get(cardId ?? "") ?? null;
           return cardId ? (
             <CardTile
               key={cardId}
@@ -80,7 +83,7 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
               selectable={!!cueFor(cardId)}
               selected={selectedCardId === cardId}
               onClick={() => onCard(cardId)}
-              face={revealed.get(cardId) ?? null}
+              face={face}
               hidden={hidden.has(key)}
               slotRef={positions.register(key)}
             />

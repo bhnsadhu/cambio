@@ -13,9 +13,24 @@ import { Lobby } from "./Lobby";
 import { Table } from "./Table";
 import { Explainer } from "./Explainer";
 import { HowToPlay } from "./HowToPlay";
+import { FlightLayer, useFlights } from "./FlightLayer";
 import { Button, Chip, DotOff, Field, inputClass, Pip, Wordmark } from "./ui";
 
+/**
+ * Card flights are tracked here rather than inside the table so that the
+ * deal of the first round has a previous view to be a movement *from*: the
+ * table itself only mounts once the lobby is left, which is the same render
+ * the first deal arrives in.
+ */
 export function GameScreen({ code }: { code: string }) {
+  return (
+    <PositionsProvider>
+      <GameShell code={code} />
+    </PositionsProvider>
+  );
+}
+
+function GameShell({ code }: { code: string }) {
   const game = useGame(code);
   const prefs = usePrefs();
   const router = useRouter();
@@ -37,6 +52,7 @@ export function GameScreen({ code }: { code: string }) {
   const seated = !!game.session;
   const showExplainer = replay || (seated && !!view && prefs.onboarded !== true);
   const closeExplainer = useCallback(() => { setPref("onboarded", true); setReplay(false); }, []);
+  const flights = useFlights(view, game.me);
 
   let body: React.ReactNode;
   if (game.status === "notfound") {
@@ -50,11 +66,11 @@ export function GameScreen({ code }: { code: string }) {
   } else if (view.public.phase === "lobby") {
     body = <Lobby view={view.public} me={game.me} busy={game.busy} onStart={() => void game.send({ type: "start" })} />;
   } else {
-    body = <Table game={game} />;
+    body = <Table game={game} flights={flights} />;
   }
 
   return (
-    <PositionsProvider>
+    <>
       <main className="mx-auto min-h-screen w-full max-w-[1480px] px-8">
         <header className="flex h-14 items-center justify-between">
           <div className="flex items-center gap-5">
@@ -92,11 +108,12 @@ export function GameScreen({ code }: { code: string }) {
 
         {body}
 
+        <FlightLayer specs={flights.specs} onLanded={flights.onLanded} version={flights.version} />
         <Toasts toasts={game.toasts} />
         {showExplainer ? <Explainer onDone={closeExplainer} /> : null}
         <HowToPlay open={help} onClose={() => setHelp(false)} onReplay={() => { setHelp(false); setReplay(true); }} />
       </main>
-    </PositionsProvider>
+    </>
   );
 }
 
