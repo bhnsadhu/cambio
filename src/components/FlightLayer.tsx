@@ -10,11 +10,11 @@ const EASE_OUT = "cubic-bezier(0.2, 0.8, 0.2, 1)";
 
 /**
  * Works out which cards moved since the last view and flies them across the
- * table. Destinations stay invisible until their card lands.
+ * table. Destinations stay invisible until their card lands, and a flight
+ * always completes its arc, whatever else happens while it is in the air.
  */
 export function useFlights(view: PlayerView | null, me: string | null) {
   const positions = usePositions();
-  const [landed, setLanded] = useState<{ version: number; ids: Set<string> }>({ version: -1, ids: new Set() });
 
   // Keep the view before this one so a change can be described as motion.
   // Tracked by version, not object identity: the poll and every reconnect
@@ -34,7 +34,21 @@ export function useFlights(view: PlayerView | null, me: string | null) {
     return () => { positions.snapshot(); };
   }, [view, positions]);
 
-  const version = view?.public.version ?? -1;
+  // A card in the air belongs to the movement that started it, not to whatever
+  // view happens to be current: an action landing mid-arc must not snap it
+  // into its slot. Flights are held here until they report a landing, and the
+  // same card moving again replaces its own flight, so it is never drawn
+  // twice. Nothing is left in the air across a round boundary.
+  const phase = view?.public.phase ?? null;
+  const [flying, setFlying] = useState<{ seen: FlightSpec[] | null; phase: string | null; list: FlightSpec[] }>({ seen: null, phase: null, list: [] });
+  if (flying.seen !== specs || flying.phase !== phase) {
+    const moving = new Set(specs.map(cardOf));
+    const list = phase === "lobby" || phase === "scoring"
+      ? []
+      : specs.length ? [...flying.list.filter((s) => !moving.has(cardOf(s))), ...specs] : flying.list;
+    setFlying({ seen: specs, phase, list });
+  }
+
   // Landings are collected and flushed once per frame so a sixteen card deal
   // costs one render, not sixteen.
   const pendingLandings = useRef<string[]>([]);
@@ -44,36 +58,33 @@ export function useFlights(view: PlayerView | null, me: string | null) {
     if (flush.current !== null) return;
     flush.current = requestAnimationFrame(() => {
       flush.current = null;
-      const batch = pendingLandings.current;
+      const batch = new Set(pendingLandings.current);
       pendingLandings.current = [];
-      setLanded((cur) => {
-        const ids = cur.version === version ? new Set(cur.ids) : new Set<string>();
-        for (const b of batch) ids.add(b);
-        return { version, ids };
-      });
+      setFlying((cur) => (cur.list.some((s) => batch.has(s.id)) ? { ...cur, list: cur.list.filter((s) => !batch.has(s.id)) } : cur));
     });
-  }, [version]);
+  }, []);
 
-  const hidden = useMemo(() => {
-    const set = new Set<LocKey>();
-    for (const s of specs) if (!(landed.version === version && landed.ids.has(s.id))) set.add(s.to);
-    return set;
-  }, [specs, landed, version]);
+  const hidden = useMemo(() => new Set<LocKey>(flying.list.map((s) => s.to)), [flying]);
 
-  return { specs, hidden, onLanded, version };
+  return { specs: flying.list, hidden, onLanded };
 }
 
-export function FlightLayer({ specs, onLanded, version }: { specs: FlightSpec[]; onLanded: (id: string) => void; version: number }) {
+/** The physical card a flight carries, without the version that framed it. */
+function cardOf(spec: FlightSpec): string {
+  return spec.id.slice(spec.id.indexOf(":") + 1);
+}
+
+export function FlightLayer({ specs, onLanded }: { specs: FlightSpec[]; onLanded: (id: string) => void }) {
   return (
     <div className="pointer-events-none fixed inset-0 z-40" aria-hidden>
       {specs.map((s) => (
-        <Flight key={s.id} spec={s} onLanded={onLanded} version={version} />
+        <Flight key={s.id} spec={s} onLanded={onLanded} />
       ))}
     </div>
   );
 }
 
-function Flight({ spec, onLanded, version }: { spec: FlightSpec; onLanded: (id: string) => void; version: number }) {
+function Flight({ spec, onLanded }: { spec: FlightSpec; onLanded: (id: string) => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const positions = usePositions();
   const [done, setDone] = useState(false);
@@ -105,13 +116,12 @@ function Flight({ spec, onLanded, version }: { spec: FlightSpec; onLanded: (id: 
     );
     let finished = false;
     anim.onfinish = () => { finished = true; setDone(true); landedRef.current(spec.id); };
-    // A cancelled flight reports nothing: its destination is governed by the
-    // specs that replaced it, and calling it landed here reveals the card
-    // early (visibly, under React's double-invoked effects in development).
+    // A cancelled flight reports nothing: it was cancelled because the card
+    // is moving again, and the flight that replaced it owns the destination.
     return () => { if (!finished) anim.cancel(); };
     // A flight is defined entirely by its spec; positions is stable.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spec.id, version]);
+  }, [spec.id]);
 
   if (done) return null;
   return (

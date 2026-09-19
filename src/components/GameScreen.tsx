@@ -116,7 +116,7 @@ function GameShell({ code }: { code: string }) {
 
         {body}
 
-        <FlightLayer specs={flights.specs} onLanded={flights.onLanded} version={flights.version} />
+        <FlightLayer specs={flights.specs} onLanded={flights.onLanded} />
         {view ? <PauseOverlay view={view.public} {...pause} /> : null}
         <Toasts toasts={game.toasts} />
         {showExplainer ? <Explainer onDone={closeExplainer} /> : null}
