@@ -53,11 +53,12 @@ export function Landing() {
 
       <section className="grid grid-cols-[1.1fr_1fr] gap-16 pt-16">
         <div>
-          <div className="mb-8 flex items-end gap-2" aria-hidden>
-            <CardBack size="md" className="rotate-[-6deg]" />
-            <CardBack size="md" className="-translate-y-1 rotate-[-2deg]" />
-            <FaceCard size="md" card={{ id: "h1", rank: "7", suit: "S" }} className="rotate-[3deg] shadow-lift" />
-            <CardBack size="md" className="translate-y-0.5 rotate-[7deg]" />
+          {/* One clean row: same baseline, same size, no tilt, even spacing. */}
+          <div className="mb-8 flex items-end gap-3" aria-hidden>
+            <CardBack size="md" />
+            <CardBack size="md" />
+            <FaceCard size="md" card={{ id: "h1", rank: "7", suit: "S" }} />
+            <CardBack size="md" />
           </div>
           <h1 className="t-display">
             The memory card game,<br />live with friends.

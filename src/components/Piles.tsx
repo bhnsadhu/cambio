@@ -29,7 +29,7 @@ export function Piles({
       </header>
       <div className="flex items-start gap-4">
         <div className="flex flex-col items-center gap-2">
-          {/* The deck is a short stack: two backs peeking out under the top card. */}
+          {/* One flat card back, the same weight as any other card on the table. */}
           <button
             type="button"
             ref={positions.register("deck") as (el: HTMLButtonElement | null) => void}
@@ -41,8 +41,6 @@ export function Piles({
             ].join(" ")}
             aria-label={canDraw ? "draw a card" : "deck"}
           >
-            {deckCount > 2 ? <span aria-hidden className="card-back absolute inset-0 translate-x-1 translate-y-1 rounded-[var(--tile-r)] opacity-60" /> : null}
-            {deckCount > 1 ? <span aria-hidden className="card-back absolute inset-0 translate-x-0.5 translate-y-0.5 rounded-[var(--tile-r)] opacity-80" /> : null}
             {deckCount > 0 ? (
               <span aria-hidden className={`card-back absolute inset-0 rounded-[var(--tile-r)] ${canDraw ? "ring-turn" : ""}`} />
             ) : (

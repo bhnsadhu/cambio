@@ -15,9 +15,7 @@ export function Scoreboard({ view, me, busy, onPlayAgain }: { view: PublicView; 
   if (!result) return null;
 
   const roundsWon = new Map<string, number>();
-  const history = new Map<string, number[]>();
   for (const r of view.results) {
-    for (const s of r.scores) history.set(s.playerId, [...(history.get(s.playerId) ?? []), s.score]);
     for (const w of r.winnerIds) roundsWon.set(w, (roundsWon.get(w) ?? 0) + 1);
   }
 
@@ -64,7 +62,6 @@ export function Scoreboard({ view, me, busy, onPlayAgain }: { view: PublicView; 
               <th className="pb-2.5 font-medium">Final hand</th>
               <th className="pb-2.5 pl-6 text-right font-medium">Hand total</th>
               <th className="pb-2.5 pl-8 text-right font-medium">Rounds won</th>
-              <th className="pb-2.5 pl-6 text-right font-medium">Each round</th>
             </tr>
           </thead>
           <tbody>
@@ -73,7 +70,6 @@ export function Scoreboard({ view, me, busy, onPlayAgain }: { view: PublicView; 
               const isMe = player.id === me;
               const base = 240 + row * 220;
               const wins = roundsWon.get(player.id) ?? 0;
-              const past = history.get(player.id) ?? [];
               return (
                 <tr key={player.id} className={isMe ? "bg-surface-2/60" : ""}>
                   <td className={`t-money border-t border-line py-3.5 pl-2 align-middle text-[17px] ${won ? "text-accent" : "text-ink-3"}`}>{rank}</td>
@@ -99,9 +95,6 @@ export function Scoreboard({ view, me, busy, onPlayAgain }: { view: PublicView; 
                   </td>
                   <td className="t-money border-t border-line py-3.5 pl-8 text-right align-middle text-[17px] text-ink-2">
                     {wins}<span className="t-sub text-ink-3"> of {view.results.length}</span>
-                  </td>
-                  <td className="tnum border-t border-line py-3.5 pl-6 text-right align-middle">
-                    <span className="t-sub text-ink-3">{past.map((s, i) => `R${i + 1} ${s}`).join(" · ")}</span>
                   </td>
                 </tr>
               );
