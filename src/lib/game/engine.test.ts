@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyAction, canStick, cardCount, createGame, GameError, joinGame, OPENING_PEEK_MS, ownerOf, TURN_TIMEOUT_MS } from "./engine";
+import { applyAction, canStick, cardCount, createGame, DEAL_MS, GameError, joinGame, OPENING_PEEK_MS, ownerOf, TURN_TIMEOUT_MS } from "./engine";
 import { cardValue, powerOf } from "./cards";
 import { projectFor } from "./view";
 import { planBots } from "./bots";
@@ -36,7 +36,7 @@ describe("lobby", () => {
     expect(() => act(t.state, t.ids[1], { type: "start" }, ctx)).toThrow(/host/);
   });
 
-  it("gives humans a 10s opening reveal of their bottom two cards, bots remember theirs", () => {
+  it("deals before the peek: the reveal window opens once the cards have landed", () => {
     const ctx = makeCtx();
     const t = table(ctx, 1);
     const s = act(t.state, t.hostId, { type: "start" }, ctx);
@@ -44,11 +44,16 @@ describe("lobby", () => {
     const rev = s.reveals.find((r) => r.toPlayerId === host.id)!;
     expect(rev.kind).toBe("opening");
     expect(rev.cardIds).toEqual([host.hand[2], host.hand[3]]);
-    expect(rev.until).toBe(ctx.now + OPENING_PEEK_MS);
+    expect(s.dealingUntil).toBe(ctx.now + DEAL_MS);
+    expect(s.openingPeekUntil).toBe(ctx.now + DEAL_MS + OPENING_PEEK_MS);
+    expect(rev.until).toBe(ctx.now + DEAL_MS + OPENING_PEEK_MS);
     const bot = s.players.find((p) => p.isBot)!;
     expect(s.botKnown[bot.id]).toEqual([bot.hand[2], bot.hand[3]]);
     // advance is refused until the window closes, then idempotent
     expect(applyAction(s, { actionId: "adv1", playerId: host.id, action: { type: "advance" } }, ctx).changed).toBe(false);
+    ctx.tick(DEAL_MS);
+    // still the peek: the window only starts once the deal is down
+    expect(applyAction(s, { actionId: "adv1b", playerId: host.id, action: { type: "advance" } }, ctx).changed).toBe(false);
     ctx.tick(OPENING_PEEK_MS);
     const s2 = act(s, host.id, { type: "advance" }, ctx);
     expect(s2.phase).toBe("playing");
@@ -79,12 +84,30 @@ describe("turn loop", () => {
     let s = rig(state, ids[0], [card("h1", "9"), card("h2", "2"), card("h3", "5"), card("h4", "K", "H")]);
     s = rigDeck(s, [card("d1", "J")]);
     s = act(s, ids[0], { type: "draw" }, ctx);
-    expect(() => act(s, ids[0], { type: "swap", cardId: "nope" }, ctx)).toThrow(/your own/);
+    expect(() => act(s, ids[0], { type: "swap", cardId: "nope" }, ctx)).toThrow(/card on the table/);
     s = act(s, ids[0], { type: "swap", cardId: "h1" }, ctx);
     expect(player(s, ids[0]).hand[0]).toBe("d1");
     expect(topOf(s).id).toBe("h1");
     expect(s.pendingPower).toBeNull();
     expect(s.turn?.playerId).toBe(ids[1]);
+  });
+
+  it("the drawn card can be swapped into another player's hand, discarding what was there", () => {
+    const ctx = makeCtx();
+    const { state, ids } = started(ctx);
+    let s = rig(state, ids[2], [card("c1", "A"), card("c2", "2"), card("c3", "5"), card("c4", "3")]);
+    s = rigDeck(s, [card("d1", "10")]);
+    s = act(s, ids[0], { type: "draw" }, ctx);
+    s = act(s, ids[0], { type: "swap", cardId: "c1" }, ctx);
+    expect(player(s, ids[2]).hand[0]).toBe("d1");
+    expect(cardCount(player(s, ids[2]))).toBe(4);
+    expect(topOf(s).id).toBe("c1");
+    expect(s.pendingPower).toBeNull();
+    expect(s.turn?.playerId).toBe(ids[1]);
+    const entry = s.log[s.log.length - 1];
+    expect(entry.kind).toBe("swap");
+    expect(entry.weight).toBe("loud");
+    expect(entry.text).toContain("P3's 1st card");
   });
 
   it("the drawn card is private to the drawer and hidden from everyone else", () => {
@@ -115,7 +138,7 @@ describe("turn loop", () => {
     expect(s.deck.length).toBe(recycledIds.length - 1); // everything under the top came back, minus the drawn card
     for (const id of recycledIds) expect(s.cards[id]).toBeUndefined();
     expect(Object.keys(s.cards).length).toBe(54 + 1);
-    expect(s.log.at(-2)?.text).toMatch(/reshuffled under 3♠/);
+    expect(s.log.at(-2)?.text).toMatch(/shuffled back under 3♠/);
   });
 });
 
@@ -161,10 +184,24 @@ describe("powers", () => {
     const { state, ids } = withDrawn(ctx, card("d1", "Q"));
     const mine = player(state, ids[0]).hand[0]!;
     const theirs = player(state, ids[3]).hand[2]!;
-    const s = act(state, ids[0], { type: "blindSwap", myCardId: mine, theirCardId: theirs }, ctx);
+    const s = act(state, ids[0], { type: "blindSwap", cardIdA: mine, cardIdB: theirs }, ctx);
     expect(player(s, ids[0]).hand[0]).toBe(theirs);
     expect(player(s, ids[3]).hand[2]).toBe(mine);
     expect(s.reveals).toHaveLength(0);
+  });
+
+  it("a blind swap can trade two other players' cards, but not two of one player's", () => {
+    const ctx = makeCtx();
+    const { state, ids } = withDrawn(ctx, card("d1", "J"));
+    const a = player(state, ids[1]).hand[0]!;
+    const a2 = player(state, ids[1]).hand[1]!;
+    const b = player(state, ids[2]).hand[3]!;
+    expect(() => act(state, ids[0], { type: "blindSwap", cardIdA: a, cardIdB: a2 }, ctx)).toThrow(/different players/);
+    const s = act(state, ids[0], { type: "blindSwap", cardIdA: a, cardIdB: b }, ctx);
+    expect(player(s, ids[1]).hand[0]).toBe(b);
+    expect(player(s, ids[2]).hand[3]).toBe(a);
+    expect(s.reveals).toHaveLength(0);
+    expect(s.turn?.playerId).toBe(ids[1]);
   });
 
   it("black king: look at two cards of different players, then choose to swap", () => {
@@ -303,7 +340,7 @@ describe("sticking", () => {
     s = rigDeck(s, [card("d2", "J")]);
     s = act(s, ids[1], { type: "draw" }, ctx);
     s = act(s, ids[1], { type: "place" }, ctx);
-    s = act(s, ids[1], { type: "blindSwap", myCardId: "b1", theirCardId: "e1" }, ctx);
+    s = act(s, ids[1], { type: "blindSwap", cardIdA: "b1", cardIdB: "e1" }, ctx);
     expect(player(s, ids[3]).hand[0]).toBe("b1");
     // J is on top now; a 7 no longer matches. Put a 7 back on top via P3.
     s = rigDeck(s, [card("d3", "7", "C")]);
@@ -462,7 +499,7 @@ describe("cambio and round end", () => {
     expect(r.nextLeadSeat).toBe(0);
   });
 
-  it("play again deals a fresh round with the same seats and the winner leading", () => {
+  it("another round needs every seat, and deals with the winner leading", () => {
     const ctx = makeCtx();
     const { state, ids, hostId } = started(ctx);
     let s = rig(state, ids[0], [card("a1", "9"), card("a2", "9")]);
@@ -477,15 +514,77 @@ describe("cambio and round end", () => {
     }
     expect(s.results[0].winnerIds).toEqual([ids[2]]);
     expect(s.results[0].nextLeadSeat).toBe(2);
-    expect(() => act(s, ids[1], { type: "playAgain" }, ctx)).toThrow(/host/);
+    // Every seat has to ask, not just the host, and asking twice is a no-op.
     s = act(s, hostId, { type: "playAgain" }, ctx);
+    expect(s.phase).toBe("scoring");
+    expect(applyAction(s, { actionId: "pa-again", playerId: hostId, action: { type: "playAgain" } }, ctx).changed).toBe(false);
+    s = act(s, ids[1], { type: "playAgain" }, ctx);
+    s = act(s, ids[2], { type: "playAgain" }, ctx);
+    expect(s.phase).toBe("scoring");
+    s = act(s, ids[3], { type: "playAgain" }, ctx);
     expect(s.round).toBe(2);
     expect(s.phase).toBe("peek");
     expect(s.players.map((p) => p.id)).toEqual(ids);
     for (const p of s.players) expect(cardCount(p)).toBe(4);
-    ctx.tick(OPENING_PEEK_MS);
+    ctx.tick(DEAL_MS + OPENING_PEEK_MS);
     s = act(s, hostId, { type: "advance" }, ctx);
     expect(s.turn?.playerId).toBe(ids[2]);
+  });
+
+  it("bots are in for another round the moment it is scored, so a table only waits on people", () => {
+    const ctx = makeCtx(7);
+    const { state, ids, hostId } = started(ctx, 2);
+    let s = rig(state, ids[0], [card("a1", "9")]);
+    s = rig(s, ids[1], [card("b1", "A")]);
+    s = act(s, ids[0], { type: "callCambio" }, ctx);
+    for (const p of s.players.filter((x) => x.id !== ids[0])) {
+      s = rigDeck(s, [card(`z${p.id}`, "2")]);
+      s = act(s, p.id, { type: "draw" }, ctx);
+      s = act(s, p.id, { type: "place" }, ctx);
+      if (s.pendingPower) s = act(s, p.id, { type: "skipPower" }, ctx);
+    }
+    expect(s.phase).toBe("scoring");
+    const bots = s.players.filter((p) => p.isBot).map((p) => p.id);
+    expect(s.replayVotes.sort()).toEqual(bots.sort());
+    s = act(s, hostId, { type: "playAgain" }, ctx);
+    expect(s.phase).toBe("scoring"); // still waiting on the other human
+    s = act(s, ids[1], { type: "playAgain" }, ctx);
+    expect(s.phase).toBe("peek");
+    expect(s.round).toBe(2);
+  });
+
+  it("one player leaving takes the rest back to the lobby with the seats closed up", () => {
+    const ctx = makeCtx(11);
+    const { state, ids, hostId } = started(ctx, 3);
+    let s = rig(state, ids[0], [card("a1", "9")]);
+    s = act(s, ids[0], { type: "callCambio" }, ctx);
+    for (const p of s.players.filter((x) => x.id !== ids[0])) {
+      s = rigDeck(s, [card(`z${p.id}`, "2")]);
+      s = act(s, p.id, { type: "draw" }, ctx);
+      s = act(s, p.id, { type: "place" }, ctx);
+      if (s.pendingPower) s = act(s, p.id, { type: "skipPower" }, ctx);
+    }
+    expect(s.phase).toBe("scoring");
+    s = act(s, ids[1], { type: "leaveTable" }, ctx);
+    expect(s.phase).toBe("lobby");
+    expect(s.players.map((p) => p.id)).toEqual([ids[0], ids[2]]);
+    expect(s.players.map((p) => p.seat)).toEqual([0, 1]);
+    expect(s.players.every((p) => cardCount(p) === 0)).toBe(true);
+    expect(s.replayVotes).toEqual([]);
+    expect(s.results).toHaveLength(1);
+    // The table plays on: bots fill the seats again and the round count carries.
+    s = act(s, hostId, { type: "start" }, ctx);
+    expect(s.round).toBe(2);
+    expect(s.players).toHaveLength(4);
+  });
+
+  it("the host leaving hands the table to the next seat", () => {
+    const ctx = makeCtx(12);
+    const t = table(ctx, 3);
+    const s = act(t.state, t.hostId, { type: "leaveTable" }, ctx);
+    expect(s.hostId).toBe(t.ids[1]);
+    expect(s.players.find((p) => p.id === t.ids[1])!.isHost).toBe(true);
+    expect(s.phase).toBe("lobby");
   });
 });
 
@@ -610,7 +709,7 @@ describe("idle timeout", () => {
     const ctx = makeCtx(6);
     const t = table(ctx, 1);
     let s = act(t.state, t.hostId, { type: "start" }, ctx);
-    ctx.tick(OPENING_PEEK_MS + 1);
+    ctx.tick(DEAL_MS + OPENING_PEEK_MS + 1);
     s = act(s, t.hostId, { type: "advance" }, ctx);
     ctx.tick(TURN_TIMEOUT_MS - 1000);
     expect(applyAction(s, { actionId: "t1", playerId: t.hostId, action: { type: "timeout" } }, ctx).changed).toBe(false);

@@ -40,9 +40,11 @@ export function projectPublic(state: GameState, version: number, now: number): P
     pausedBy: state.pausedBy ?? null,
     pauseVote: state.pauseVote ? { ...state.pauseVote, agreed: state.pauseVote.agreed.slice() } : null,
     cambio: state.cambio ? { callerId: state.cambio.callerId, reason: state.cambio.reason, remaining: state.cambio.remaining.slice() } : null,
+    dealingUntil: state.dealingUntil ?? null,
     openingPeekUntil: state.openingPeekUntil,
+    replayVotes: (state.replayVotes ?? []).slice(),
     results: state.phase === "scoring" || state.results.length ? structuredClone(state.results) : [],
-    log: state.log.slice(-25),
+    log: structuredClone(state.log.slice(-25)),
     serverNow: now,
   };
 }

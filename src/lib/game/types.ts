@@ -88,12 +88,61 @@ export interface CambioState {
   remaining: string[];
 }
 
+/**
+ * What a log line *is*, beyond its words. The feed reads the text; the
+ * on-screen announcer and the card highlights read the rest, so every seat
+ * can follow a move it did not make.
+ */
+export type EventKind =
+  | "table"      // seats, hosting, housekeeping
+  | "deal"
+  | "draw"
+  | "place"
+  | "swap"
+  | "peekOwn"
+  | "peekOther"
+  | "blindSwap"
+  | "kingLook"
+  | "kingSwap"
+  | "kingLeave"
+  | "skipPower"
+  | "stick"
+  | "stickMiss"
+  | "give"
+  | "cambio"
+  | "zero"
+  | "timeout"
+  | "reshuffle"
+  | "pause"
+  | "roundEnd"
+  | "replay";
+
+/**
+ * How loudly a move is announced on screen.
+ *   quiet  - the feed only (a draw, a plain placement)
+ *   normal - a standard notification (a look, a swap, a stick)
+ *   loud   - a moment that changes the game (Cambio, a round ending)
+ */
+export type EventWeight = "quiet" | "normal" | "loud";
+
 export interface LogEntry {
   seq: number;
   at: number;
   text: string;
   /** optional: emphasise in the feed */
   tone?: "neutral" | "good" | "bad" | "accent";
+  kind: EventKind;
+  /** who moved */
+  actorId?: string | null;
+  /** whose cards were touched, the actor included when it was their own */
+  subjectIds?: string[];
+  /**
+   * The cards this move touched, for highlighting them in every hand at the
+   * table. Ids only: a log line never carries the rank of a card that is
+   * still face down.
+   */
+  cardIds?: string[];
+  weight?: EventWeight;
 }
 
 export interface RoundResult {
@@ -133,7 +182,14 @@ export interface GameState {
   pauseVote: PauseVote | null;
   cambio: CambioState | null;
   reveals: Reveal[];
+  /**
+   * While the deal is still landing on the table. The opening peek only
+   * starts once this passes, so a round reads as shuffle, deal, then look.
+   */
+  dealingUntil: number | null;
   openingPeekUntil: number | null;
+  /** at scoring time: who has asked for another round (bots agree at once) */
+  replayVotes: string[];
   /** cumulative results across rounds */
   results: RoundResult[];
   log: LogEntry[];
@@ -155,17 +211,22 @@ export type Action =
   | { type: "advance" }             // peek window -> first turn (idempotent)
   | { type: "draw" }
   | { type: "place" }               // discard the drawn card (may trigger power)
-  | { type: "swap"; cardId: string } // put drawn card into own slot, old card to discard
+  /** put the drawn card into any slot at the table; the card there is discarded */
+  | { type: "swap"; cardId: string }
   | { type: "callCambio" }
   | { type: "peekOwn"; cardId: string }
   | { type: "peekOther"; cardId: string }
-  | { type: "blindSwap"; myCardId: string; theirCardId: string }
+  /** J/Q: trade any two cards belonging to two different players, unseen */
+  | { type: "blindSwap"; cardIdA: string; cardIdB: string }
   | { type: "kingLook"; cardIdA: string; cardIdB: string }
   | { type: "kingDecide"; swap: boolean }
   | { type: "skipPower" }
   | { type: "stick"; cardId: string }
   | { type: "give"; cardId: string }
+  /** at scoring: ask for another round. A full table starts one. */
   | { type: "playAgain" }
+  /** leave a table between rounds; the seats left go back to the lobby */
+  | { type: "leaveTable" }
   /** ask the table to pause, or to resume when it is already paused */
   | { type: "pauseRequest" }
   | { type: "pauseVote"; agree: boolean }
@@ -215,7 +276,10 @@ export interface PublicView {
   /** epoch ms after which the current human turn is forfeited */
   turnDeadline: number | null;
   cambio: { callerId: string; reason: "called" | "zero"; remaining: string[] } | null;
+  dealingUntil: number | null;
   openingPeekUntil: number | null;
+  /** at scoring: who is ready for another round */
+  replayVotes: string[];
   results: RoundResult[];
   log: LogEntry[];
   /** server time at projection; lets clients estimate clock skew */

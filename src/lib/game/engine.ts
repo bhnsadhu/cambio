@@ -20,6 +20,8 @@ import type {
   ActionEnvelope,
   Card,
   CambioState,
+  EventKind,
+  EventWeight,
   GameState,
   LogEntry,
   PauseVote,
@@ -32,6 +34,12 @@ import type {
 export const SEATS = 4;
 export const BOT_NAMES = ["Camryn", "Camron", "Cami"] as const;
 export const OPENING_PEEK_MS = 5_000;
+/**
+ * How long the deal takes to land before the opening peek starts. The table
+ * shuffles and deals, *then* everyone looks; the client's deal animation is
+ * cut to fit inside this, with a beat to spare for the round trip.
+ */
+export const DEAL_MS = 2_600;
 /** An idle human forfeits the turn and draws a penalty after this long. */
 export const TURN_TIMEOUT_MS = 30_000;
 export const PEEK_REVEAL_MS = 6_000;
@@ -113,7 +121,9 @@ export function createGame(
     pauseVote: null,
     cambio: null,
     reveals: [],
+    dealingUntil: null,
     openingPeekUntil: null,
+    replayVotes: [],
     results: [],
     log: [],
     logSeq: 0,
@@ -122,7 +132,7 @@ export function createGame(
     createdAt: ctx.now,
     updatedAt: ctx.now,
   };
-  addLog(state, ctx, `${name} opened the table.`);
+  addLog(state, ctx, `${name} opened the table.`, { kind: "table", actorId: hostId });
   return { state, hostId, token };
 }
 
@@ -141,7 +151,7 @@ export function joinGame(
   const token = ctx.newId() + ctx.newId();
   state.players.push({ id: playerId, seat, name, isBot: false, isHost: false, token, hand: [null, null, null, null] });
   state.players.sort((a, b) => a.seat - b.seat);
-  addLog(state, ctx, `${name} took seat ${seat + 1}.`);
+  addLog(state, ctx, `${name} took seat ${seat + 1}.`, { kind: "table", actorId: playerId, weight: "normal" });
   state.updatedAt = ctx.now;
   return { state, playerId, token };
 }
@@ -191,13 +201,17 @@ export function applyAction(input: GameState, env: ActionEnvelope, ctx: EngineCt
     case "callCambio": doCallCambio(state, actor, ctx); note = { kind: "cambio" }; break;
     case "peekOwn": doPeekOwn(state, actor, a.cardId, ctx); break;
     case "peekOther": doPeekOther(state, actor, a.cardId, ctx); break;
-    case "blindSwap": doBlindSwap(state, actor, a.myCardId, a.theirCardId, ctx); break;
+    case "blindSwap": doBlindSwap(state, actor, a.cardIdA, a.cardIdB, ctx); break;
     case "kingLook": doKingLook(state, actor, a.cardIdA, a.cardIdB, ctx); break;
     case "kingDecide": doKingDecide(state, actor, a.swap, ctx); break;
     case "skipPower": doSkipPower(state, actor, ctx); break;
     case "stick": note = doStick(state, actor, a.cardId, ctx); break;
     case "give": doGive(state, actor, a.cardId, ctx); break;
-    case "playAgain": doPlayAgain(state, actor, ctx); break;
+    case "playAgain": {
+      if (!doPlayAgain(state, actor, ctx)) return { state: input, changed: false };
+      break;
+    }
+    case "leaveTable": doLeaveTable(state, actor, ctx); break;
     case "pauseRequest": doPauseRequest(state, actor, ctx); break;
     case "pauseVote": {
       if (!doPauseVote(state, actor, a.agree, ctx)) return { state: input, changed: false };
@@ -229,18 +243,78 @@ function doStart(state: GameState, actor: Player, ctx: EngineCtx) {
   requirePhase(state, ["lobby"]);
   if (actor.id !== state.hostId) throw new GameError("NOT_HOST", "Only the host can start the round.");
   fillBots(state, ctx);
-  state.round = 1;
+  // A table that came back to the lobby between rounds keeps counting up.
+  state.round = state.results.length + 1;
   state.leadSeat = 0;
   dealRound(state, ctx);
 }
 
-function doPlayAgain(state: GameState, actor: Player, ctx: EngineCtx) {
+/**
+ * Another round is the whole table's call, not the host's: everyone still
+ * seated says yes, and the last yes deals. Bots agree the moment the round is
+ * scored, so the only seats a table waits on are human ones. Returns false
+ * when the actor had already asked, so the action is a harmless no-op.
+ */
+function doPlayAgain(state: GameState, actor: Player, ctx: EngineCtx): boolean {
   requirePhase(state, ["scoring"]);
-  if (actor.id !== state.hostId) throw new GameError("NOT_HOST", "Only the host can start the next round.");
-  const last = state.results[state.results.length - 1];
-  state.round += 1;
-  state.leadSeat = last ? last.nextLeadSeat : 0;
-  dealRound(state, ctx);
+  if (state.replayVotes.includes(actor.id)) return false;
+  state.replayVotes.push(actor.id);
+  const waiting = state.players.filter((p) => !state.replayVotes.includes(p.id));
+  if (waiting.length === 0) {
+    addLog(state, ctx, `Everyone is in. Dealing the next round.`, { kind: "replay", tone: "accent", weight: "loud", actorId: actor.id });
+    const last = state.results[state.results.length - 1];
+    state.round = state.results.length + 1;
+    state.leadSeat = last && state.players.some((p) => p.seat === last.nextLeadSeat) ? last.nextLeadSeat : lowestSeat(state);
+    dealRound(state, ctx);
+    return true;
+  }
+  addLog(state, ctx, `${actor.name} is in for another round. Waiting on ${joinNames(waiting.map((p) => p.name))}.`,
+    { kind: "replay", weight: "normal", actorId: actor.id });
+  return true;
+}
+
+/**
+ * Leaving between rounds takes the table back to the lobby rather than ending
+ * it: the seats that stay can invite someone else, or let a bot fill the gap.
+ * The bots are stood down on the way, since `start` seats them again.
+ */
+function doLeaveTable(state: GameState, actor: Player, ctx: EngineCtx) {
+  requirePhase(state, ["lobby", "scoring"]);
+  const wasPlaying = state.phase === "scoring";
+  state.players = state.players.filter((p) => p.id !== actor.id && (!wasPlaying || !p.isBot));
+  state.replayVotes = [];
+  if (wasPlaying) {
+    state.phase = "lobby";
+    state.turn = null;
+    state.pendingPower = null;
+    state.pendingGives = [];
+    state.cambio = null;
+    state.reveals = [];
+    state.dealingUntil = null;
+    state.openingPeekUntil = null;
+    state.deck = [];
+    state.discard = [];
+    state.cards = {};
+    state.botKnown = {};
+    for (const p of state.players) p.hand = [null, null, null, null];
+  }
+  // Seats close up behind whoever left, so the lobby reads 1, 2, 3, 4.
+  state.players.sort((a, b) => a.seat - b.seat);
+  state.players.forEach((p, i) => { p.seat = i; });
+  state.leadSeat = 0;
+  if (actor.id === state.hostId) {
+    const heir = state.players[0] ?? null;
+    for (const p of state.players) p.isHost = !!heir && p.id === heir.id;
+    state.hostId = heir ? heir.id : "";
+  }
+  addLog(state, ctx, state.players.length
+    ? `${actor.name} left the table. Back to the lobby: invite someone, or start and let a bot take the seat.`
+    : `${actor.name} left. The table is empty.`,
+    { kind: "table", tone: "bad", weight: "loud", actorId: actor.id });
+}
+
+function lowestSeat(state: GameState): number {
+  return state.players.length ? Math.min(...state.players.map((p) => p.seat)) : 0;
 }
 
 function fillBots(state: GameState, ctx: EngineCtx) {
@@ -252,7 +326,7 @@ function fillBots(state: GameState, ctx: EngineCtx) {
   }
   state.players.sort((a, b) => a.seat - b.seat);
   const bots = state.players.filter((p) => p.isBot).map((p) => p.name);
-  if (bots.length) addLog(state, ctx, `${joinNames(bots)} filled the empty seats.`);
+  if (bots.length) addLog(state, ctx, `${joinNames(bots)} filled the empty seats.`, { kind: "table" });
 }
 
 function dealRound(state: GameState, ctx: EngineCtx) {
@@ -272,18 +346,23 @@ function dealRound(state: GameState, ctx: EngineCtx) {
   state.cambio = null;
   state.reveals = [];
   state.botKnown = {};
+  state.dealingUntil = null;
   for (const p of state.players) {
     p.hand = [null, null, null, null];
     for (let i = 0; i < 4; i++) p.hand[i] = state.deck.pop()!;
   }
   state.phase = "peek";
-  state.openingPeekUntil = ctx.now + OPENING_PEEK_MS;
+  // Shuffle, deal, *then* look: the peek clock only starts once the last card
+  // has landed, so nobody is memorising a hand that is still being dealt.
+  state.dealingUntil = ctx.now + DEAL_MS;
+  state.openingPeekUntil = state.dealingUntil + OPENING_PEEK_MS;
+  state.replayVotes = [];
   for (const p of state.players) {
     const bottom = [p.hand[2]!, p.hand[3]!];
     if (p.isBot) remember(state, p.id, bottom);
     else addReveal(state, ctx, p.id, "opening", bottom, state.openingPeekUntil);
   }
-  addLog(state, ctx, `Round ${state.round}. Cards dealt.`, "accent");
+  addLog(state, ctx, `Round ${state.round}. The deck is shuffled and dealt.`, { kind: "deal", tone: "accent", weight: "loud" });
 }
 
 function doAdvance(state: GameState, ctx: EngineCtx): boolean {
@@ -293,7 +372,7 @@ function doAdvance(state: GameState, ctx: EngineCtx): boolean {
   state.reveals = state.reveals.filter((r) => r.kind !== "opening");
   const lead = state.players.find((p) => p.seat === state.leadSeat) ?? state.players[0];
   state.turn = { playerId: lead.id, stage: "draw", drawnCardId: null, startedAt: ctx.now };
-  addLog(state, ctx, `Cards down. ${lead.name} leads.`);
+  addLog(state, ctx, `Cards down. ${lead.name} leads.`, { kind: "table", actorId: lead.id, weight: "normal" });
   return true;
 }
 
@@ -308,7 +387,7 @@ function doDraw(state: GameState, actor: Player, ctx: EngineCtx) {
   state.turn!.drawnCardId = id;
   state.turn!.stage = "decide";
   if (actor.isBot) remember(state, actor.id, [id]);
-  addLog(state, ctx, `${actor.name} drew a card.`);
+  addLog(state, ctx, `${actor.name} drew a card from the deck.`, { kind: "draw", actorId: actor.id });
 }
 
 function doPlace(state: GameState, actor: Player, ctx: EngineCtx) {
@@ -318,33 +397,56 @@ function doPlace(state: GameState, actor: Player, ctx: EngineCtx) {
   state.turn!.drawnCardId = null;
   toDiscard(state, id);
   const power = powerOf(card);
-  addLog(state, ctx, power ? `${actor.name} placed ${shortLabel(card)}, a power card.` : `${actor.name} placed ${shortLabel(card)}.`, power ? "accent" : "neutral");
+  addLog(state, ctx,
+    power
+      ? `${actor.name} placed ${shortLabel(card)} on the pile, which carries ${aPower(power)}.`
+      : `${actor.name} placed ${shortLabel(card)} on the pile.`,
+    { kind: "place", actorId: actor.id, tone: power ? "accent" : "neutral", weight: power ? "normal" : "quiet" });
   if (power && powerIsUsable(state, actor, power)) {
     state.pendingPower = { playerId: actor.id, kind: power };
     state.turn!.stage = "power";
     return;
   }
-  if (power) addLog(state, ctx, `No valid target for the power. It fizzles.`);
+  if (power) addLog(state, ctx, `There was no one to use the power on. It fizzles.`, { kind: "place", actorId: actor.id });
   endTurn(state, ctx);
 }
 
+/**
+ * The drawn card goes into any slot at the table, not only your own: the card
+ * that was there is discarded, and its owner is left holding whatever you drew.
+ */
 function doSwap(state: GameState, actor: Player, cardId: string, ctx: EngineCtx) {
   requireTurn(state, actor, "decide");
-  const slot = actor.hand.indexOf(cardId);
-  if (slot < 0) throw new GameError("INVALID_TARGET", "Pick one of your own cards to swap.");
+  const at = ownerOf(state, cardId);
+  if (!at) throw new GameError("INVALID_TARGET", "Pick a card on the table to swap the drawn card into.");
   const drawn = state.turn!.drawnCardId!;
   const old = state.cards[cardId];
-  actor.hand[slot] = drawn;
+  const where = placeOf(at.player, at.slot, actor);
+  at.player.hand[at.slot] = drawn;
   state.turn!.drawnCardId = null;
   toDiscard(state, cardId);
-  addLog(state, ctx, `${actor.name} swapped the drawn card in and let go of ${shortLabel(old)}.`);
+  const own = at.player.id === actor.id;
+  addLog(state, ctx,
+    own
+      ? `${actor.name} swapped the drawn card into ${where}, discarding ${shortLabel(old)}.`
+      : `${actor.name} pushed the drawn card into ${where}, discarding ${shortLabel(old)}. ${at.player.name} is holding it now.`,
+    {
+      kind: "swap",
+      actorId: actor.id,
+      subjectIds: [at.player.id],
+      cardIds: [drawn],
+      tone: own ? "neutral" : "accent",
+      // Pushing your drawn card into someone else's hand is the loudest thing
+      // a plain turn can do: it always gets the big notification.
+      weight: own ? (state.phase === "final" ? "loud" : "normal") : "loud",
+    });
   endTurn(state, ctx);
 }
 
 function doCallCambio(state: GameState, actor: Player, ctx: EngineCtx) {
   requirePhase(state, ["playing"]);
   requireTurn(state, actor, "draw");
-  addLog(state, ctx, `${actor.name} called Cambio. Everyone else gets one more turn.`, "accent");
+  addLog(state, ctx, `${actor.name} called Cambio. Everyone else gets one last turn.`, { kind: "cambio", actorId: actor.id, tone: "accent", weight: "loud" });
   startCambio(state, actor.id, "called", actor.id);
   endTurn(state, ctx);
 }
@@ -362,8 +464,10 @@ function requirePower(state: GameState, actor: Player, kind: PowerKind) {
 function doPeekOwn(state: GameState, actor: Player, cardId: string, ctx: EngineCtx) {
   requirePower(state, actor, "peekOwn");
   if (!actor.hand.includes(cardId)) throw new GameError("INVALID_TARGET", "Pick one of your own cards.");
+  const where = place(state, cardId, actor);
   reveal(state, ctx, actor, "peekOwn", [cardId], ctx.now + PEEK_REVEAL_MS);
-  addLog(state, ctx, `${actor.name} peeked at one of their own cards.`);
+  addLog(state, ctx, `${actor.name} looked at ${where}. Only they saw it.`,
+    { kind: "peekOwn", actorId: actor.id, subjectIds: [actor.id], cardIds: [cardId], weight: "normal" });
   endTurn(state, ctx);
 }
 
@@ -371,20 +475,36 @@ function doPeekOther(state: GameState, actor: Player, cardId: string, ctx: Engin
   requirePower(state, actor, "peekOther");
   const owner = ownerOf(state, cardId);
   if (!owner || owner.player.id === actor.id) throw new GameError("INVALID_TARGET", "Pick a card from another player.");
+  const where = place(state, cardId, actor);
   reveal(state, ctx, actor, "peekOther", [cardId], ctx.now + PEEK_REVEAL_MS);
-  addLog(state, ctx, `${actor.name} peeked at one of ${owner.player.name}'s cards.`);
+  addLog(state, ctx, `${actor.name} looked at ${where}. Only they saw it.`,
+    { kind: "peekOther", actorId: actor.id, subjectIds: [owner.player.id], cardIds: [cardId], weight: "normal" });
   endTurn(state, ctx);
 }
 
-function doBlindSwap(state: GameState, actor: Player, myCardId: string, theirCardId: string, ctx: EngineCtx) {
+/**
+ * J/Q: trade any two cards between two different players, sight unseen. The
+ * actor need not be one of them, so a jack can just as easily rearrange the
+ * table as raid it.
+ */
+function doBlindSwap(state: GameState, actor: Player, aId: string, bId: string, ctx: EngineCtx) {
   requirePower(state, actor, "blindSwap");
-  const mine = actor.hand.indexOf(myCardId);
-  if (mine < 0) throw new GameError("INVALID_TARGET", "Pick one of your own cards to give.");
-  const theirs = ownerOf(state, theirCardId);
-  if (!theirs || theirs.player.id === actor.id) throw new GameError("INVALID_TARGET", "Pick a card from another player.");
-  actor.hand[mine] = theirCardId;
-  theirs.player.hand[theirs.slot] = myCardId;
-  addLog(state, ctx, `${actor.name} swapped a card blind with ${theirs.player.name}.`);
+  const a = ownerOf(state, aId);
+  const b = ownerOf(state, bId);
+  if (!a || !b) throw new GameError("INVALID_TARGET", "Pick two cards that are still on the table.");
+  if (a.player.id === b.player.id) throw new GameError("INVALID_TARGET", "The two cards must belong to different players.");
+  const from = placeOf(a.player, a.slot, actor);
+  const to = placeOf(b.player, b.slot, actor);
+  a.player.hand[a.slot] = bId;
+  b.player.hand[b.slot] = aId;
+  addLog(state, ctx, `${actor.name} blind swapped ${from} with ${to}. Nobody saw either card.`, {
+    kind: "blindSwap",
+    actorId: actor.id,
+    subjectIds: [a.player.id, b.player.id],
+    cardIds: [aId, bId],
+    tone: "accent",
+    weight: swapWeight(state, actor, a.player, b.player),
+  });
   endTurn(state, ctx);
 }
 
@@ -397,7 +517,13 @@ function doKingLook(state: GameState, actor: Player, aId: string, bId: string, c
   if (a.player.id === b.player.id) throw new GameError("INVALID_TARGET", "The two cards must belong to different players.");
   state.pendingPower!.looked = { a: aId, b: bId };
   reveal(state, ctx, actor, "kingLook", [aId, bId], ctx.now + KING_LOOK_MS);
-  addLog(state, ctx, `${actor.name} is looking at one of ${a.player.name}'s cards and one of ${b.player.name}'s.`);
+  addLog(state, ctx, `${actor.name} is looking at ${placeOf(a.player, a.slot, actor)} and ${placeOf(b.player, b.slot, actor)}, then decides whether to swap them.`, {
+    kind: "kingLook",
+    actorId: actor.id,
+    subjectIds: [a.player.id, b.player.id],
+    cardIds: [aId, bId],
+    weight: "normal",
+  });
 }
 
 function doKingDecide(state: GameState, actor: Player, swap: boolean, ctx: EngineCtx) {
@@ -409,14 +535,28 @@ function doKingDecide(state: GameState, actor: Player, swap: boolean, ctx: Engin
     const a = ownerOf(state, looked.a);
     const b = ownerOf(state, looked.b);
     if (a && b) {
+      const from = placeOf(a.player, a.slot, actor);
+      const to = placeOf(b.player, b.slot, actor);
       a.player.hand[a.slot] = looked.b;
       b.player.hand[b.slot] = looked.a;
-      addLog(state, ctx, `${actor.name} swapped the two cards, ${a.player.name}'s for ${b.player.name}'s.`);
+      addLog(state, ctx, `${actor.name} swapped ${from} with ${to}, having seen both.`, {
+        kind: "kingSwap",
+        actorId: actor.id,
+        subjectIds: [a.player.id, b.player.id],
+        cardIds: [looked.a, looked.b],
+        tone: "accent",
+        weight: swapWeight(state, actor, a.player, b.player),
+      });
     } else {
-      addLog(state, ctx, `${actor.name} wanted to swap, but one of the cards had already gone.`);
+      addLog(state, ctx, `${actor.name} wanted to swap, but one of the cards had already gone.`, { kind: "kingLeave", actorId: actor.id, weight: "normal" });
     }
   } else {
-    addLog(state, ctx, `${actor.name} left both cards where they were.`);
+    addLog(state, ctx, `${actor.name} looked at both cards and left them where they were.`, {
+      kind: "kingLeave",
+      actorId: actor.id,
+      cardIds: [looked.a, looked.b],
+      weight: "normal",
+    });
   }
   endTurn(state, ctx);
 }
@@ -425,7 +565,7 @@ function doSkipPower(state: GameState, actor: Player, ctx: EngineCtx) {
   const pp = state.pendingPower;
   if (!pp || pp.playerId !== actor.id) throw new GameError("NO_POWER", "You have no power to skip.");
   state.reveals = state.reveals.filter((r) => !(r.kind === "kingLook" && r.toPlayerId === actor.id));
-  addLog(state, ctx, `${actor.name} passed on the ${describePower(pp.kind)}.`);
+  addLog(state, ctx, `${actor.name} passed on ${aPower(pp.kind)}.`, { kind: "skipPower", actorId: actor.id });
   endTurn(state, ctx);
 }
 
@@ -434,7 +574,7 @@ function powerIsUsable(state: GameState, actor: Player, kind: PowerKind): boolea
   switch (kind) {
     case "peekOwn": return cardCount(actor) > 0;
     case "peekOther": return others.length > 0;
-    case "blindSwap": return cardCount(actor) > 0 && others.length > 0;
+    case "blindSwap": return state.players.filter((p) => cardCount(p) > 0).length >= 2;
     case "kingLook": return state.players.filter((p) => cardCount(p) > 0).length >= 2;
   }
 }
@@ -445,6 +585,16 @@ export function describePower(kind: PowerKind): string {
     case "peekOther": return "peek at someone else's card";
     case "blindSwap": return "blind swap";
     case "kingLook": return "look at two cards and maybe swap them";
+  }
+}
+
+/** The same power in the log's third person: "passed on a blind swap". */
+function aPower(kind: PowerKind): string {
+  switch (kind) {
+    case "peekOwn": return "a look at one of their own cards";
+    case "peekOther": return "a look at someone else's card";
+    case "blindSwap": return "a blind swap";
+    case "kingLook": return "a look at two cards, and the swap that follows";
   }
 }
 
@@ -480,10 +630,15 @@ function doStick(state: GameState, actor: Player, cardId: string, ctx: EngineCtx
   const own = owner.player.id === actor.id;
 
   if (ranksMatch(card, top)) {
+    const where = placeOf(owner.player, owner.slot, actor);
     owner.player.hand[owner.slot] = null;
     trimHand(owner.player);
     toDiscard(state, cardId);
-    addLog(state, ctx, `${actor.name} stuck ${own ? "their own" : `${owner.player.name}'s`} ${shortLabel(card)}.`, "good");
+    addLog(state, ctx,
+      own
+        ? `${actor.name} stuck ${where}: it was ${shortLabel(card)}, and it is gone.`
+        : `${actor.name} stuck ${where}: it was ${shortLabel(card)}. ${owner.player.name} is a card lighter, and ${actor.name} owes them one.`,
+      { kind: "stick", tone: "good", weight: "normal", actorId: actor.id, subjectIds: [owner.player.id], cardIds: [cardId] });
     if (!own) state.pendingGives.push({ from: actor.id, to: owner.player.id, since: ctx.now });
     if (cardCount(owner.player) === 0) handleZero(state, owner.player, ctx);
     return { kind: "stick", correct: true };
@@ -492,11 +647,15 @@ function doStick(state: GameState, actor: Player, cardId: string, ctx: EngineCtx
   // The card stays where it is and its value is never shown: a wrong stick
   // must not become a free peek for the table.
   const penalty = drawFromDeck(state, ctx);
+  // Which card was wrongly stuck is never named or highlighted: that it is
+  // *not* the rank on the pile is information the table has not earned.
   if (penalty) {
     addToHand(actor, penalty);
-    addLog(state, ctx, `${actor.name} stuck the wrong card and drew a penalty.`, "bad");
+    addLog(state, ctx, `${actor.name} stuck a card that did not match ${shortLabel(top)}, and took a penalty card.`,
+      { kind: "stickMiss", tone: "bad", weight: "normal", actorId: actor.id, subjectIds: [actor.id] });
   } else {
-    addLog(state, ctx, `${actor.name} stuck the wrong card, but there was no penalty card left to draw.`, "bad");
+    addLog(state, ctx, `${actor.name} stuck a card that did not match ${shortLabel(top)}, but there was no penalty card left to draw.`,
+      { kind: "stickMiss", tone: "bad", weight: "normal", actorId: actor.id, subjectIds: [actor.id] });
   }
   return { kind: "stick", correct: false };
 }
@@ -508,11 +667,13 @@ function doGive(state: GameState, actor: Player, cardId: string, ctx: EngineCtx)
   const slot = actor.hand.indexOf(cardId);
   if (slot < 0) throw new GameError("INVALID_TARGET", "Pick one of your own cards to give.");
   const to = state.players.find((p) => p.id === give.to)!;
+  const from = placeOf(actor, slot, actor);
   actor.hand[slot] = null;
   trimHand(actor);
   addToHand(to, cardId);
   state.pendingGives.splice(idx, 1);
-  addLog(state, ctx, `${actor.name} handed a card to ${to.name}.`);
+  addLog(state, ctx, `${actor.name} paid the debt with ${from}. ${to.name} takes it face down, unseen.`,
+    { kind: "give", weight: "normal", actorId: actor.id, subjectIds: [to.id], cardIds: [cardId] });
   if (cardCount(actor) === 0) handleZero(state, actor, ctx);
   maybeEndRound(state, ctx);
 }
@@ -541,7 +702,8 @@ function doTimeout(state: GameState, ctx: EngineCtx): boolean {
       from.hand[from.hand.indexOf(cardId)] = null;
       trimHand(from);
       addToHand(to, cardId);
-      addLog(state, ctx, `${from.name} ran out of time. A card went to ${to.name} for them.`, "bad");
+      addLog(state, ctx, `${from.name} ran out of time. One of their cards went to ${to.name} at random.`,
+        { kind: "timeout", tone: "bad", weight: "normal", actorId: from.id, subjectIds: [to.id], cardIds: [cardId] });
     }
     state.pendingGives.splice(state.pendingGives.indexOf(give), 1);
     acted = true;
@@ -561,8 +723,9 @@ function doTimeout(state: GameState, ctx: EngineCtx): boolean {
       const penalty = drawFromDeck(state, ctx);
       if (penalty) addToHand(player, penalty);
       addLog(state, ctx, penalty
-        ? `${player.name} ran out of time. Turn skipped, penalty card drawn.`
-        : `${player.name} ran out of time. Turn skipped.`, "bad");
+        ? `${player.name} ran out of time. The turn is skipped and a penalty card goes into their hand.`
+        : `${player.name} ran out of time. The turn is skipped.`,
+        { kind: "timeout", tone: "bad", weight: "normal", actorId: player.id, subjectIds: [player.id] });
       state.reveals = state.reveals.filter((r) => !(r.kind === "kingLook" && r.toPlayerId === player.id));
       endTurn(state, ctx);
       acted = true;
@@ -596,7 +759,8 @@ function doPauseRequest(state: GameState, actor: Player, ctx: EngineCtx) {
   state.pauseVote = { kind, byId: actor.id, agreed, at: ctx.now };
   addLog(state, ctx, kind === "pause"
     ? `${actor.name} asked to pause. Everyone has to agree.`
-    : `${actor.name} asked to resume. Everyone has to agree.`, "accent");
+    : `${actor.name} asked to resume. Everyone has to agree.`,
+    { kind: "pause", tone: "accent", weight: "normal", actorId: actor.id });
   settlePause(state, ctx);
 }
 
@@ -607,12 +771,13 @@ function doPauseVote(state: GameState, actor: Player, agree: boolean, ctx: Engin
     state.pauseVote = null;
     addLog(state, ctx, vote.kind === "pause"
       ? `${actor.name} declined the pause. Play continues.`
-      : `${actor.name} declined to resume. The table stays paused.`, "bad");
+      : `${actor.name} declined to resume. The table stays paused.`,
+      { kind: "pause", tone: "bad", weight: "normal", actorId: actor.id });
     return true;
   }
   if (vote.agreed.includes(actor.id)) return false;
   vote.agreed.push(actor.id);
-  addLog(state, ctx, `${actor.name} agreed to ${vote.kind}.`);
+  addLog(state, ctx, `${actor.name} agreed to ${vote.kind}.`, { kind: "pause", actorId: actor.id });
   settlePause(state, ctx);
   return true;
 }
@@ -626,19 +791,20 @@ function settlePause(state: GameState, ctx: EngineCtx) {
     state.paused = true;
     state.pausedAt = ctx.now;
     state.pausedBy = vote.byId;
-    addLog(state, ctx, "Everyone agreed. The table is paused.", "accent");
+    addLog(state, ctx, "Everyone agreed. The table is paused.", { kind: "pause", tone: "accent", weight: "loud" });
     return;
   }
   // Every clock picks up where it left off rather than starting again.
   const held = state.pausedAt === null ? 0 : Math.max(0, ctx.now - state.pausedAt);
   if (state.turn) state.turn.startedAt += held;
   for (const g of state.pendingGives) if (g.since !== undefined) g.since += held;
+  if (state.dealingUntil !== null) state.dealingUntil += held;
   if (state.openingPeekUntil !== null) state.openingPeekUntil += held;
   for (const r of state.reveals) r.until += held;
   state.paused = false;
   state.pausedAt = null;
   state.pausedBy = null;
-  addLog(state, ctx, "Everyone agreed. Play resumes.", "accent");
+  addLog(state, ctx, "Everyone agreed. Play resumes.", { kind: "pause", tone: "accent", weight: "loud" });
 }
 
 /* ------------------------------------------------------------------ */
@@ -660,9 +826,11 @@ function startCambio(state: GameState, callerId: string, reason: CambioState["re
 function handleZero(state: GameState, player: Player, ctx: EngineCtx) {
   if (state.cambio) {
     state.cambio.remaining = state.cambio.remaining.filter((id) => id !== player.id);
-    addLog(state, ctx, `${player.name} is out of cards.`, "accent");
+    addLog(state, ctx, `${player.name} is out of cards and out of the round.`,
+      { kind: "zero", tone: "accent", weight: "loud", actorId: player.id, subjectIds: [player.id] });
   } else {
-    addLog(state, ctx, `${player.name} is out of cards. Cambio.`, "accent");
+    addLog(state, ctx, `${player.name} is out of cards. That calls Cambio: everyone else gets one last turn.`,
+      { kind: "cambio", tone: "accent", weight: "loud", actorId: player.id, subjectIds: [player.id] });
     const anchorId = state.turn ? state.turn.playerId : player.id;
     startCambio(state, player.id, "zero", anchorId);
   }
@@ -715,6 +883,8 @@ function scoreRound(state: GameState, ctx: EngineCtx) {
   const result: RoundResult = { round: state.round, scores, winnerIds, nextLeadSeat };
   state.results.push(result);
   state.phase = "scoring";
+  // Bots are always in for another round; the table only waits on humans.
+  state.replayVotes = state.players.filter((p) => p.isBot).map((p) => p.id);
   state.turn = null;
   state.pendingPower = null;
   state.pendingGives = [];
@@ -726,7 +896,8 @@ function scoreRound(state: GameState, ctx: EngineCtx) {
   const names = winners.map((w) => w.name);
   addLog(state, ctx, winners.length > 1
     ? `Round ${state.round} ends in a tie: ${joinNames(names)} on ${min}.`
-    : `${names[0]} wins round ${state.round} with ${min}.`, "accent");
+    : `${names[0]} wins round ${state.round} with ${min}.`,
+    { kind: "roundEnd", tone: "accent", weight: "loud", subjectIds: winnerIds });
 }
 
 /* ------------------------------------------------------------------ */
@@ -781,7 +952,8 @@ function reshuffle(state: GameState, ctx: EngineCtx) {
   });
   for (const c of fresh) state.cards[c.id] = c;
   state.deck = shuffle(fresh.map((c) => c.id), ctx.rng);
-  addLog(state, ctx, `Deck ran out. ${fresh.length} cards reshuffled under ${shortLabel(state.cards[top])}.`);
+  addLog(state, ctx, `The deck ran out. ${fresh.length} cards were shuffled back under ${shortLabel(state.cards[top])}.`,
+    { kind: "reshuffle", weight: "normal" });
 }
 
 function reveal(state: GameState, ctx: EngineCtx, to: Player, kind: Reveal["kind"], cardIds: string[], until: number) {
@@ -833,10 +1005,75 @@ function describePhase(phase: GameState["phase"]): string {
   }
 }
 
-function addLog(state: GameState, ctx: EngineCtx, text: string, tone: LogEntry["tone"] = "neutral") {
+/**
+ * Every log line is also the event the table sees on screen: who moved, whose
+ * cards it touched, which cards to highlight, and how loudly to say it. Card
+ * ids are safe to carry here; ranks are only ever written into `text` for a
+ * card that is already face up on the pile.
+ */
+interface EventMeta {
+  kind: EventKind;
+  tone?: LogEntry["tone"];
+  weight?: EventWeight;
+  actorId?: string | null;
+  subjectIds?: string[];
+  cardIds?: string[];
+}
+
+function addLog(state: GameState, ctx: EngineCtx, text: string, meta: EventMeta) {
   state.logSeq += 1;
-  state.log.push({ seq: state.logSeq, at: ctx.now, text, tone });
+  state.log.push({
+    seq: state.logSeq,
+    at: ctx.now,
+    text,
+    tone: meta.tone ?? "neutral",
+    kind: meta.kind,
+    actorId: meta.actorId ?? null,
+    subjectIds: meta.subjectIds ?? [],
+    cardIds: meta.cardIds ?? [],
+    weight: meta.weight ?? "quiet",
+  });
   if (state.log.length > MAX_LOG) state.log.splice(0, state.log.length - MAX_LOG);
+}
+
+/* ------------------------------------------------------------------ */
+/* Naming what moved                                                   */
+/* ------------------------------------------------------------------ */
+
+const ORDINALS = ["1st", "2nd", "3rd", "4th", "5th", "6th"];
+
+function ordinal(n: number): string {
+  return ORDINALS[n] ?? `${n + 1}th`;
+}
+
+/**
+ * Names a card by where it sits, never by what it is: "Cami's 2nd card".
+ * This is the only way a face down card is ever described in the log, so the
+ * story of a round can be told without leaking a single value.
+ */
+function place(state: GameState, cardId: string, viewpoint?: Player): string {
+  const at = ownerOf(state, cardId);
+  if (!at) return "a card";
+  if (viewpoint && at.player.id === viewpoint.id) return `their own ${ordinal(at.slot)} card`;
+  return `${at.player.name}'s ${ordinal(at.slot)} card`;
+}
+
+/** The same, captured before a move so the log can describe where a card *was*. */
+function placeOf(player: Player, slot: number, viewpoint?: Player): string {
+  return viewpoint && player.id === viewpoint.id
+    ? `their own ${ordinal(slot)} card`
+    : `${player.name}'s ${ordinal(slot)} card`;
+}
+
+/**
+ * A swap during the final turns can decide the round, and a swap between two
+ * other players is rare enough to be worth stopping for: both get the big
+ * treatment. Everything else is a standard notification.
+ */
+function swapWeight(state: GameState, actor: Player, a: Player, b: Player): EventWeight {
+  if (state.phase === "final") return "loud";
+  if (a.id !== actor.id && b.id !== actor.id) return "loud";
+  return "normal";
 }
 
 function joinNames(names: string[]): string {

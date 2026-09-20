@@ -64,7 +64,7 @@ export function planBots(state: GameState, now: number, jitter: Jitter): BotPlan
       const cardId = pickGive(state, bot);
       if (cardId) {
         const intent = `${bot.id}:give:${give.to}:${state.turnsTaken}`;
-        plans.push({ playerId: bot.id, action: { type: "give", cardId }, delayMs: ms(900, 1500, jitter(intent)), intent });
+        plans.push({ playerId: bot.id, action: { type: "give", cardId }, delayMs: ms(1500, 2200, jitter(intent)), intent });
       }
       continue;
     }
@@ -74,7 +74,7 @@ export function planBots(state: GameState, now: number, jitter: Jitter): BotPlan
     if (pp && pp.playerId === bot.id) {
       const action = resolvePower(state, bot);
       const intent = `${bot.id}:power:${pp.kind}:${pp.looked ? "decide" : "look"}:${state.turnsTaken}`;
-      plans.push({ playerId: bot.id, action, delayMs: ms(1100, 1900, jitter(intent)), intent });
+      plans.push({ playerId: bot.id, action, delayMs: ms(1900, 2800, jitter(intent)), intent });
       continue;
     }
 
@@ -83,7 +83,7 @@ export function planBots(state: GameState, now: number, jitter: Jitter): BotPlan
       const target = pickStick(state, bot);
       if (target) {
         const intent = `${bot.id}:stick:${target}`;
-        plans.push({ playerId: bot.id, action: { type: "stick", cardId: target }, delayMs: ms(900, 2000, jitter(intent)), intent });
+        plans.push({ playerId: bot.id, action: { type: "stick", cardId: target }, delayMs: ms(1300, 2600, jitter(intent)), intent });
       }
     }
 
@@ -93,15 +93,15 @@ export function planBots(state: GameState, now: number, jitter: Jitter): BotPlan
       if (t.stage === "draw") {
         if (shouldCallCambio(state, bot)) {
           const intent = `${bot.id}:cambio:${state.turnsTaken}`;
-          plans.push({ playerId: bot.id, action: { type: "callCambio" }, delayMs: ms(1400, 2200, jitter(intent)), intent });
+          plans.push({ playerId: bot.id, action: { type: "callCambio" }, delayMs: ms(2100, 3000, jitter(intent)), intent });
         } else {
           const intent = `${bot.id}:draw:${state.turnsTaken}`;
-          plans.push({ playerId: bot.id, action: { type: "draw" }, delayMs: ms(1000, 1700, jitter(intent)), intent });
+          plans.push({ playerId: bot.id, action: { type: "draw" }, delayMs: ms(1600, 2500, jitter(intent)), intent });
         }
       } else if (t.stage === "decide" && t.drawnCardId) {
         const action = decideDrawn(state, bot, state.cards[t.drawnCardId]);
         const intent = `${bot.id}:decide:${t.drawnCardId}`;
-        plans.push({ playerId: bot.id, action, delayMs: ms(1300, 2300, jitter(intent)), intent });
+        plans.push({ playerId: bot.id, action, delayMs: ms(2000, 3100, jitter(intent)), intent });
       }
     }
   }
@@ -187,7 +187,29 @@ function decideDrawn(state: GameState, bot: Player, drawn: Card): Action {
   }
   if (worst && worst.value! > v) return { type: "swap", cardId: worst.cardId };
   if (unknown && v <= 4) return { type: "swap", cardId: unknown.cardId };
+  // Nothing of their own worth improving: a high card can be pushed into the
+  // hand of whoever is closest to winning instead of onto the pile.
+  if (v >= 9) {
+    const dump = dumpTarget(state, bot);
+    if (dump) return { type: "swap", cardId: dump };
+  }
   return { type: "place" };
+}
+
+/** The card of the most dangerous opponent that a high card should replace. */
+function dumpTarget(state: GameState, bot: Player): string | null {
+  const leader = opponentsOf(state, bot).slice().sort((a, b) => cardCount(a) - cardCount(b))[0];
+  if (!leader) return null;
+  // A card they have not seen is the one they are least able to plan around;
+  // a card the bot knows to be low is the one worth taking away from them.
+  let lowest: { id: string; value: number } | null = null;
+  for (const id of leader.hand) {
+    if (!id || !knows(state, bot, id)) continue;
+    const value = cardValue(state.cards[id]);
+    if (!lowest || value < lowest.value) lowest = { id, value };
+  }
+  if (lowest && lowest.value <= 3) return lowest.id;
+  return leader.hand.find((id) => id && !knows(state, bot, id)) ?? null;
 }
 
 function resolvePower(state: GameState, bot: Player): Action {
@@ -221,11 +243,11 @@ function resolvePower(state: GameState, bot: Player): Action {
           if (val < worst.value! - 1 && (!best || val < best.value)) best = { cardId: id, value: val };
         }
       }
-      if (best) return { type: "blindSwap", myCardId: worst.cardId, theirCardId: best.cardId };
+      if (best) return { type: "blindSwap", cardIdA: worst.cardId, cardIdB: best.cardId };
       // Otherwise dump the high card on the leader for one of their unknowns.
       const leader = opponents.slice().sort((a, b) => cardCount(a) - cardCount(b))[0];
       const target = leader?.hand.find((id) => id && !knows(state, bot, id)) ?? leader?.hand.find((id) => id);
-      if (target) return { type: "blindSwap", myCardId: worst.cardId, theirCardId: target };
+      if (target) return { type: "blindSwap", cardIdA: worst.cardId, cardIdB: target };
       return { type: "skipPower" };
     }
     case "kingLook": {
