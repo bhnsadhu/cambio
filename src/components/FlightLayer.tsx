@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { PlayerView } from "@/lib/game/types";
-import { diffFlights, type FlightSpec } from "@/lib/client/flights";
+import { diffFlights, land, NOTHING_FLYING, takeFlights, type FlightSpec } from "@/lib/client/flights";
 import { usePositions, type LocKey } from "@/lib/client/positions";
 import { CardBack, FaceCard } from "./cards";
 
@@ -34,20 +34,11 @@ export function useFlights(view: PlayerView | null, me: string | null) {
     return () => { positions.snapshot(); };
   }, [view, positions]);
 
-  // A card in the air belongs to the movement that started it, not to whatever
-  // view happens to be current: an action landing mid-arc must not snap it
-  // into its slot. Flights are held here until they report a landing, and the
-  // same card moving again replaces its own flight, so it is never drawn
-  // twice. Nothing is left in the air across a round boundary.
+  // What is in the air is decided by `takeFlights`, which is pure and tested.
   const phase = view?.public.phase ?? null;
-  const [flying, setFlying] = useState<{ seen: FlightSpec[] | null; phase: string | null; list: FlightSpec[] }>({ seen: null, phase: null, list: [] });
-  if (flying.seen !== specs || flying.phase !== phase) {
-    const moving = new Set(specs.map(cardOf));
-    const list = phase === "lobby" || phase === "scoring"
-      ? []
-      : specs.length ? [...flying.list.filter((s) => !moving.has(cardOf(s))), ...specs] : flying.list;
-    setFlying({ seen: specs, phase, list });
-  }
+  const [flying, setFlying] = useState(NOTHING_FLYING);
+  const taken = takeFlights(flying, specs, phase);
+  if (taken !== flying) setFlying(taken);
 
   // Landings are collected and flushed once per frame so a sixteen card deal
   // costs one render, not sixteen.
@@ -60,18 +51,13 @@ export function useFlights(view: PlayerView | null, me: string | null) {
       flush.current = null;
       const batch = new Set(pendingLandings.current);
       pendingLandings.current = [];
-      setFlying((cur) => (cur.list.some((s) => batch.has(s.id)) ? { ...cur, list: cur.list.filter((s) => !batch.has(s.id)) } : cur));
+      setFlying((cur) => land(cur, batch));
     });
   }, []);
 
-  const hidden = useMemo(() => new Set<LocKey>(flying.list.map((s) => s.to)), [flying]);
+  const hidden = useMemo(() => new Set<LocKey>(taken.list.map((s) => s.to)), [taken]);
 
-  return { specs: flying.list, hidden, onLanded };
-}
-
-/** The physical card a flight carries, without the version that framed it. */
-function cardOf(spec: FlightSpec): string {
-  return spec.id.slice(spec.id.indexOf(":") + 1);
+  return { specs: taken.list, hidden, onLanded };
 }
 
 export function FlightLayer({ specs, onLanded }: { specs: FlightSpec[]; onLanded: (id: string) => void }) {

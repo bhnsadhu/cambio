@@ -88,3 +88,55 @@ export function diffFlights(prev: PlayerView, next: PlayerView, me: string | nul
   }
   return specs;
 }
+
+/* ------------------------------------------------------------------ */
+/* What is in the air                                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The cards currently crossing the table.
+ *
+ * A card in the air belongs to the movement that started it, not to whatever
+ * view happens to be current: an action landing mid arc must not snap it into
+ * its slot. Flights are held until they report a landing, and the same card
+ * moving again replaces its own flight, so it is never drawn twice.
+ */
+export interface FlightState {
+  /** the batch already taken up, held by identity rather than by value */
+  seen: FlightSpec[] | null;
+  phase: string | null;
+  list: FlightSpec[];
+}
+
+export const NOTHING_FLYING: FlightState = { seen: null, phase: null, list: [] };
+
+/** The physical card a flight carries, without the version that framed it. */
+function cardOf(spec: FlightSpec): string {
+  return spec.id.slice(spec.id.indexOf(":") + 1);
+}
+
+/**
+ * Takes up a batch of movements, once.
+ *
+ * `seen` marks a batch as taken, so the only thing that ever adds to the air
+ * is a batch this has not handled before. The phase is watched purely to
+ * clear the air at a round boundary; it must never put a batch back in it,
+ * because the phase changes a render before the specs that belong with it do.
+ * Replaying a batch on a phase change deals the whole round a second time
+ * when the opening peek ends.
+ */
+export function takeFlights(cur: FlightState, specs: FlightSpec[], phase: string | null): FlightState {
+  if (cur.seen === specs && cur.phase === phase) return cur;
+  const fresh = cur.seen !== specs && specs.length > 0;
+  const moving = fresh ? new Set(specs.map(cardOf)) : null;
+  const list = phase === "lobby" || phase === "scoring"
+    ? []
+    : moving ? [...cur.list.filter((s) => !moving.has(cardOf(s))), ...specs] : cur.list;
+  return { seen: specs, phase, list };
+}
+
+/** Drops the flights that have reported a landing. */
+export function land(cur: FlightState, landed: Set<string>): FlightState {
+  if (!cur.list.some((s) => landed.has(s.id))) return cur;
+  return { ...cur, list: cur.list.filter((s) => !landed.has(s.id)) };
+}
