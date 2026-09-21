@@ -62,7 +62,8 @@ If two players act in the same few milliseconds, one commit loses the race, relo
 
 | System | Behavior |
 | --- | --- |
-| **Turns** | Draw, then place the card on the pile or swap it into your hand. Each turn stage is enforced, and an out of turn move returns a typed error. |
+| **Turns** | Draw, then place the card on the pile or swap it into any slot at the table. Each turn stage is enforced, and an out of turn move returns a typed error. |
+| **Swap targets** | A swap is not confined to your own hand. Push the drawn card onto another player and they are left holding it, while the card it replaced goes face up on the pile. |
 | **Power cards** | Four powers cover peeking at your cards, peeking at opponents' cards, blind swaps, and looking before an optional swap. A power with no legal target fizzles. |
 | **Anytime sticking** | Any player who is not drawing or deciding on a card can attempt to stick a card matching the top of the pile. |
 | **Stick resolution** | A correct stick removes the card. Sticking someone else's card means you owe them one of yours. A wrong stick draws a penalty and reveals nothing. |
@@ -71,6 +72,9 @@ If two players act in the same few milliseconds, one commit loses the race, relo
 | **Final scoring** | Players who reach zero during final turns leave the queue. Scoring waits for any card still owed after a stick. The lowest total wins, and ties stand. |
 | **Idle players** | A human who sits on a turn for 30 seconds forfeits it and draws a penalty. An owed card that is never handed over is given at random. |
 | **Unanimous pause** | Any seat can request a pause, every seat must agree, and one decline cancels it. On resume, every clock shifts forward by the time held. |
+| **Between rounds** | Another round is the table's call, not the host's. Every seat asks for one and the last yes deals, with bots agreeing the moment the round is scored. |
+| **Leaving** | Anyone who leaves instead sends the rest back to the lobby with the seats closed up, so they can invite someone or let a bot sit down. |
+| **Narration** | Every rule that fires writes a structured event: the kind of move, who made it, whose cards it touched, and which cards to light up. Card IDs travel with it and ranks never do. |
 
 ### Power Cards
 
@@ -78,11 +82,11 @@ If two players act in the same few milliseconds, one commit loses the race, relo
 | --- | --- |
 | 7 or 8 | Peek at one of your own cards |
 | 9 or 10 | Peek at another player's card |
-| J or Q | Swap two cards without looking |
+| J or Q | Swap any two cards belonging to two different players, without looking. You need not be one of them |
 | Black king | Look at two cards from two different players, then decide whether to swap them |
 | Red king | No power |
 
-Powers activate when a drawn card is placed on the discard pile. Swapping a drawn card into your hand does not activate its power.
+Powers activate when a drawn card is placed on the discard pile. Swapping a drawn card into a hand, your own or anyone else's, does not activate its power.
 
 ### Bot AI
 
@@ -122,10 +126,20 @@ Motion is derived from state. Each new view is diffed by card ID, and cards anim
 
 | Event | Animation |
 | --- | --- |
-| Deal | Cards stagger from the deck |
+| Deal | Cards stagger from the deck, and nothing is revealed until the last one is down |
 | Draw | The drawn card lands in the action bar |
 | Swap | Cards cross between positions |
 | Stick | The matching card arrives on the pile face up |
+
+Every move is also announced on screen and lit in the hands it touched, so a player who is not acting can still follow every card.
+
+| Moment | Notification |
+| --- | --- |
+| A draw, a plain placement | The table log only |
+| A look, a swap, a stick, a card owed | A line in the middle of the table, naming the move, who made it, and whose card it happened to |
+| Cambio, a swap during the final turns, a player out of cards, the table going dark | The same space at four times the size |
+
+A burst of moves shortens each hold rather than dropping any of them, and hovering a line in the log finds its cards on the table.
 
 The look is deliberately spare: a black background, white cards, one mint accent for the numbers that matter, and Plus Jakarta Sans for headlines.
 
@@ -136,11 +150,12 @@ First time players get a short walkthrough and a **How to play** sheet that open
 ## How to Play
 
 1. **Create a table and share the code.** Four seats are available, and bots fill any empty seats when the round starts.
-2. **Remember your opening cards.** Everyone gets four face down cards in a 2 by 2 grid. A five second opening window shows your bottom two.
-3. **Draw on your turn.** Place the drawn card on the pile to activate its power, or swap it into your hand.
+2. **Remember your opening cards.** Everyone gets four face down cards in a 2 by 2 grid. The deck is shuffled and dealt, and only then does a five second window show you your bottom two.
+3. **Draw on your turn.** Place the drawn card on the pile to activate its power, or swap it into any hand at the table, your own or someone else's.
 4. **Watch for sticks.** If you believe a card matches the top of the pile, stick it. Sticking is open to everyone except the player currently drawing or deciding.
 5. **Call Cambio.** Call at the start of your turn instead of drawing. Everyone else gets one more turn before scoring.
 6. **Finish with the lowest total.** Hands are revealed and scored. The lowest total wins, and the winner leads the next round.
+7. **Play on, or leave.** Every seat chooses. Another round starts once everyone is in; if anyone leaves, the rest go back to the lobby with a seat open.
 
 ### Scoring
 
