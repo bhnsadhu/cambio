@@ -578,6 +578,17 @@ describe("cambio and round end", () => {
     expect(s.players).toHaveLength(4);
   });
 
+  it("the last seat leaving orphans the table, and the next to join inherits it", () => {
+    const ctx = makeCtx(13);
+    const t = table(ctx, 1);
+    const empty = act(t.state, t.hostId, { type: "leaveTable" }, ctx);
+    expect(empty.players).toHaveLength(0);
+    const { state: rejoined, playerId } = joinGame(empty, "Late", ctx);
+    expect(rejoined.hostId).toBe(playerId);
+    expect(rejoined.players[0].isHost).toBe(true);
+    expect(act(rejoined, playerId, { type: "start" }, ctx).phase).toBe("peek");
+  });
+
   it("the host leaving hands the table to the next seat", () => {
     const ctx = makeCtx(12);
     const t = table(ctx, 3);

@@ -149,7 +149,11 @@ export function joinGame(
   const seat = nextOpenSeat(state);
   const playerId = ctx.newId();
   const token = ctx.newId() + ctx.newId();
-  state.players.push({ id: playerId, seat, name, isBot: false, isHost: false, token, hand: [null, null, null, null] });
+  // A table whose last seat walked out has no host left to start it, so
+  // whoever opens the link next inherits it.
+  const orphaned = !state.players.some((p) => p.id === state.hostId);
+  if (orphaned) state.hostId = playerId;
+  state.players.push({ id: playerId, seat, name, isBot: false, isHost: orphaned, token, hand: [null, null, null, null] });
   state.players.sort((a, b) => a.seat - b.seat);
   addLog(state, ctx, `${name} took seat ${seat + 1}.`, { kind: "table", actorId: playerId, weight: "normal" });
   state.updatedAt = ctx.now;
