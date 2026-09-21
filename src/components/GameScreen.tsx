@@ -45,10 +45,20 @@ function GameShell({ code }: { code: string }) {
     const id = window.setTimeout(() => setLeaving(false), 4000);
     return () => window.clearTimeout(id);
   }, [leaving]);
-  const leave = () => {
+  /**
+   * Leaving between rounds is told to the table: the seat is given up, the
+   * bots stand down and everyone else lands back in the lobby with a gap to
+   * fill. Mid round there is nothing to tell — the seat plays on without you
+   * until the turn clock gives up on it.
+   */
+  const leave = useCallback(async () => {
+    const phase = game.view?.public.phase;
+    if (game.session && (phase === "lobby" || phase === "scoring")) {
+      await game.send({ type: "leaveTable" });
+    }
     game.setSession(null);
     router.push("/");
-  };
+  }, [game, router]);
 
   const seated = !!game.session;
   const showExplainer = replay || (seated && !!view && prefs.onboarded !== true);
@@ -73,7 +83,7 @@ function GameShell({ code }: { code: string }) {
   } else if (view.public.phase === "lobby") {
     body = <Lobby view={view.public} me={game.me} busy={game.busy} onStart={() => void game.send({ type: "start" })} />;
   } else {
-    body = <Table game={game} flights={flights} />;
+    body = <Table game={game} flights={flights} onLeave={() => void leave()} />;
   }
 
   return (
@@ -98,7 +108,7 @@ function GameShell({ code }: { code: string }) {
               leaving ? (
                 <span className="flex items-center gap-1.5">
                   <span className="t-sub text-ink-2">Leave this table?</span>
-                  <Button variant="secondary" size="sm" onClick={leave}>Leave</Button>
+                  <Button variant="secondary" size="sm" onClick={() => void leave()}>Leave</Button>
                   <Button variant="ghost" size="sm" onClick={() => setLeaving(false)}>Stay</Button>
                 </span>
               ) : (

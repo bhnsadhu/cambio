@@ -71,8 +71,8 @@ export function Landing() {
 
           <dl className="mt-12 grid max-w-[520px] grid-cols-2 gap-x-8 gap-y-6">
             <Rule k="Goal" v="Lowest hand wins. Aces are 1, faces 10, red kings minus 1, black kings and jokers 0." />
-            <Rule k="Your turn" v="Draw. Place the card on the pile to use its power, or swap it into your hand." />
-            <Rule k="Powers" v="7 and 8 peek at yours. 9 and 10 peek at theirs. Jack and queen swap blind. Black king looks at two, then swaps or not." />
+            <Rule k="Your turn" v="Draw. Place the card on the pile to use its power, or swap it into any hand at the table, your own or someone else's." />
+            <Rule k="Powers" v="7 and 8 peek at yours. 9 and 10 peek at theirs. Jack and queen swap any two cards blind. Black king looks at two, then swaps or not." />
             <Rule k="Sticking" v="When a card lands on the pile, click a matching card from any hand. Miss, and you draw a penalty." />
           </dl>
         </div>

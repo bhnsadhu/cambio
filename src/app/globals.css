@@ -81,6 +81,11 @@
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(0.6); opacity: 0.55; }
 }
+@keyframes spotlight {
+  0%   { box-shadow: 0 0 0 1.5px var(--color-accent), 0 0 0 0 rgb(79 240 168 / 0.5); }
+  70%  { box-shadow: 0 0 0 1.5px var(--color-accent), 0 0 0 13px rgb(79 240 168 / 0); }
+  100% { box-shadow: 0 0 0 1.5px var(--color-accent), 0 0 0 0 rgb(79 240 168 / 0); }
+}
 @keyframes countdown {
   from { transform: scaleX(1); }
   to { transform: scaleX(0); }
@@ -165,5 +170,20 @@ body {
 }
 
 .pip { animation: pip 1.6s var(--ease-in-out) infinite; }
+
+/*
+ * The card a move is about, lit for everyone at the table and not just for
+ * whoever made it. Sits over the tile, so it reads the same whether the card
+ * is face up, face down or mid turn.
+ */
+.spotlight {
+  border-radius: calc(var(--tile-r) + 3px);
+  animation: spotlight 1.5s var(--ease-out) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spotlight, .pip, .skeleton { animation: none; }
+  .spotlight { box-shadow: 0 0 0 1.5px var(--color-accent); }
+}
 
 ::selection { background: rgb(79 240 168 / 0.3); }

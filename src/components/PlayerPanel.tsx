@@ -20,14 +20,18 @@ export interface PanelProps {
   revealed: Map<string, Card>;
   /** locations whose card is still in flight */
   hidden: Set<LocKey>;
+  /** cards the current announcement is about, lit in every hand */
+  spotlit: Set<string>;
+  /** this player is the one the current announcement is about */
+  inTheSpotlight: boolean;
   /** another player is holding a drawn card */
   holding: boolean;
   positions: Positions;
 }
 
-export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCard, cueFor, selectedCardId, onCard, revealed, hidden, holding, positions }: PanelProps) {
-  const ring = isCaller ? "ring-accent" : isTurn ? "ring-turn" : "hairline";
-  const surface = isTurn ? "bg-surface-2" : "bg-surface";
+export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCard, cueFor, selectedCardId, onCard, revealed, hidden, spotlit, inTheSpotlight, holding, positions }: PanelProps) {
+  const ring = inTheSpotlight ? "ring-accent" : isCaller ? "ring-accent" : isTurn ? "ring-turn" : "hairline";
+  const surface = isTurn || inTheSpotlight ? "bg-surface-2" : "bg-surface";
   const stageText = isTurn
     ? turnStage === "draw" ? "to draw" : turnStage === "decide" ? "deciding" : turnStage === "power" ? "using a power" : ""
     : "";
@@ -85,6 +89,7 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
               onClick={() => onCard(cardId)}
               face={face}
               hidden={hidden.has(key)}
+              spotlit={spotlit.has(cardId)}
               slotRef={positions.register(key)}
             />
           ) : (

@@ -48,6 +48,8 @@ export interface TileProps {
   face?: Card | null;
   /** keeps the slot's space but shows nothing (a card is in flight to it) */
   hidden?: boolean;
+  /** this card is part of the move being announced: light it for everyone */
+  spotlit?: boolean;
   slotRef?: (el: HTMLElement | null) => void;
 }
 
@@ -55,7 +57,7 @@ export interface TileProps {
  * A card tile in a hand. Face down at rest; turns on its axis for a timed
  * reveal; dashed when the slot is empty.
  */
-export function CardTile({ empty, selectable, selected, cue, onClick, face, hidden, slotRef }: TileProps) {
+export function CardTile({ empty, selectable, selected, cue, onClick, face, hidden, spotlit, slotRef }: TileProps) {
   // Keep the last face so the value stays readable while the tile turns back.
   // Once turned, the back side is invisible, so a stale face never shows.
   const [shown, setShown] = useState<Card | null>(face ?? null);
@@ -86,6 +88,7 @@ export function CardTile({ empty, selectable, selected, cue, onClick, face, hidd
       data-face={face ? "up" : "down"}
       aria-label={face ? `revealed ${face.rank}` : cue ? `${cue} this card` : "face down card"}
     >
+      {spotlit ? <span aria-hidden className="spotlight pointer-events-none absolute -inset-[3px] z-20" /> : null}
       <span className="flip-inner block">
         <span
           className={[

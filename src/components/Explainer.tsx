@@ -21,7 +21,7 @@ const STEPS = [
   },
   {
     title: "Powers fire when you place.",
-    body: "Draw, then place the card on the pile or swap it into your hand. A placed 7, 8, 9, 10, jack, queen or black king does something. A swapped one does not.",
+    body: "Draw, then place the card on the pile or swap it into any hand at the table — yours, or someone else's, which leaves them holding it. A placed 7, 8, 9, 10, jack, queen or black king does something. A swapped one does not.",
     art: <Art3 />,
   },
   {

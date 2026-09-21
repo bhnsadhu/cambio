@@ -7,6 +7,7 @@ import { shortLabel } from "@/lib/game/cards";
 import type { GameHook } from "@/lib/client/useGame";
 import { usePositions } from "@/lib/client/positions";
 import { setPref, usePrefs } from "@/lib/client/prefs";
+import { Announcer, BigMoment, useAnnouncements } from "./Announcements";
 import { PlayerPanel } from "./PlayerPanel";
 import { Piles } from "./Piles";
 import { EventFeed } from "./EventFeed";
@@ -24,7 +25,7 @@ type Mode =
   | { kind: "decide" }
   | { kind: "stick" };
 
-export function Table({ game, flights }: { game: GameHook; flights: ReturnType<typeof useFlights> }) {
+export function Table({ game, flights, onLeave }: { game: GameHook; flights: ReturnType<typeof useFlights>; onLeave: () => void }) {
   const view = game.view!;
   const pub = view.public;
   const me = game.me;
@@ -32,6 +33,16 @@ export function Table({ game, flights }: { game: GameHook; flights: ReturnType<t
   const prefs = usePrefs();
   const { hidden } = flights;
   const [sel, setSel] = useState<{ cardId: string; key: string } | null>(null);
+  /** cards the log is pointing at, while a line in the feed is hovered */
+  const [traced, setTraced] = useState<string[]>([]);
+
+  // Shuffle, deal, then look. Nothing is revealed until the last card is down,
+  // so the deal never reads as a fresh hand arriving after the peek.
+  const dealTick = useClock(120, pub.phase === "peek" && !pub.paused);
+  const dealing =
+    pub.phase === "peek" &&
+    pub.dealingUntil !== null &&
+    (pub.paused ? (pub.pausedAt ?? 0) : dealTick + game.skew) < pub.dealingUntil;
 
   const mine = pub.players.find((p) => p.id === me) ?? null;
   const turnPlayer = pub.turn ? pub.players.find((p) => p.id === pub.turn!.playerId) ?? null : null;
@@ -66,12 +77,13 @@ export function Table({ game, flights }: { game: GameHook; flights: ReturnType<t
   const [expired, setExpired] = useState<Set<string>>(() => new Set());
   const revealed = useMemo(() => {
     const m = new Map<string, Card>();
+    if (dealing) return m; // the cards are still landing; nobody looks yet
     for (const r of view.private?.reveals ?? []) {
       if (expired.has(`${r.id}:${r.until}`)) continue;
       for (const c of r.cards) m.set(c.id, c);
     }
     return m;
-  }, [view, expired]);
+  }, [view, expired, dealing]);
   useEffect(() => {
     if (pub.paused) return; // reveals are held for the length of the pause
     const now = Date.now() + game.skew;
@@ -98,23 +110,32 @@ export function Table({ game, flights }: { game: GameHook; flights: ReturnType<t
     prevMode.current = mode.kind;
   }, [mode.kind]);
 
+  /**
+   * The two-card powers pick the same way: any card starts the pair, and only
+   * a card belonging to a different player can finish it.
+   */
+  const pairCue = (cardId: string, label: string): string | null => {
+    if (!selected) return label;
+    if (cardId === selected) return "Undo";
+    return owner(selected)?.id === owner(cardId)?.id ? null : label;
+  };
+
   const cueFor = (cardId: string): string | null => {
     if (!mine || game.busy) return null;
     const own = mine.hand.includes(cardId);
     switch (mode.kind) {
       case "give": return own ? "Give" : null;
-      case "decide": return own ? "Swap" : null;
+      // The drawn card can go into any hand. Your own slot takes it on one
+      // click; someone else's asks for a second, since it costs them the card.
+      case "decide": return own ? "Swap" : cardId === selected ? "Confirm" : "Push";
       case "stick": return "Stick";
       case "power": {
         if (mode.lookedDone) return null;
         switch (mode.power) {
           case "peekOwn": return own ? "Peek" : null;
           case "peekOther": return own ? null : "Peek";
-          case "blindSwap": return selected ? (own ? "Swap" : "Take") : own ? "Swap" : null;
-          case "kingLook": {
-            if (!selected) return "Look";
-            return owner(selected)?.id === owner(cardId)?.id ? (cardId === selected ? "Look" : null) : "Look";
-          }
+          case "blindSwap": return pairCue(cardId, selected ? "Swap with" : "Swap");
+          case "kingLook": return pairCue(cardId, "Look");
         }
       }
       default: return null;
@@ -127,32 +148,54 @@ export function Table({ game, flights }: { game: GameHook; flights: ReturnType<t
     if (res?.note?.kind === "stick") game.toast(res.note.correct ? "Stuck." : "Not a match. Penalty card drawn.", res.note.correct ? "good" : "bad");
   };
 
+  /** Picks the second half of a pair, or starts one. */
+  const onPair = (cardId: string, fireWith: (a: string, b: string) => void) => {
+    if (!selected) { setSelected(cardId); return; }
+    if (cardId === selected) { setSelected(null); return; }
+    if (owner(selected)?.id === owner(cardId)?.id) return;
+    fireWith(selected, cardId);
+  };
+
   const onCard = (cardId: string) => {
     if (!mine || game.busy) return;
     const own = mine.hand.includes(cardId);
     switch (mode.kind) {
       case "give": if (own) void fire({ type: "give", cardId }); return;
-      case "decide": if (own) void fire({ type: "swap", cardId }); return;
+      case "decide":
+        if (own) { void fire({ type: "swap", cardId }); return; }
+        if (cardId === selected) { void fire({ type: "swap", cardId }); return; }
+        setSelected(cardId);
+        return;
       case "stick": void fire({ type: "stick", cardId }); return;
       case "power":
         switch (mode.power) {
           case "peekOwn": if (own) void fire({ type: "peekOwn", cardId }); return;
           case "peekOther": if (!own) void fire({ type: "peekOther", cardId }); return;
-          case "blindSwap":
-            if (own) { setSelected(cardId); return; }
-            if (selected) void fire({ type: "blindSwap", myCardId: selected, theirCardId: cardId });
-            return;
-          case "kingLook":
-            if (!selected) { setSelected(cardId); return; }
-            if (cardId === selected) { setSelected(null); return; }
-            if (owner(selected)?.id === owner(cardId)?.id) return;
-            void fire({ type: "kingLook", cardIdA: selected, cardIdB: cardId });
-            return;
+          case "blindSwap": onPair(cardId, (a, b) => void fire({ type: "blindSwap", cardIdA: a, cardIdB: b })); return;
+          case "kingLook": onPair(cardId, (a, b) => void fire({ type: "kingLook", cardIdA: a, cardIdB: b })); return;
         }
     }
   };
 
-  const status = describeStatus(view, mine, turnPlayer, mode, selected, powerHint);
+  // One announcement at a time, and the cards it is about lit in every hand.
+  // The scoreboard tells the story of the round itself, so the announcer
+  // stands down while it is up.
+  const announcement = useAnnouncements(pub.log, pub.phase !== "lobby" && pub.phase !== "scoring");
+  const spotlit = useMemo(() => {
+    const ids = new Set<string>(traced);
+    for (const id of announcement?.cardIds ?? []) ids.add(id);
+    return ids;
+  }, [announcement, traced]);
+  const spotlitPlayers = useMemo(() => {
+    const ids = new Set<string>();
+    if (announcement) {
+      if (announcement.entry.actorId) ids.add(announcement.entry.actorId);
+      for (const id of announcement.entry.subjectIds ?? []) ids.add(id);
+    }
+    return ids;
+  }, [announcement]);
+
+  const status = describeStatus(view, mine, turnPlayer, mode, selected, powerHint, dealing);
   const showDrawnSlot = myTurn && (pub.turn?.stage === "draw" || pub.turn?.stage === "decide");
   const drawn = view.private?.drawnCard ?? null;
 
@@ -174,6 +217,8 @@ export function Table({ game, flights }: { game: GameHook; flights: ReturnType<t
               onCard={onCard}
               revealed={revealed}
               hidden={hidden}
+              spotlit={spotlit}
+              inTheSpotlight={spotlitPlayers.has(p.id)}
               holding={pub.turn?.playerId === p.id && pub.turn.stage === "decide" && p.id !== me}
               positions={positions}
             />
@@ -191,15 +236,19 @@ export function Table({ game, flights }: { game: GameHook; flights: ReturnType<t
 
         {/* The middle of the table: timed reveals and an open pause request
             live here, between the hands and the actions. */}
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3">
+        <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-3">
+          <BigMoment announcement={announcement} players={pub.players} me={me} />
           <PauseBanner view={pub} me={me} busy={game.busy} onVote={(agree) => void game.send({ type: "pauseVote", agree })} />
-          <RevealBanner
-            view={view}
-            skew={game.skew}
-            busy={game.busy}
-            hint={peekHint ? "These two are yours. When the timer ends they turn back over and stay that way." : null}
-            onKingDecide={(swap) => void fire({ type: "kingDecide", swap })}
-          />
+          <Announcer announcement={announcement} players={pub.players} me={me} />
+          {dealing ? null : (
+            <RevealBanner
+              view={view}
+              skew={game.skew}
+              busy={game.busy}
+              hint={peekHint ? "These two are yours. When the timer ends they turn back over and stay that way." : null}
+              onKingDecide={(swap) => void fire({ type: "kingDecide", swap })}
+            />
+          )}
         </div>
 
         {/* Action bar */}
@@ -229,7 +278,15 @@ export function Table({ game, flights }: { game: GameHook; flights: ReturnType<t
                 <Button variant="primary" size="lg" disabled={game.busy} onClick={() => void fire({ type: "draw" })}>Draw</Button>
               </>
             ) : null}
-            {mine && mode.kind === "decide" ? (
+            {mine && mode.kind === "decide" && selected ? (
+              <>
+                <Button variant="ghost" disabled={game.busy} onClick={() => setSelected(null)}>Cancel</Button>
+                <Button variant="accent" size="lg" disabled={game.busy} onClick={() => void fire({ type: "swap", cardId: selected })}>
+                  Push it onto {owner(selected)?.name ?? "them"}
+                </Button>
+              </>
+            ) : null}
+            {mine && mode.kind === "decide" && !selected ? (
               <Button variant="primary" size="lg" disabled={game.busy} onClick={() => void fire({ type: "place" })}>
                 Place {drawn ? shortLabel(drawn) : ""} on the pile
               </Button>
@@ -247,10 +304,16 @@ export function Table({ game, flights }: { game: GameHook; flights: ReturnType<t
         </div>
       </div>
 
-      <EventFeed log={pub.log} />
+      <EventFeed log={pub.log} players={pub.players} me={me} onTrace={setTraced} />
 
       {pub.phase === "scoring" ? (
-        <Scoreboard view={pub} me={me} busy={game.busy} onPlayAgain={() => void fire({ type: "playAgain" })} />
+        <Scoreboard
+          view={pub}
+          me={me}
+          busy={game.busy}
+          onPlayAgain={() => void game.send({ type: "playAgain" })}
+          onLeave={onLeave}
+        />
       ) : null}
     </div>
   );
@@ -274,6 +337,11 @@ function TurnTimer({ deadline, skew, mine, frozenAt }: { deadline: number; skew:
   );
 }
 
+/** 1st, 2nd, 3rd, 4th — the same way the table log names a slot. */
+function ordinalSuffix(n: number): string {
+  return n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th";
+}
+
 function describeStatus(
   view: PlayerView,
   mine: PlayerPublic | null,
@@ -281,15 +349,24 @@ function describeStatus(
   mode: Mode,
   selected: string | null,
   powerHint: boolean,
+  dealing: boolean,
 ): { title: React.ReactNode; detail?: React.ReactNode } {
   const pub = view.public;
   const name = (p: PlayerPublic | null) => (p ? <PlayerName name={p.name} isBot={p.isBot} /> : "Someone");
+  const holder = (cardId: string | null) => (cardId ? pub.players.find((p) => p.hand.includes(cardId)) ?? null : null);
+  const slotOf = (cardId: string | null) => {
+    const p = holder(cardId);
+    return p && cardId ? p.hand.indexOf(cardId) + 1 : 0;
+  };
   const topRank = pub.discardTop ? (pub.discardTop.rank === "JOKER" ? "joker" : pub.discardTop.rank) : null;
   const stickHint = topRank && mine && mine.cardCount > 0
     ? <>Sticking is open. Click any card you believe is a {topRank}, in any hand.</>
     : null;
   const firstPower = powerHint ? " This is your first power. Powers only fire when you place the drawn card. Swapping it in gives them up." : "";
 
+  if (dealing) {
+    return { title: "Shuffling and dealing.", detail: "Four cards each. You get to look at two of them once they are down." };
+  }
   if (pub.phase === "peek") {
     return { title: "Memorize your bottom two cards.", detail: mine ? "Play starts when the timer ends." : "Play starts in a few seconds." };
   }
@@ -299,19 +376,30 @@ function describeStatus(
   switch (mode.kind) {
     case "give":
       return { title: <>Good stick. Hand {name(mode.to)} one of your cards.</>, detail: "Click the card to give. They will not see it." };
-    case "decide":
-      return { title: "Keep it or place it?", detail: "Click one of your cards to swap this in. Its power is lost. Or place it on the pile." };
+    case "decide": {
+      if (selected) {
+        const p = holder(selected);
+        return {
+          title: <>Push it onto {name(p)}?</>,
+          detail: <>Their {slotOf(selected)}{ordinalSuffix(slotOf(selected))} card is discarded and they are left holding whatever you drew. Click it again, or confirm.</>,
+        };
+      }
+      return {
+        title: "Keep it, place it, or hand it on?",
+        detail: "Click one of your own cards to swap it in, or any other player's card to push it onto them. Either way the card's power is lost. Or place it on the pile and use the power.",
+      };
+    }
     case "power":
       switch (mode.power) {
         case "peekOwn": return { title: "Look at one of your own cards.", detail: `Click a card in your hand. You see it for a few seconds.${firstPower}` };
         case "peekOther": return { title: "Look at someone else's card.", detail: `Click any card in another player's hand.${firstPower}` };
         case "blindSwap": return selected
-          ? { title: "Now pick the card to take.", detail: "Click a card in another player's hand. Neither of you sees either card." }
-          : { title: "Blind swap. Pick one of your cards to give away.", detail: `Then pick any card of another player's to take.${firstPower}` };
+          ? { title: <>Now pick a card from a different player than {name(holder(selected))}.</>, detail: "The two trade places. Nobody sees either card, yourself included." }
+          : { title: "Blind swap. Pick any card on the table.", detail: `Then pick one from a different player. They trade, unseen — the pair does not have to include you.${firstPower}` };
         case "kingLook": return mode.lookedDone
           ? { title: "You have seen both cards.", detail: "Swap them, or leave them." }
           : selected
-            ? { title: "Pick a second card from a different player.", detail: "You see both, then decide whether to swap them." }
+            ? { title: <>Pick a second card from a different player than {name(holder(selected))}.</>, detail: "You see both, then decide whether to swap them." }
             : { title: "Black king. Look at any two cards from two different players.", detail: `Then choose whether to swap them.${firstPower}` };
       }
     default: break;

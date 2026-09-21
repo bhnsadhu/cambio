@@ -3,14 +3,30 @@
 import { useEffect, useState } from "react";
 import type { PublicView } from "@/lib/game/types";
 import { FaceCard } from "./cards";
-import { Button, Chip, PlayerName } from "./ui";
+import { Button, Chip, Pip, PlayerName } from "./ui";
 
 /**
  * The payoff. Players are ranked from winner down, your own row says so,
  * hands turn over one card at a time, and a running tally of rounds won
  * builds across replays at the same table.
+ *
+ * Then the table decides together: another round needs everyone still
+ * seated, and anyone who leaves sends the rest back to the lobby with a
+ * seat open, rather than ending the evening for all of them.
  */
-export function Scoreboard({ view, me, busy, onPlayAgain }: { view: PublicView; me: string | null; busy: boolean; onPlayAgain: () => void }) {
+export function Scoreboard({
+  view,
+  me,
+  busy,
+  onPlayAgain,
+  onLeave,
+}: {
+  view: PublicView;
+  me: string | null;
+  busy: boolean;
+  onPlayAgain: () => void;
+  onLeave: () => void;
+}) {
   const result = view.results[view.results.length - 1];
   if (!result) return null;
 
@@ -24,8 +40,9 @@ export function Scoreboard({ view, me, busy, onPlayAgain }: { view: PublicView; 
     .sort((a, b) => a.score - b.score || a.player.seat - b.player.seat)
     .map((row, i, all) => ({ ...row, rank: all.findIndex((x) => x.score === row.score) + 1 }));
 
-  const isHost = me === view.hostId;
-  const host = view.players.find((p) => p.id === view.hostId);
+  const seated = !!me && view.players.some((p) => p.id === me);
+  const ready = !!me && view.replayVotes.includes(me);
+  const waiting = view.players.filter((p) => !view.replayVotes.includes(p.id));
   const winners = view.players.filter((p) => result.winnerIds.includes(p.id));
   const caller = view.cambio ? view.players.find((p) => p.id === view.cambio!.callerId) : null;
   const meWon = !!me && result.winnerIds.includes(me);
@@ -47,11 +64,37 @@ export function Scoreboard({ view, me, busy, onPlayAgain }: { view: PublicView; 
               Lowest hand wins. Ties share the win.
             </p>
           </div>
-          {isHost ? (
-            <Button variant="primary" size="lg" disabled={busy} onClick={onPlayAgain}>Play again</Button>
-          ) : (
-            <p className="t-sub max-w-[180px] text-right text-ink-3">Waiting for {host ? <PlayerName name={host.name} isBot={host.isBot} /> : "the host"} to deal again</p>
-          )}
+          <div className="flex shrink-0 flex-col items-end gap-2.5">
+            {seated ? (
+              ready ? (
+                <>
+                  <span className="t-sub inline-flex items-center gap-2 text-accent-ink"><Pip />You are in for another round</span>
+                  <Button variant="ghost" size="sm" disabled={busy} onClick={onLeave}>Leave instead</Button>
+                </>
+              ) : (
+                <div className="flex items-center gap-2.5">
+                  <Button variant="secondary" size="lg" disabled={busy} onClick={onLeave}>Leave</Button>
+                  <Button variant="primary" size="lg" disabled={busy} onClick={onPlayAgain}>Play again</Button>
+                </div>
+              )
+            ) : (
+              <p className="t-sub max-w-[190px] text-right text-ink-3">Watching. The table decides whether to play on.</p>
+            )}
+            {waiting.length ? (
+              <p className="t-footnote max-w-[230px] text-right text-ink-3">
+                {view.players.length - waiting.length} of {view.players.length} in. Waiting on{" "}
+                {waiting.map((p, i) => (
+                  <span key={p.id}>
+                    {i > 0 ? (i === waiting.length - 1 ? " and " : ", ") : ""}
+                    {p.id === me ? "you" : <PlayerName name={p.name} isBot={p.isBot} />}
+                  </span>
+                ))}
+                . If anyone leaves, the rest go back to the lobby.
+              </p>
+            ) : (
+              <p className="t-footnote text-right text-ink-3">Everyone is in. Dealing.</p>
+            )}
+          </div>
         </header>
 
         <table className="mt-7 w-full border-separate border-spacing-0">

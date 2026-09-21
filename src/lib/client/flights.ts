@@ -19,9 +19,15 @@ export interface FlightSpec {
   duration: number;
 }
 
-export const FLIGHT_MS = 280;
-export const DEAL_MS = 320;
-export const DEAL_STAGGER_MS = 60;
+/**
+ * A card takes long enough to cross the table that the eye can follow it from
+ * the hand it left to the hand it landed in. The deal is slower still, and its
+ * sixteen cards are staggered to fit inside the engine's `DEAL_MS` window with
+ * a beat to spare for the round trip.
+ */
+export const FLIGHT_MS = 460;
+export const DEAL_MS = 380;
+export const DEAL_STAGGER_MS = 90;
 
 function locate(view: PlayerView): Map<string, LocKey> {
   const m = new Map<string, LocKey>();
