@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:accounts": "node scripts/test-accounts.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

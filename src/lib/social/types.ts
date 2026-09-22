@@ -1,10 +1,4 @@
-/**
- * Saved profiles, friends and everything a client shows about them.
- *
- * A profile is identity without an account: the browser keeps a secret token,
- * the server keeps its hash. Nothing here is secret — a profile's record is
- * meant to be shown to the table — so these types travel freely to clients.
- */
+/** Public profiles and social records. Credentials live separately on the server. */
 
 export interface ProfileStats {
   roundsPlayed: number;

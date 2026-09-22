@@ -2,7 +2,8 @@ import { test, expect, type Page, type BrowserContext } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 
-const origin = "http://localhost:3100";
+const origin = process.env.E2E_APP_ORIGIN ?? "http://localhost:3100";
+const restOrigin = process.env.E2E_REST_ORIGIN ?? "http://127.0.0.1:55434";
 const firstPassword = "First strong test password 42!";
 const nextPassword = "Another strong test password 84!";
 const suffix = () => Math.random().toString(36).slice(2, 10);
@@ -12,7 +13,7 @@ function sql(text: string) {
   return execFileSync("docker", ["exec", "-i", database, "psql", "-U", "postgres", "-v", "ON_ERROR_STOP=1", "-At"], { input: text, encoding: "utf8" }).trim();
 }
 async function rpc(name: string, values: Record<string, unknown>) {
-  const res = await fetch(`http://127.0.0.1:55434/rpc/${name}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ p_secret: "account-test-secret", ...values }) });
+  const res = await fetch(`${restOrigin}/rpc/${name}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ p_secret: "account-test-secret", ...values }) });
   expect(res.ok, await res.clone().text()).toBeTruthy();
   return res.status === 204 ? null : res.json();
 }
@@ -79,6 +80,7 @@ test("complete account lifecycle preserves identity and closes revoked sessions"
   await rename.getByLabel("Display name", { exact: true }).fill("Alex Rivera");
   await rename.getByRole("button", { name: "Save display name" }).click();
   await expect(page.getByRole("status")).toContainText("Display name updated");
+  await expect(page.getByRole("heading", { name: "Alex Rivera", exact: true })).toBeVisible();
   state = await (await context.request.get(`/api/games/${seat.code}/state`)).json();
   expect(state.view.public.players.find((p: { id: string }) => p.id === seat.playerId).name).toBe("Alex Rivera");
 
@@ -178,8 +180,32 @@ test("logout reaches another open tab and a delayed response cannot restore the 
   const otherTab = await context.newPage();
   await otherTab.goto("/me");
   await expect(otherTab.getByRole("heading", { name: "Account settings", exact: true })).toBeVisible();
+  await page.route("**/api/account/logout", (route) => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: { message: "Could not sign out. Try again." } }) }));
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(page.locator("main").getByRole("alert")).toHaveText("Could not sign out. Try again.");
+  await expect(page.getByRole("heading", { name: "Account settings", exact: true })).toBeVisible();
+  await page.unroute("**/api/account/logout");
+
+  let release!: () => void;
+  let captured!: () => void;
+  let delivered!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  const capturedResponse = new Promise<void>((resolve) => { captured = resolve; });
+  const deliveredResponse = new Promise<void>((resolve) => { delivered = resolve; });
+  await page.route("**/api/social", async (route) => {
+    const response = await route.fetch();
+    captured();
+    await gate;
+    await route.fulfill({ response });
+    delivered();
+  });
+  await page.reload();
+  await capturedResponse;
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  release();
+  await deliveredResponse;
   await expect(page.getByRole("heading", { name: "Your Cambio account" })).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem("cambio:profile"))).toBeNull();
   await expect(otherTab.getByRole("heading", { name: "Your Cambio account" })).toBeVisible();
   await page.reload();
   await expect(page.getByRole("form", { name: "Log in", exact: true })).toBeVisible();
@@ -190,4 +216,40 @@ test("credentials endpoints reject cross site requests and old profile creation"
   expect((await context.request.post("/api/account", { headers: { origin: "https://other.example" }, data: { username: `csrf${suffix()}`, displayName: "CSRF User", password: firstPassword } })).status()).toBe(403);
   expect((await post(context, "/api/profile", { name: "Browser Only" })).status()).toBe(410);
   expect((await post(context, "/api/account/login", { username: "missinguser", password: firstPassword })).status()).toBe(401);
+});
+
+test("account access, tables, and help keep clear copy and responsive settings", async ({ page, context }) => {
+  const username = `layout${suffix()}`;
+  expect((await post(context, "/api/account", { username, displayName: "Casey ONeil", password: firstPassword })).status()).toBe(201);
+  await page.goto("/");
+  await expect(page.getByLabel("Display name", { exact: true }).first()).toHaveValue("Casey ONeil");
+  await noPunctuationDashes(page);
+  await page.getByRole("button", { name: "Open a table", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "How Cambio works" })).toBeVisible();
+  await noPunctuationDashes(page);
+  await page.getByRole("button", { name: "Skip", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Start round", exact: true })).toBeVisible();
+  await noPunctuationDashes(page);
+  await page.getByRole("button", { name: "How to play", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "How to play", exact: true })).toBeVisible();
+  await noPunctuationDashes(page);
+  await page.getByRole("button", { name: "Close", exact: true }).last().click();
+  await page.getByRole("button", { name: "Start round", exact: true }).click();
+  await expect(page.getByRole("button", { name: "I'm ready", exact: true })).toBeVisible();
+  await noPunctuationDashes(page);
+  await page.getByRole("button", { name: "I'm ready", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Casey ONeil", exact: true })).toBeVisible();
+  await noPunctuationDashes(page);
+  await page.screenshot({ path: "test-results/game-table.png", fullPage: true });
+  await page.goto("/me");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByRole("navigation", { name: "Account sections" })).toBeVisible();
+  await noPunctuationDashes(page);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: "test-results/account-mobile.png", fullPage: true });
+  await page.getByRole("navigation", { name: "Account sections" }).getByRole("link", { name: "Sign out", exact: true }).click();
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Your Cambio account" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: "test-results/login-mobile.png", fullPage: true });
 });

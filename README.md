@@ -1,6 +1,6 @@
 # Cambio
 
-A real time multiplayer web app for the card game Cambio, also known as Cabo. It seats four players, and three house bots fill any seat that is empty. Share a five letter code and play in the browser. No accounts, no installs.
+A real time multiplayer web app for the card game Cambio, also known as Cabo. It seats four players, and three house bots fill any seat that is empty. Share a five letter code and play in the browser. Play as a guest, or create an account to keep your record. No installs.
 
 **Play it live: [cambio.bhanusadhu.com](https://cambio.bhanusadhu.com)**
 
@@ -15,9 +15,9 @@ Open the link, create a table, and press **Start round**. Any seat still empty g
 | **Real time multiplayer** | Every move streams to all four seats over Supabase Realtime. Simultaneous moves are serialized, and the rules decide every late arrival. |
 | **Complete game engine** | Turn logic, power cards, anytime sticking, and every way a round can end, in about 850 lines of pure TypeScript with no I/O. |
 | **Bots that play from memory** | Three house bots fill empty seats and act only on information they have legitimately seen, at three difficulties. |
-| **Saved profiles** | Wins, rank, best hand and streak across every table, with friends, invites and a light for whoever is playing right now. |
+| **Persistent accounts** | Wins, rank, best hand and streak across every table, with friends, invites and a light for whoever is playing right now. |
 | **Serverless architecture** | Runs on serverless functions and one Postgres database, with no dedicated game server. |
-| **72 tests** | Includes seeded bot versus bot tables played to the score, checking that every move is legal, no card is created or lost, and each difficulty beats the one below it. |
+| **Game and account tests** | Includes seeded bot versus bot tables played to the score, checking that every move is legal, no card is created or lost, and each difficulty beats the one below it. |
 
 ---
 
@@ -34,7 +34,7 @@ Open the link, create a table, and press **Start round**. Any seat still empty g
 | Database security | Row Level Security and `SECURITY DEFINER` RPCs |
 | Hosting and compute | Vercel Functions, with `waitUntil` running bot turns after the response is sent |
 | Animation | Web Animations API, with no animation library |
-| Testing | Vitest |
+| Testing | Vitest, Playwright, and isolated Postgres lifecycle checks |
 | Typography | Plus Jakarta Sans |
 
 ---
@@ -121,7 +121,13 @@ After every human action, the server starts a bot runner with `waitUntil`. A 20 
 
 ### Profiles and Friends
 
-A profile is identity without an account. The browser keeps a secret token; the database keeps only its hash, exactly the way a seat at a table is held. There is no password, no email and no sign-in screen — a name and one button.
+Accounts use a unique username and password, separate from the display name shown to other players. Public friend handles remain stable when the username changes. Guests can still play without creating an account.
+
+Passwords use salted scrypt hashes. Random session tokens live in HttpOnly cookies with SameSite protection and a 30 day lifetime; only their hashes are stored in the database. Login and sensitive changes have persistent request limits. Clearing browser storage does not delete an account: logging in restores its profile ID, stats, friends, and existing seats.
+
+The account page provides display name, username, and password changes, plus separate sign out and permanent deletion controls. Password changes revoke other sessions. Deletion requires the current password and an explicit confirmation, removes all account and social records, and anonymizes retained game seats. Game actions check the live account session as well as any saved seat token.
+
+Existing browser profiles can add credentials without changing their profile ID. After upgrading, the old browser key no longer grants access. A profile whose original browser key was already lost cannot be claimed by name alone.
 
 | Piece | What it does |
 | --- | --- |
@@ -228,7 +234,7 @@ The deck contains 52 cards plus two jokers.
 | `src/lib/server/store.ts` | Loads state, applies actions, commits with a version check, and retries conflicts |
 | `src/lib/server/runner.ts` | Runs bots under a database lease, started after actions with `waitUntil` |
 | `src/lib/server/social.ts` | Profiles, friends, invites, presence, and writing a scored round into the record books |
-| `src/lib/social/` | Profile and friend types, and the points-to-rank ladder |
+| `src/lib/social/` | Profile and friend types, and the rank ladder based on points |
 | `src/lib/client/` | `useGame` hook, Realtime subscription, actions, watchdog, card flights, profile and friends |
 | `src/components/` | Table UI, profile cards and the friends panel |
 | `supabase/` | Database schema and RPCs |
@@ -246,6 +252,8 @@ Apply the migrations, in order:
 ```text
 supabase/migrations/0001_cambio_schema.sql
 supabase/migrations/0002_social.sql
+supabase/migrations/0003_presence_invites.sql
+supabase/migrations/0004_accounts.sql
 ```
 
 Then store a server secret:
@@ -283,3 +291,15 @@ npm run dev
 ```bash
 npm test
 ```
+
+
+For the complete account lifecycle, start Docker and install the test browser once:
+
+```bash
+npx playwright install chromium
+npm run test:accounts
+```
+
+This command creates isolated Postgres and PostgREST containers, applies every migration, runs the SQL account tests, starts a local app using dummy credentials, and runs the browser suite. It removes the test containers afterward. Stop any existing Next development server first so the test app can use the development build directory.
+
+The browser suite covers registration, duplicate usernames, display name changes at active tables, username changes, wrong and correct passwords, session revocation, logout, a failed logout request, delayed responses after logout, multiple tabs, legacy profile upgrades, restored stats and friends after clearing storage, seat recovery, permanent deletion, request origin checks, and mobile account layouts. These tests never use the live Supabase database.

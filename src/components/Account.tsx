@@ -66,8 +66,10 @@ export function AuthForm({ initialMode = "login", initialName = "", legacy = fal
 }
 
 export function AccountSettings({ stored }: { stored: StoredProfile }) {
-  const [displayName, setDisplayName] = useState(stored.profile.displayName);
-  const [username, setUsername] = useState(stored.username ?? "");
+  const [nameDraft, setDisplayName] = useState<string | null>(null);
+  const displayName = nameDraft ?? stored.profile.displayName;
+  const [usernameDraft, setUsername] = useState<string | null>(null);
+  const username = usernameDraft ?? stored.username ?? "";
   const [usernamePassword, setUsernamePassword] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
@@ -90,7 +92,7 @@ export function AccountSettings({ stored }: { stored: StoredProfile }) {
     <div className="flex flex-col gap-5" aria-label="Account settings">
       {notice ? <p ref={noticeRef} role={notice.error ? "alert" : "status"} className={`t-sub rounded-[16px] p-4 ${notice.error ? "bg-surface-2 text-red" : "bg-accent-soft text-accent"}`}>{notice.text}</p> : null}
       <form id="display-name" className={panel} aria-label="Display name settings" onSubmit={(event) => { event.preventDefault(); void perform("name", async () => {
-        const result = await updateAccount({ displayName }); setDisplayName(result.profile.displayName);
+        const result = await updateAccount({ displayName }); setDisplayName(null);
         return result.warning ?? "Display name updated everywhere you play.";
       }); }}>
         <div><h2 className="t-headline">Display name</h2><p className="t-sub mt-1 text-ink-2">The name shown at the table and in your friends list. It does not change your login.</p></div>
@@ -98,7 +100,7 @@ export function AccountSettings({ stored }: { stored: StoredProfile }) {
         <Button type="submit" variant="primary" disabled={!!busy}>{busy === "name" ? "Saving" : "Save display name"}</Button>
       </form>
       <form id="username" className={panel} aria-label="Username settings" onSubmit={(event) => { event.preventDefault(); void perform("username", async () => {
-        const result = await updateAccount({ username, currentPassword: usernamePassword }); setUsername(result.username); setUsernamePassword("");
+        await updateAccount({ username, currentPassword: usernamePassword }); setUsername(null); setUsernamePassword("");
         return "Username updated. Use it the next time you log in.";
       }); }}>
         <div><h2 className="t-headline">Login username</h2><p className="t-sub mt-1 text-ink-2">Your current username is <strong>{stored.username}</strong>. Your public friend handle stays @{stored.profile.handle}.</p></div>

@@ -1,6 +1,5 @@
 import "server-only";
-import { createHash, randomBytes } from "node:crypto";
-import { GameError } from "@/lib/game/engine";
+import { createHash } from "node:crypto";
 import type { GameState, RoundResult } from "@/lib/game/types";
 import type { Friend, Invite, Opponent, PendingFriend, Profile, Social } from "@/lib/social/types";
 import { rpc } from "./db";
@@ -8,15 +7,11 @@ import { rpc } from "./db";
 /**
  * Profiles, friends, invites and presence.
  *
- * The browser holds a profile token; the server only ever holds its hash, in
- * the same way a seat at a table is held. Every call below goes through a
+ * A revocable session identifies an account. Legacy browser tokens are
+ * accepted only until a profile gains credentials. Every call goes through a
  * SECURITY DEFINER RPC gated by the server secret, so the anon key can no
  * more read a profile than it can read a hand of cards.
  */
-
-export function newProfileToken(): string {
-  return randomBytes(24).toString("base64url");
-}
 
 function hash(token: string): string {
   return createHash("sha256").update(token).digest("hex");
@@ -29,12 +24,6 @@ function hash(token: string): string {
 export function handleFrom(displayName: string): string {
   const base = displayName.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 16);
   return base.length >= 3 ? base : `${base}player`.slice(0, 16);
-}
-
-export function cleanDisplayName(raw: string): string {
-  const name = (raw ?? "").trim().replace(/\s+/g, " ").slice(0, 18);
-  if (name.length < 1) throw new GameError("BAD_NAME", "Enter a name for your profile.");
-  return name;
 }
 
 export function normaliseHandle(raw: string): string {
@@ -85,17 +74,6 @@ export function toProfile(r: RawProfile): Profile {
 /* Profiles                                                            */
 /* ------------------------------------------------------------------ */
 
-export async function createProfile(rawName: string): Promise<{ profile: Profile; token: string }> {
-  const displayName = cleanDisplayName(rawName);
-  const token = newProfileToken();
-  const row = await rpc<RawProfile>("profile_create", {
-    p_handle: handleFrom(displayName),
-    p_display_name: displayName,
-    p_token_hash: hash(token),
-  });
-  return { profile: toProfile(row), token };
-}
-
 export async function profileByToken(token: string | null): Promise<Profile | null> {
   if (!token) return null;
   const row = await rpc<RawProfile | null>("profile_by_token", { p_token_hash: hash(token) });
@@ -107,17 +85,6 @@ export async function profileByHandle(handle: string): Promise<Profile | null> {
   if (!clean) return null;
   const row = await rpc<RawProfile | null>("profile_by_handle", { p_handle: clean });
   return row ? toProfile(row) : null;
-}
-
-export async function renameProfile(id: string, rawName: string): Promise<Profile> {
-  const row = await rpc<RawProfile>("profile_rename", { p_id: id, p_display_name: cleanDisplayName(rawName) });
-  return toProfile(row);
-}
-
-/** The id behind a profile token, for stamping onto a seat. */
-export async function profileIdForToken(token: string | null): Promise<string | null> {
-  const profile = await profileByToken(token);
-  return profile ? profile.id : null;
 }
 
 /* ------------------------------------------------------------------ */

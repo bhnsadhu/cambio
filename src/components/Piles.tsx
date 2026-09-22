@@ -22,7 +22,7 @@ export function Piles({
   positions: Positions;
 }) {
   return (
-    <section className="flex min-w-0 flex-col gap-4 rounded-panel bg-surface px-4 pt-4 pb-5 hairline" aria-label="deck and discard pile">
+    <section className="flex min-w-0 flex-col gap-4 rounded-panel bg-surface px-4 pt-4 pb-5 hairline" aria-label="Deck and discard pile">
       <header>
         <h3 className="t-headline">Table</h3>
         <p className="t-footnote mt-0.5 text-ink-3">Deck and pile</p>
@@ -39,7 +39,7 @@ export function Piles({
               "press relative h-[var(--tile-h)] w-[var(--tile-w)] rounded-[var(--tile-r)] transition-[transform,box-shadow] duration-200 ease-out",
               canDraw ? "cursor-pointer hover:-translate-y-1.5" : "cursor-default",
             ].join(" ")}
-            aria-label={canDraw ? "draw a card" : "deck"}
+            aria-label={canDraw ? "Draw a card" : "Deck"}
           >
             {deckCount > 0 ? (
               <span aria-hidden className={`card-back absolute inset-0 rounded-[var(--tile-r)] ${canDraw ? "ring-turn" : ""}`} />
