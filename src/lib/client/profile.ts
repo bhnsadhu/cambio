@@ -3,6 +3,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import type { Profile } from "@/lib/social/types";
 import { clearAllSessions, storeName } from "./session";
+import { advanceSessionRevision, SESSION_REVISION_KEY, sessionRevision, waitForSessionChange, withSessionChange } from "./accountSession";
 
 const KEY = "cambio:profile";
 /** `token` is a public identity marker for accounts. Only legacy profiles
@@ -17,7 +18,7 @@ let accountNotice: string | null = null;
 const listeners = new Set<() => void>();
 function emit() { for (const listener of listeners) listener(); }
 function subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; }
-export function profileGeneration() { return generation; }
+export function profileGeneration() { return `${generation}:${sessionRevision()}`; }
 
 function read(): StoredProfile | null {
   if (cache !== undefined) return cache;
@@ -33,8 +34,8 @@ export function profileToken(): string | null {
   const token = read()?.token;
   return token && !token.startsWith("account:") ? token : null;
 }
-export function saveStoredProfile(value: StoredProfile | null, forGeneration?: number) {
-  if (forGeneration !== undefined && forGeneration !== generation) return;
+export function saveStoredProfile(value: StoredProfile | null, forGeneration?: string) {
+  if (forGeneration !== undefined && forGeneration !== profileGeneration()) return;
   if (value === null) { generation += 1; clearAllSessions(); }
   cache = value;
   try {
@@ -49,6 +50,12 @@ export function useAccountNotice() { return useSyncExternalStore(subscribe, () =
 export function dismissAccountNotice() { accountNotice = null; emit(); }
 
 export async function callProfile<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const gen = profileGeneration();
+  await waitForSessionChange();
+  return fetchProfile<T>(path, init, gen);
+}
+
+async function fetchProfile<T>(path: string, init: RequestInit, gen: string): Promise<T> {
   const token = profileToken();
   const headers = new Headers(init.headers);
   headers.set("content-type", "application/json");
@@ -56,58 +63,71 @@ export async function callProfile<T>(path: string, init: RequestInit = {}): Prom
   const res = await fetch(path, { ...init, headers, credentials: "same-origin", cache: "no-store" });
   const body = (await res.json().catch(() => ({}))) as { error?: { code?: string; message: string } } & T;
   if (!res.ok || body.error) {
-    if (body.error?.code === "SESSION") saveStoredProfile(null);
+    if (body.error?.code === "SESSION" && gen === profileGeneration()) saveStoredProfile(null, gen);
     throw new Error(body.error?.message ?? `Request failed (${res.status})`);
   }
   return body;
 }
 
 interface AccountResponse { profile: Profile; username: string; warning?: string | null }
-function rememberAccount(res: AccountResponse, gen: number) {
-  if (gen !== generation) return;
+function rememberAccount(res: AccountResponse, gen: string) {
+  if (gen !== profileGeneration()) return;
   accountNotice = null;
   if (read()?.profile.id !== res.profile.id) clearAllSessions();
   saveStoredProfile({ token: `account:${res.profile.id}`, profile: res.profile, username: res.username }, gen);
   storeName(res.profile.displayName);
 }
-export async function authenticate(mode: "login" | "register", values: { username: string; password: string; displayName?: string }) {
-  const gen = ++generation;
-  const res = await callProfile<AccountResponse>(mode === "login" ? "/api/account/login" : "/api/account", {
-    method: "POST", body: JSON.stringify(values),
+function changeAccount<T>(work: (gen: string) => Promise<T>): Promise<T> {
+  return withSessionChange(async () => {
+    ++generation;
+    advanceSessionRevision();
+    try { return await work(profileGeneration()); }
+    finally { ++generation; advanceSessionRevision(); }
   });
-  rememberAccount(res, gen);
-  return res;
 }
-export async function updateAccount(values: { displayName?: string; username?: string; currentPassword?: string; password?: string }) {
-  const gen = ++generation;
-  const res = await callProfile<AccountResponse>("/api/account", { method: "PATCH", body: JSON.stringify(values) });
-  rememberAccount(res, gen);
-  return res;
+
+export function authenticate(mode: "login" | "register", values: { username: string; password: string; displayName?: string }) {
+  return changeAccount(async (gen) => {
+    const res = await fetchProfile<AccountResponse>(mode === "login" ? "/api/account/login" : "/api/account", {
+      method: "POST", body: JSON.stringify(values),
+    }, gen);
+    rememberAccount(res, gen);
+    return res;
+  });
 }
-export async function signOut() {
-  ++generation;
-  // Only clear the UI once the server has revoked the cookie session.
-  await callProfile("/api/account/logout", { method: "POST" });
-  accountNotice = "You are signed out. Your stats and friends are saved.";
-  saveStoredProfile(null);
-  storeName("");
+export function updateAccount(values: { displayName?: string; username?: string; currentPassword?: string; password?: string }) {
+  return changeAccount(async (gen) => {
+    const res = await fetchProfile<AccountResponse>("/api/account", { method: "PATCH", body: JSON.stringify(values) }, gen);
+    rememberAccount(res, gen);
+    return res;
+  });
 }
-export async function deleteAccount(currentPassword: string, confirmation: string) {
-  ++generation;
-  await callProfile("/api/account", { method: "DELETE", body: JSON.stringify({ currentPassword, confirmation }) });
-  accountNotice = "Your account was deleted.";
-  saveStoredProfile(null);
-  storeName("");
+export function signOut() {
+  return changeAccount(async (gen) => {
+    // Only clear the UI once the server has revoked the cookie session.
+    await fetchProfile("/api/account/logout", { method: "POST" }, gen);
+    accountNotice = "You are signed out. Your stats and friends are saved.";
+    saveStoredProfile(null);
+    storeName("");
+  });
+}
+export function deleteAccount(currentPassword: string, confirmation: string) {
+  return changeAccount(async (gen) => {
+    await fetchProfile("/api/account", { method: "DELETE", body: JSON.stringify({ currentPassword, confirmation }) }, gen);
+    accountNotice = "Your account was deleted.";
+    saveStoredProfile(null);
+    storeName("");
+  });
 }
 
 export async function refreshProfile(): Promise<Profile | null> {
   // Concurrent screens share one request. A generation change discards any
   // response that began before login, logout, deletion, or account edits.
   if (pending) return pending;
-  const gen = generation;
+  const gen = profileGeneration();
   pending = (async () => {
     const res = await callProfile<{ profile: Profile | null; username: string | null }>("/api/account");
-    if (gen !== generation) return read()?.profile ?? null;
+    if (gen !== profileGeneration()) return read()?.profile ?? null;
     if (res.profile && res.username) {
       rememberAccount({ profile: res.profile, username: res.username }, gen);
       return res.profile;
@@ -131,6 +151,7 @@ export function AccountSession() {
     refresh();
     const visible = () => { if (document.visibilityState === "visible") refresh(); };
     const storage = (event: StorageEvent) => {
+      if (event.key === SESSION_REVISION_KEY) { generation += 1; refresh(); return; }
       if (event.key !== KEY && event.key !== null) return;
       const previous = read()?.token;
       generation += 1;

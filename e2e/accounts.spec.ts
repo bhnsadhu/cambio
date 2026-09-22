@@ -248,6 +248,111 @@ test("logout reaches another open tab and a delayed response cannot restore the 
   await otherTab.close();
 });
 
+test("password rotation keeps open tabs signed in while the replacement cookie is in transit", async ({ page, context, browser }) => {
+  const username = `rotate${suffix()}`;
+  const account = await (await post(context, "/api/account", { username, displayName: "Jordan Quinn", password: firstPassword })).json();
+  expect(account.profile?.id).toBeTruthy();
+  const oldCookie = (await context.cookies()).find((cookie) => cookie.name === "cambio_session")!;
+  const otherDevice = await browser.newContext({ baseURL: origin });
+  const otherTab = await context.newPage();
+  let release!: () => void;
+  let captured!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  const capturedResponse = new Promise<void>((resolve) => { captured = resolve; });
+  try {
+    expect((await post(otherDevice, "/api/account/login", { username, password: firstPassword })).ok()).toBeTruthy();
+    await page.goto("/me");
+    await otherTab.goto("/me");
+    await expect(otherTab.getByRole("heading", { name: "Account settings", exact: true })).toBeVisible();
+    await page.route("**/api/account", async (route) => {
+      if (route.request().method() !== "PATCH") return route.continue();
+      const response = await route.fetch();
+      expect(response.ok()).toBeTruthy();
+      // APIRequestContext can apply Set-Cookie early. Keep the original browser
+      // cookie until the intercepted response actually reaches this tab.
+      await context.addCookies([oldCookie]);
+      captured();
+      await gate;
+      await route.fulfill({ response });
+    });
+    await page.getByRole("button", { name: "Change password" }).click();
+    const form = page.getByRole("form", { name: "Password settings" });
+    await form.getByLabel("Current password", { exact: true }).fill(firstPassword);
+    await form.getByLabel("New password", { exact: true }).fill(nextPassword);
+    await form.getByLabel("Confirm new password", { exact: true }).fill(nextPassword);
+    await form.getByRole("button", { name: "Save password" }).click();
+    await capturedResponse;
+    expect((await (await context.request.get("/api/account")).json()).profile).toBeNull();
+    let refreshes = 0;
+    const countRefresh = (request: { url(): string; method(): string }) => {
+      if (request.url().endsWith("/api/account") && request.method() === "GET") refreshes += 1;
+    };
+    page.on("request", countRefresh);
+    otherTab.on("request", countRefresh);
+    for (const tab of [page, otherTab]) {
+      await tab.bringToFront();
+      await tab.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+    }
+    // Give refresh callbacks time to run while the server has revoked the old
+    // session but this browser has not received its replacement yet.
+    await page.waitForTimeout(800);
+    expect(refreshes).toBe(0);
+    for (const tab of [page, otherTab]) {
+      await expect(tab.getByRole("heading", { name: "Account settings", exact: true })).toBeVisible();
+      expect(await tab.evaluate(() => JSON.parse(localStorage.getItem("cambio:profile")!).profile.id)).toBe(account.profile.id);
+    }
+    release();
+    await expect(page.getByRole("status")).toContainText("Password changed");
+    await expect.poll(() => refreshes).toBeGreaterThan(0);
+    for (const tab of [page, otherTab]) {
+      await tab.reload();
+      await expect(tab.getByRole("heading", { name: "Account settings", exact: true })).toBeVisible();
+    }
+    expect((await (await context.request.get("/api/account")).json()).profile.id).toBe(account.profile.id);
+    expect((await (await otherDevice.request.get("/api/account")).json()).profile).toBeNull();
+    expect((await post(otherDevice, "/api/account/login", { username, password: firstPassword })).status()).toBe(401);
+    expect((await post(otherDevice, "/api/account/login", { username, password: nextPassword })).ok()).toBeTruthy();
+  } finally {
+    release();
+    await otherTab.close();
+    await otherDevice.close();
+  }
+});
+
+test("a late session error cannot undo a completed account change", async ({ page, context }) => {
+  const username = `stale${suffix()}`;
+  const account = await (await post(context, "/api/account", { username, displayName: "Sam Rivers", password: firstPassword })).json();
+  expect(account.profile?.id).toBeTruthy();
+  let release!: () => void;
+  let captured!: () => void;
+  let delivered!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  const capturedResponse = new Promise<void>((resolve) => { captured = resolve; });
+  const deliveredResponse = new Promise<void>((resolve) => { delivered = resolve; });
+  await page.route("**/api/social", async (route) => {
+    captured();
+    await gate;
+    await route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ error: { code: "SESSION", message: "Old session" } }) });
+    delivered();
+  }, { times: 1 });
+  try {
+    await page.goto("/");
+    await capturedResponse;
+    await page.getByRole("link", { name: "Account settings", exact: true }).click();
+    await page.getByRole("button", { name: "Change display name" }).click();
+    const form = page.getByRole("form", { name: "Display name settings" });
+    await form.getByLabel("Display name", { exact: true }).fill("Sam Rivera");
+    await form.getByRole("button", { name: "Save display name" }).click();
+    await expect(page.getByRole("status")).toContainText("Display name updated");
+    release();
+    await deliveredResponse;
+    await expect(page.getByRole("region", { name: "Display name", exact: true })).toContainText("Sam Rivera");
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("cambio:profile")!).profile.id)).toBe(account.profile.id);
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Display name", exact: true })).toContainText("Sam Rivera");
+  } finally { release(); }
+});
+
 test("credentials endpoints reject cross site requests and old profile creation", async ({ context }) => {
   expect((await context.request.post("/api/account", { headers: { origin: "https://other.example" }, data: { username: `csrf${suffix()}`, displayName: "CSRF User", password: firstPassword } })).status()).toBe(403);
   expect((await post(context, "/api/profile", { name: "Browser Only" })).status()).toBe(410);

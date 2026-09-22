@@ -1,6 +1,7 @@
 import type { Action, PlayerView } from "@/lib/game/types";
 import type { Session } from "./session";
 import { profileToken } from "./profile";
+import { waitForSessionChange } from "./accountSession";
 
 export interface ApiError { code: string; message: string }
 
@@ -15,6 +16,7 @@ export class RequestError extends Error {
 }
 
 async function call<T>(path: string, init: RequestInit & { token?: string | null } = {}): Promise<T> {
+  await waitForSessionChange();
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (init.token) headers["x-cambio-token"] = init.token;
   // A saved profile rides along, so the seat it takes is recorded under it.
