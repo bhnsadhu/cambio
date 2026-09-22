@@ -37,7 +37,7 @@ export function EventFeed({
     <aside className="flex max-h-72 min-h-0 min-w-0 flex-col rounded-panel bg-surface hairline xl:max-h-none" aria-label="Table log">
       <header className="px-4 pt-4 pb-3">
         <h3 className="t-headline">Table log</h3>
-        <p className="t-footnote mt-0.5 text-ink-3">Moves appear here as they happen</p>
+        <p className="t-footnote mt-0.5 hidden text-ink-3 xl:block">Hover a move to find its cards</p>
       </header>
       {log.length === 0 ? (
         <p className="t-sub px-4 pb-5 text-ink-3">Quiet so far. Moves show up here as they happen.</p>

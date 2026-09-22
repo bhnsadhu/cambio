@@ -15,7 +15,7 @@ import { Explainer } from "./Explainer";
 import { FriendsPanel, Notifications } from "./Friends";
 import { HowToPlay } from "./HowToPlay";
 import { AccountLink } from "./Profile";
-import { Button, Field, inputClass, Wordmark } from "./ui";
+import { Button, Field, inputClass, PlayerName, Wordmark } from "./ui";
 
 export function Landing() {
   const router = useRouter();
@@ -108,11 +108,18 @@ export function Landing() {
         <Button className="mt-5" variant="ghost" onClick={openHelp}>How to play</Button>
       </> : <section className="grid items-start gap-10 pt-10 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:pt-16">
         <div>
+          {/* One clean row: same baseline, same size, no tilt, even spacing. */}
           <div className="mb-8 flex items-end gap-3" aria-hidden>
-            <CardBack size="md" /><CardBack size="md" /><FaceCard size="md" card={{ id: "h1", rank: "7", suit: "S" }} /><CardBack size="md" />
+            <CardBack size="md" />
+            <CardBack size="md" />
+            <FaceCard size="md" card={{ id: "h1", rank: "7", suit: "S" }} />
+            <CardBack size="md" />
           </div>
           <h1 className="t-display">The memory card game,<br />live with friends.</h1>
-          <p className="t-body mt-5 max-w-[420px] text-ink-2">Remember your cards. Finish with the lowest hand. Play with friends or try a round with the house bots.</p>
+          <p className="t-body mt-5 max-w-[440px] text-ink-2">
+            Remember your cards. Finish with the lowest hand. Play with friends, or let the house bots{" "}
+            <PlayerName name="Cameron" isBot />, <PlayerName name="Camila" isBot /> and <PlayerName name="Cami" isBot /> take the empty seats.
+          </p>
           <Button className="mt-5" variant="secondary" onClick={openHelp}>How to play</Button>
         </div>
         {play}
