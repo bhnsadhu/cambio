@@ -56,7 +56,7 @@ export function AuthForm({ initialMode = "login", initialName = "", legacy = fal
       </form>
       {!legacy ? <p className="t-sub mt-5 text-center text-ink-2">
         {registering ? "Already have an account?" : "New to Cambio?"}{" "}
-        <button type="button" className="font-semibold text-ink underline underline-offset-4 disabled:opacity-40" disabled={busy} onClick={() => { setMode(registering ? "login" : "register"); setError(null); setPassword(""); setConfirm(""); }}>{registering ? "Log in" : "Create account"}</button>
+        <button type="button" className="font-semibold text-ink hover:text-ink-2 disabled:opacity-40" disabled={busy} onClick={() => { setMode(registering ? "login" : "register"); setError(null); setPassword(""); setConfirm(""); }}>{registering ? "Log in" : "Create account"}</button>
       </p> : null}
     </section>
   );

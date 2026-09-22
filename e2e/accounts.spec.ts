@@ -268,6 +268,9 @@ test("account access, tables, and help keep clear copy and responsive settings",
   await expect(page.getByRole("button", { name: "Start round", exact: true })).toBeVisible();
   await noPunctuationDashes(page);
   await page.getByRole("button", { name: "How to play", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "How Cambio works" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "How to play", exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Read full rules" }).click();
   await expect(page.getByRole("dialog", { name: "How to play", exact: true })).toBeVisible();
   await noPunctuationDashes(page);
   await page.getByRole("button", { name: "Close", exact: true }).last().click();

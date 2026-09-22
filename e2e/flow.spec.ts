@@ -143,4 +143,15 @@ test("guest play stays available and the walkthrough is only automatic once", as
   await page.getByRole("button", { name: "Leave", exact: true }).click();
   await expect(page).toHaveURL(`${origin}/`);
   await expect(page.getByLabel("Display name", { exact: true })).toHaveValue("Guest Player");
+  await page.getByRole("button", { name: "How to play", exact: true }).click();
+  const walkthrough = page.getByRole("dialog", { name: "How Cambio works" });
+  await expect(walkthrough).toContainText("1 of 4");
+  await walkthrough.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(walkthrough).toContainText("2 of 4");
+  await walkthrough.getByRole("button", { name: "Read full rules" }).click();
+  await expect(walkthrough).toHaveCount(0);
+  await page.getByRole("dialog", { name: "How to play", exact: true }).getByRole("button", { name: "Show walkthrough" }).click();
+  await expect(walkthrough).toContainText("1 of 4");
+  await walkthrough.getByRole("button", { name: "Skip", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 });

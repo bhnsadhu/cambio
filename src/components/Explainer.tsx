@@ -31,7 +31,7 @@ const STEPS = [
   },
 ];
 
-export function Explainer({ onDone }: { onDone: () => void }) {
+export function Explainer({ onDone, onRules }: { onDone: () => void; onRules?: () => void }) {
   const [i, setI] = useState(0);
   const step = STEPS[i];
   const last = i === STEPS.length - 1;
@@ -56,6 +56,7 @@ export function Explainer({ onDone }: { onDone: () => void }) {
           <p className="t-caption text-ink-3">{i + 1} of {STEPS.length}</p>
           <h2 className="t-title2 mt-2" key={`t${i}`}>{step.title}</h2>
           <p className="t-body mt-2 text-ink-2" key={`b${i}`}>{step.body}</p>
+          {onRules ? <button type="button" onClick={onRules} className="t-sub mt-3 font-medium text-ink-2 hover:text-ink">Read full rules</button> : null}
           <div className="mt-7 flex items-center justify-between">
             <div className="flex items-center gap-1.5" aria-hidden>
               {STEPS.map((_, k) => (

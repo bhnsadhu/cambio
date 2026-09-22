@@ -69,7 +69,7 @@ export function Landing() {
           {busy ? mode === "create" ? "Opening" : "Joining" : mode === "create" ? "Open a table" : "Join table"}
         </Button>
       </form>
-      {accountReady && !profile ? <p className="t-sub mt-5 text-ink-2">Playing as a guest. <Link href={loginHref(next, "register")} onClick={rememberGuest} className="text-ink underline underline-offset-4">Create an account to save your stats</Link></p> : null}
+      {accountReady && !profile ? <p className="t-sub mt-5 text-ink-2">Playing as a guest. <Link href={loginHref(next, "register")} onClick={rememberGuest} className="font-medium text-ink hover:text-ink-2">Create an account to save your stats</Link></p> : null}
     </section>
   );
 
@@ -94,7 +94,7 @@ export function Landing() {
           {play}
           <FriendsPanel social={social} />
         </div>
-        <Button className="mt-5" variant="ghost" onClick={() => setHelp(true)}>How to play</Button>
+        <Button className="mt-5" variant="ghost" onClick={() => setWalkthrough(true)}>How to play</Button>
       </> : <section className="grid items-start gap-10 pt-10 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:pt-16">
         <div>
           <div className="mb-8 flex items-end gap-3" aria-hidden>
@@ -102,13 +102,13 @@ export function Landing() {
           </div>
           <h1 className="t-display">The memory card game,<br />live with friends.</h1>
           <p className="t-body mt-5 max-w-[420px] text-ink-2">Remember your cards. Finish with the lowest hand. Play with friends or try a round with the house bots.</p>
-          <Button className="mt-5" variant="secondary" onClick={() => setHelp(true)}>How to play</Button>
+          <Button className="mt-5" variant="secondary" onClick={() => setWalkthrough(true)}>How to play</Button>
         </div>
         {play}
       </section>}
       <Notifications social={social} />
       <HowToPlay open={help} onClose={() => setHelp(false)} onReplay={() => { setHelp(false); setWalkthrough(true); }} />
-      {walkthrough ? <Explainer onDone={() => { setPref("onboarded", true); setWalkthrough(false); }} /> : null}
+      {walkthrough ? <Explainer onDone={() => { setPref("onboarded", true); setWalkthrough(false); }} onRules={() => { setPref("onboarded", true); setWalkthrough(false); setHelp(true); }} /> : null}
     </main>
   );
 }

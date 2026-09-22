@@ -132,7 +132,7 @@ function GameShell({ code }: { code: string }) {
               ? <AccountLink from={`/g/${code}`} />
               : game.session ? <span className="t-sub text-ink-2">Playing as <span className="font-medium text-ink">{game.session.name}</span></span> : null}
             {view ? <PauseButton view={view.public} {...pause} /> : null}
-            <Button variant="ghost" size="sm" onClick={() => setHelp(true)}>How to play</Button>
+            <Button variant="ghost" size="sm" onClick={() => setReplay(true)}>How to play</Button>
             {game.session ? (
               leaving ? (
                 <span className="flex items-center gap-1.5">
@@ -159,7 +159,7 @@ function GameShell({ code }: { code: string }) {
         {view ? <PauseOverlay view={view.public} {...pause} /> : null}
         <Toasts toasts={game.toasts} />
         <Notifications social={social} atCode={code} />
-        {showExplainer ? <Explainer onDone={closeExplainer} /> : null}
+        {showExplainer ? <Explainer onDone={closeExplainer} onRules={() => { closeExplainer(); setHelp(true); }} /> : null}
         <HowToPlay open={help} onClose={() => setHelp(false)} onReplay={() => { setHelp(false); setReplay(true); }} />
       </main>
     </>
@@ -217,7 +217,7 @@ function JoinForm({ code, onJoined }: { code: string; onJoined: (s: { playerId: 
         {error ? <p className="t-sub text-accent-ink">{error}</p> : null}
         <Button type="submit" variant="primary" size="lg" disabled={!accountReady || busy || !name.trim()}>{busy ? "Taking a seat" : "Take a seat"}</Button>
       </form>
-      {accountReady && !profile ? <p className="t-sub mt-5 text-ink-2">Have an account? <Link href={loginHref(`/g/${code}`)} onClick={() => storeName(name.trim())} className="text-ink underline underline-offset-4">Log in before joining</Link></p> : null}
+      {accountReady && !profile ? <p className="t-sub mt-5 text-ink-2">Have an account? <Link href={loginHref(`/g/${code}`)} onClick={() => storeName(name.trim())} className="font-medium text-ink hover:text-ink-2">Log in before joining</Link></p> : null}
     </div>
   );
 }
@@ -232,7 +232,7 @@ function MidRound({ code, canLogin, onWatch }: { code: string; canLogin: boolean
         <Button variant="primary" size="lg" onClick={onWatch}>Watch</Button>
         <Link href="/"><Button variant="secondary" size="lg">Open a table</Button></Link>
       </div>
-      {canLogin ? <p className="t-sub mt-5 text-ink-2">Already playing? <Link href={loginHref(`/g/${code}`)} className="text-ink underline underline-offset-4">Log in to return to your seat</Link></p> : null}
+      {canLogin ? <p className="t-sub mt-5 text-ink-2">Already playing? <Link href={loginHref(`/g/${code}`)} className="font-medium text-ink hover:text-ink-2">Log in to return to your seat</Link></p> : null}
     </div>
   );
 }
