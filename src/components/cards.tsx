@@ -5,27 +5,51 @@ import type { Card } from "@/lib/game/types";
 import { isRed, SUIT_SYMBOL } from "@/lib/game/cards";
 
 const SIZES = {
-  sm: { box: "w-9 h-[51px] rounded-[5px]", rank: "text-[13px]", suit: "text-[12px]", pad: "p-1.5" },
-  md: { box: "w-14 h-20 rounded-[8px]", rank: "text-[17px]", suit: "text-[15px]", pad: "p-2" },
-  lg: { box: "w-[var(--tile-w)] h-[var(--tile-h)] rounded-[var(--tile-r)]", rank: "text-[24px]", suit: "text-[20px]", pad: "p-2.5" },
+  sm: { box: "w-9 h-[51px] rounded-[5px]", rank: "text-[13px]", ten: "text-[12px]", suit: "text-[12px]", mark: "text-[15px]", label: "text-[6.5px]", pad: "p-1.5" },
+  md: { box: "w-14 h-20 rounded-[8px]", rank: "text-[17px]", ten: "text-[15.5px]", suit: "text-[15px]", mark: "text-[21px]", label: "text-[8.5px]", pad: "p-2" },
+  lg: { box: "w-[var(--tile-w)] h-[var(--tile-h)] rounded-[var(--tile-r)]", rank: "text-[24px]", ten: "text-[21px]", suit: "text-[20px]", mark: "text-[29px]", label: "text-[10.5px]", pad: "p-2.5" },
 } as const;
 
 export type CardSize = keyof typeof SIZES;
 
-/** A face up card. The only place a value is ever drawn on screen. */
+/**
+ * A face up card. The only place a value is ever drawn on screen.
+ *
+ * Two ranks get their own treatment, because at a glance they were read as
+ * something else:
+ *   10    two digits set like one, a size down and with the tracking opened
+ *         up, so the zero can never be lost against the one.
+ *   joker a card of its own colour with a star where the rank goes and its
+ *         name across the foot. A jack is a black or red J with a suit; a
+ *         joker looks nothing like it from across the table.
+ */
 export function FaceCard({ card, size = "md", className = "", elRef, style }: { card: Card; size?: CardSize; className?: string; elRef?: Ref<HTMLDivElement>; style?: CSSProperties }) {
   const s = SIZES[size];
-  const color = isRed(card.suit) ? "text-red" : "text-card-ink";
+  const joker = card.rank === "JOKER";
+  const ten = card.rank === "10";
+  const color = joker ? "text-joker" : isRed(card.suit) ? "text-red" : "text-card-ink";
   return (
-    <div ref={elRef} style={style} className={`relative ${s.box} ${s.pad} flex flex-col justify-between bg-card shadow-card ${color} ${className}`}>
-      {card.rank === "JOKER" ? (
+    <div
+      ref={elRef}
+      style={style}
+      className={`relative ${s.box} ${s.pad} flex flex-col justify-between ${joker ? "bg-joker-card" : "bg-card"} shadow-card ${color} ${className}`}
+    >
+      {joker ? (
         <>
-          <span className={`${s.rank} font-medium leading-none tracking-[-0.02em] text-card-ink`}>J</span>
-          <span className="self-end text-[9px] font-medium uppercase leading-none tracking-[0.12em] text-card-ink/45">Joker</span>
+          <span className={`${s.mark} font-semibold leading-none`} aria-hidden>★</span>
+          <span className={`${s.label} self-start font-bold uppercase leading-none tracking-[0.1em]`}>Joker</span>
         </>
       ) : (
         <>
-          <span className={`${s.rank} tnum font-medium leading-none tracking-[-0.02em]`}>{card.rank}</span>
+          <span
+            className={[
+              ten ? s.ten : s.rank,
+              "font-semibold leading-none whitespace-nowrap",
+              ten ? "tracking-[0.03em]" : "tnum tracking-[-0.02em]",
+            ].join(" ")}
+          >
+            {card.rank}
+          </span>
           <span className={`${s.suit} self-start leading-none`}>{card.suit ? SUIT_SYMBOL[card.suit] : ""}</span>
         </>
       )}

@@ -31,6 +31,9 @@
   --color-tile: #f4f4f6;
   --color-tile-2: #e9e9ee;
   --color-accent: #4ff0a8;
+  /* The joker's own colour, so it can never be mistaken for a jack. */
+  --color-joker: #6d3bf5;
+  --color-joker-card: #efe9ff;
   --color-accent-soft: rgb(79 240 168 / 0.14);
   --color-accent-ink: #4ff0a8;
   --color-red: #ff5a52;
