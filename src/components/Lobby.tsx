@@ -9,12 +9,14 @@ export function Lobby({
   view,
   me,
   busy,
+  hasAccount,
   onStart,
   onDifficulty,
 }: {
   view: PublicView;
   me: string | null;
   busy: boolean;
+  hasAccount: boolean;
   onStart: () => void;
   onDifficulty: (seat: number, difficulty: BotDifficulty) => void;
 }) {
@@ -44,7 +46,7 @@ export function Lobby({
             <Button variant="secondary" size="sm" onClick={copy}>{copied ? "Copied" : "Copy link"}</Button>
           </div>
           <p className="t-body mt-4 max-w-[440px] text-ink-2">
-            Share the code to invite someone. {view.doNotDisturb ? "Do not disturb is on, so friends need an invitation." : "Friends can also ask to join and wait for you to accept."} Seats still open when the round starts go to the house bots.
+            Share the code to invite someone. {hasAccount ? (view.doNotDisturb ? "Do not disturb is on, so friends need an invitation. " : "Friends can also ask to join and wait for you to accept. ") : ""}Seats still open when the round starts go to the house bots.
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">

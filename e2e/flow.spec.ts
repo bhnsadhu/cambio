@@ -135,6 +135,8 @@ test("guest play stays available and the walkthrough is only automatic once", as
   await page.getByRole("button", { name: "Skip", exact: true }).click();
   await expect(page.getByRole("button", { name: "Start round", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: /Log in|Create account/ })).toHaveCount(0);
+  await expect(page.getByRole("switch", { name: "Do not disturb" })).toHaveCount(0);
+  await expect(page.getByText(/Do not disturb|DND/)).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole("button", { name: "Start round", exact: true })).toBeVisible();
   await expect(page.getByRole("dialog", { name: "How Cambio works" })).toHaveCount(0);

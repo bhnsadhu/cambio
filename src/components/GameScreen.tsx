@@ -102,6 +102,7 @@ function GameShell({ code }: { code: string }) {
         view={view.public}
         me={game.me}
         busy={game.busy}
+        hasAccount={!!social.profile}
         onStart={() => void game.send({ type: "start" })}
         onDifficulty={(seat, difficulty) => void game.send({ type: "setBotDifficulty", seat, difficulty })}
       />
@@ -116,9 +117,9 @@ function GameShell({ code }: { code: string }) {
 
   return (
     <>
-      <main className="mx-auto min-h-screen w-full max-w-[1480px] px-8">
-        <header className="flex h-14 items-center justify-between">
-          <div className="flex items-center gap-5">
+      <main className="mx-auto min-h-screen w-full max-w-[1480px] px-5 sm:px-8">
+        <header className="flex min-h-14 flex-wrap items-center justify-between gap-x-5 gap-y-2 py-3">
+          <div className="flex items-center gap-3 sm:gap-5">
             <Link href="/" aria-label="Cambio home"><Wordmark /></Link>
             {view ? (
               <div className="t-sub flex items-center gap-2 text-ink-2">
@@ -128,10 +129,10 @@ function GameShell({ code }: { code: string }) {
               </div>
             ) : null}
           </div>
-          <div className="flex items-center gap-3">
-            {social.profile
-              ? <AccountLink from={`/g/${code}`} />
-              : game.session ? <span className="t-sub text-ink-2">Playing as <span className="font-medium text-ink">{game.session.name}</span></span> : null}
+          <nav aria-label="Table controls" className="flex max-w-full flex-wrap items-center gap-1 sm:gap-2">
+            {social.profile ? <AccountLink from={`/g/${code}`} /> : null}
+            {social.profile && seated && view ? <RoomSettings view={view.public} me={game.me} busy={game.busy}
+              onChange={(enabled) => { void game.send({ type: "setDoNotDisturb", enabled }).then(() => social.refresh()); }} /> : null}
             {view ? <PauseButton view={view.public} {...pause} /> : null}
             <Button variant="ghost" size="sm" onClick={() => prefs.onboarded ? setHelp(true) : setReplay(true)}>How to play</Button>
             {game.session ? (
@@ -151,11 +152,8 @@ function GameShell({ code }: { code: string }) {
               {game.connection === "live" ? <Pip /> : <DotOff />}
               {game.connection === "live" ? "Live" : game.connection === "connecting" ? "Connecting" : "Reconnecting"}
             </Chip>
-          </div>
+          </nav>
         </header>
-
-        {seated && view ? <RoomSettings view={view.public} me={game.me} busy={game.busy}
-          onChange={(enabled) => { void game.send({ type: "setDoNotDisturb", enabled }).then(() => social.refresh()); }} /> : null}
 
         {body}
 

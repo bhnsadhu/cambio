@@ -229,7 +229,10 @@ test("Do not disturb belongs to the room and blocks requests while allowing invi
     await hostPage.reload();
     await expect(toggle).toBeChecked();
     await hostPage.setViewportSize({ width: 390, height: 844 });
-    await hostPage.getByRole("region", { name: "Room settings" }).screenshot({ path: "test-results/room-do-not-disturb-mobile.png", animations: "disabled" });
+    await hostPage.getByRole("navigation", { name: "Table controls" }).screenshot({ path: "test-results/room-do-not-disturb-mobile.png", animations: "disabled" });
+    const size = await toggle.boundingBox();
+    expect(size!.height).toBeLessThanOrEqual(32);
+    expect(size!.width).toBeLessThan(120);
     await friendPage.goto("/");
     await expect(friendPage.getByText("Do not disturb", { exact: true })).toHaveCount(2);
     await expect(friendPage.getByRole("button", { name: /Ask to join|Ask again/ })).toHaveCount(0);
@@ -252,7 +255,7 @@ test("Do not disturb belongs to the room and blocks requests while allowing invi
     await memberPage.goto(`/g/${seat.code}`);
     await memberPage.getByRole("button", { name: "Skip", exact: true }).click();
     await expect(memberPage.getByRole("switch", { name: "Do not disturb" })).toHaveCount(0);
-    await expect(memberPage.getByRole("region", { name: "Room settings" })).toContainText("Join requests are off");
+    await expect(memberPage.getByLabel("Do not disturb is on")).toBeVisible();
     await toggle.click();
     await expect(toggle).not.toBeChecked();
     expect((await (await post(friend.context, "/api/social/join-requests", { profileId: member.profile.id, tableId })).json()).outcome.ok).toBe(true);
@@ -270,5 +273,10 @@ test("Do not disturb belongs to the room and blocks requests while allowing invi
     await toggle.click();
     await expect(toggle).not.toBeChecked();
     expect((await (await host.context.request.get(`/api/games/${seat.code}/state`)).json()).view.public.doNotDisturb).toBe(false);
+    await hostPage.getByRole("button", { name: "Start round", exact: true }).click();
+    await expect(hostPage.getByRole("button", { name: "Start round", exact: true })).toHaveCount(0);
+    await toggle.click();
+    await expect(toggle).toBeChecked();
+    await expect(hostPage.getByRole("region", { name: "Room settings" })).toHaveCount(0);
   } finally { await host.context.close(); await friend.context.close(); await member.context.close(); }
 });
