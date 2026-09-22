@@ -33,7 +33,7 @@ export function AccountPage({ back }: { back: string }) {
         <Link href={destination} className="t-sub text-ink-2 hover:text-ink">{backLabel(destination)}</Link>
       </header>
       <div className="mx-auto max-w-[560px] pt-8">
-        {!ready || !stored?.username ? <p role="status" className="t-sub text-ink-2">Checking your account...</p> : <>
+        {!ready || !stored?.username ? <p role="status" className="t-sub text-ink-2">Checking your account</p> : <>
           <h1 className="t-title mb-6">Account settings</h1>
           <AccountSettings key={stored.profile.id} stored={stored} onExit={exit} />
         </>}

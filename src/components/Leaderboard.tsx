@@ -84,7 +84,7 @@ function Standings({ scope }: { scope: LeaderboardScope }) {
         <p role="alert" className="t-sub text-red">{error}</p>
         <Button size="sm" onClick={() => { setError(null); setAttempt((value) => value + 1); }}>Try again</Button>
       </div> : null}
-      {!data ? !error ? <p role="status" className="t-sub text-ink-2">Loading the leaderboard...</p> : null : <>
+      {!data ? !error ? <p role="status" className="t-sub text-ink-2">Loading the leaderboard</p> : null : <>
         {data.me ? <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-panel bg-accent-soft px-5 py-4" aria-label="Your standing">
           <div>
             <p className="t-caption text-accent">Your rank {scope === "friends" ? "among friends" : "among all players"}</p>

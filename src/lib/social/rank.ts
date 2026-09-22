@@ -4,7 +4,7 @@
  * Points come from the database (a stored column, so the ladder can be
  * ordered in SQL): a round won is worth four times a round played, and
  * calling Cambio and making it stick is worth more again. The tiers below
- * turn that number into something a player recognises at a glance.
+ * turn that number into something a player recognizes at a glance.
  */
 
 import type { Profile, ProfileStats } from "./types";

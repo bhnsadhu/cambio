@@ -25,7 +25,7 @@ export function AccountAccess({ next, initialMode }: { next: string; initialMode
         <Link href={back} className="t-sub text-ink-2 hover:text-ink">{backLabel(back)}</Link>
       </header>
       <div className="mx-auto max-w-[460px] pt-10">
-        {!ready || stored?.username ? <p role="status" className="t-sub text-ink-2">{ready ? "Taking you back..." : "Checking your account..."}</p>
+        {!ready || stored?.username ? <p role="status" className="t-sub text-ink-2">{ready ? "Taking you back" : "Checking your account"}</p>
           : <AuthForm key={`${initialMode}:${next}`} initialMode={initialMode} initialName={name} legacy={!!stored} />}
       </div>
     </main>

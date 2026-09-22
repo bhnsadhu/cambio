@@ -236,7 +236,7 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
           : "Cards are down. Ready when you are.",
         detail: imReady
           ? "The peek opens for the whole table at once, the moment the last seat is in."
-          : "Your four cards are dealt, face down. Say you are ready, and once everyone has, you all get five seconds to memorise your bottom two.",
+          : "Your four cards are dealt, face down. Say you are ready, and once everyone has, you all get five seconds to memorize your bottom two.",
       }
     : armed && pub.discardTop
     ? {

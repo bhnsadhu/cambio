@@ -45,14 +45,15 @@ export function Landing() {
       saveSession(seat.code, { playerId: seat.playerId, token: seat.token, name: name.trim() });
       router.push(`/g/${seat.code}`);
     } catch (error) {
-      setError({ mode, message: error instanceof RequestError ? error.message : "Could not reach the table. Try again." });
+      const fallback = mode === "create" ? "Could not open a table right now. Try again." : "Could not join that table. Check the code.";
+      setError({ mode, message: error instanceof RequestError ? error.message : fallback });
       setBusy(null);
     }
   };
 
   const play = (
     <section className="flex flex-col gap-4" aria-label="Play Cambio">
-      {!accountReady ? <p role="status" className="t-sub text-ink-2">Checking your account...</p>
+      {!accountReady ? <p role="status" className="t-sub text-ink-2">Checking your account</p>
         : profile ? <p className="t-body text-ink-2">Playing as <strong className="text-ink">{name}</strong></p>
           : <Field label="Display name"><input className={inputClass} value={name} onChange={(event) => setName(event.target.value)} placeholder="Your name at the table" maxLength={18} autoComplete="nickname" required disabled={!!busy} /></Field>}
       <form onSubmit={(event) => void submit(event, "create")} className="flex flex-col gap-4 rounded-panel bg-surface p-6 hairline" aria-label="New table">

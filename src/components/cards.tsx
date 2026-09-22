@@ -19,7 +19,7 @@ export type CardSize = keyof typeof SIZES;
  * something else:
  *   10    two digits set like one, a size down and with the tracking opened
  *         up, so the zero can never be lost against the one.
- *   joker a card of its own colour with a star where the rank goes and its
+ *   joker a card of its own color with a star where the rank goes and its
  *         name across the foot. A jack is a black or red J with a suit; a
  *         joker looks nothing like it from across the table.
  */
