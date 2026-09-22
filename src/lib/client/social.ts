@@ -36,6 +36,7 @@ interface Fetched { token: string; profile: Profile | null; social: Social }
 
 export function useSocial(): SocialHook {
   const stored = useStoredProfile();
+  const identity = stored?.token;
   const [fetched, setFetched] = useState<Fetched | null>(null);
   const [error, setError] = useState<string | null>(null);
   const alive = useRef(true);
@@ -44,7 +45,7 @@ export function useSocial(): SocialHook {
   // Everything is derived from the stored profile and the last read, so
   // signing out or switching profiles needs no effect to tidy up after it.
   const fresh = stored && fetched && fetched.token === stored.token ? fetched : null;
-  const profile = stored ? fresh?.profile ?? stored.profile : null;
+  const profile = stored?.profile ?? null;
   const social = fresh?.social ?? EMPTY_SOCIAL;
   const loading = !!stored && !fresh && error === null;
 
@@ -62,15 +63,16 @@ export function useSocial(): SocialHook {
       // The record moves while you play; keep the cached copy in step. The
       // generation keeps a read that outlived a sign-out from bringing the
       // profile back.
-      if (res.profile) saveStoredProfile({ token: held.token, profile: res.profile }, gen);
+      if (res.profile) saveStoredProfile({ ...held, profile: res.profile }, gen);
+      else saveStoredProfile(null, gen);
       setError(null);
     } catch (e) {
-      if (alive.current) setError(e instanceof Error ? e.message : "Could not reach the friends list.");
+      if (alive.current && gen === profileGeneration()) setError(e instanceof Error ? e.message : "Could not reach the friends list.");
     }
   }, []);
 
   useEffect(() => {
-    if (!stored) return;
+    if (!identity) return;
     const first = window.setTimeout(() => { void refresh(); }, 0);
     const id = setInterval(() => void refresh(), POLL_MS);
     const onVisible = () => { if (document.visibilityState === "visible") void refresh(); };
@@ -80,7 +82,7 @@ export function useSocial(): SocialHook {
       clearInterval(id);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [stored, refresh]);
+  }, [identity, refresh]);
 
   const addFriend = useCallback(async (handle: string) => {
     const res = await callProfile<{ outcome: string }>("/api/social/friends", {

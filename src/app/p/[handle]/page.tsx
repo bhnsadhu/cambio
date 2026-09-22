@@ -18,6 +18,8 @@ export default function PlayerPage({ params }: { params: Promise<{ handle: strin
   usePresence(null);
   const [state, setState] = useState<{ profile: Profile; relation: Relation; playedTogether: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -33,6 +35,12 @@ export default function PlayerPage({ params }: { params: Promise<{ handle: strin
     return () => window.clearTimeout(t);
   }, [load]);
 
+  const perform = async (work: () => Promise<unknown>) => {
+    setBusy(true); setActionError(null);
+    try { await work(); await load(); }
+    catch (error) { setActionError(error instanceof Error ? error.message : "Could not update this friendship."); }
+    finally { setBusy(false); }
+  };
   const friend = state ? social.social.friends.find((f) => f.id === state.profile.id) ?? null : null;
 
   return (
@@ -52,6 +60,7 @@ export default function PlayerPage({ params }: { params: Promise<{ handle: strin
       ) : (
         <div className="flex flex-col gap-4 pt-8 animate-rise">
           <ProfileCard profile={state.profile} />
+          {actionError ? <p role="alert" className="t-sub text-red">{actionError}</p> : null}
           {friend?.playing ? (
             <div className="flex items-center justify-between gap-3 rounded-panel bg-surface-2 px-5 py-4 hairline">
               <p className="t-sub">
@@ -66,19 +75,21 @@ export default function PlayerPage({ params }: { params: Promise<{ handle: strin
             </div>
           ) : null}
           <div className="flex items-center gap-2">
-            {state.relation === "self" ? (
+            {!social.profile ? (
+              <Link href="/me"><Button variant="primary">Log in to add friends</Button></Link>
+            ) : state.relation === "self" ? (
               <Link href="/me"><Button variant="secondary">This is you</Button></Link>
             ) : state.relation === "friends" ? (
-              <Button variant="ghost" onClick={async () => { await social.remove(state.profile.id); await load(); }}>Remove friend</Button>
+              <Button variant="ghost" disabled={busy} onClick={() => void perform(() => social.remove(state.profile.id))}>Remove friend</Button>
             ) : state.relation === "incoming" ? (
               <>
-                <Button variant="accent" onClick={async () => { await social.respond(state.profile.id, true); await load(); }}>Accept request</Button>
-                <Button variant="ghost" onClick={async () => { await social.respond(state.profile.id, false); await load(); }}>Decline</Button>
+                <Button variant="accent" disabled={busy} onClick={() => void perform(() => social.respond(state.profile.id, true))}>Accept request</Button>
+                <Button variant="ghost" disabled={busy} onClick={() => void perform(() => social.respond(state.profile.id, false))}>Decline</Button>
               </>
             ) : state.relation === "outgoing" ? (
               <Button variant="secondary" disabled>Request sent</Button>
             ) : (
-              <Button variant="primary" onClick={async () => { await social.addFriend(state.profile.handle); await load(); }}>Add friend</Button>
+              <Button variant="primary" disabled={busy} onClick={() => void perform(() => social.addFriend(state.profile.handle))}>Add friend</Button>
             )}
             {state.playedTogether > 0 ? (
               <span className="t-footnote text-ink-3">

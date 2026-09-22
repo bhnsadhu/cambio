@@ -1,34 +1,13 @@
-import { createProfile, profileByToken, renameProfile } from "@/lib/server/social";
-import { fail, ok, profileTokenFrom, requireProfileToken } from "@/lib/server/http";
-import { GameError } from "@/lib/game/engine";
+import { profileByToken } from "@/lib/server/social";
+import { fail, ok, profileTokenFrom } from "@/lib/server/http";
 
-/** Save a profile on this device. The token it returns is the only key to it. */
-export async function POST(req: Request) {
-  try {
-    const body = (await req.json().catch(() => ({}))) as { name?: string };
-    const { profile, token } = await createProfile(body.name ?? "");
-    return ok({ profile, token });
-  } catch (e) {
-    return fail(e);
-  }
-}
-
+/** Read old browser profiles so their owners can add permanent credentials. */
 export async function GET(req: Request) {
-  try {
-    const profile = await profileByToken(profileTokenFrom(req));
-    return ok({ profile });
-  } catch (e) {
-    return fail(e);
-  }
+  try { return ok({ profile: await profileByToken(profileTokenFrom(req)) }); }
+  catch (error) { return fail(error); }
 }
 
-export async function PATCH(req: Request) {
-  try {
-    const body = (await req.json().catch(() => ({}))) as { name?: string };
-    const me = await profileByToken(requireProfileToken(req));
-    if (!me) throw new GameError("NOT_FOUND", "That profile no longer exists.");
-    return ok({ profile: await renameProfile(me.id, body.name ?? "") });
-  } catch (e) {
-    return fail(e);
-  }
+/** Old clients must not create new accounts with unrecoverable browser keys. */
+export async function POST() {
+  return ok({ error: { code: "UPGRADE", message: "Refresh Cambio to create an account with a username and password." } }, { status: 410 });
 }

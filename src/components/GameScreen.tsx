@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useAccountReady, useStoredProfile } from "@/lib/client/profile";
 import { useGame } from "@/lib/client/useGame";
 import { api, RequestError } from "@/lib/client/api";
 import { useSocial, usePresence } from "@/lib/client/social";
@@ -179,9 +180,9 @@ function WithFriends({ social, code, seated, children }: { social: ReturnType<ty
           <section className="rounded-panel bg-surface p-6 hairline">
             <h2 className="t-headline">Playing with friends?</h2>
             <p className="t-sub mt-1 text-ink-2">
-              Save a profile and you can invite them straight to this table, and see when they are at one of their own.
+              Create an account and you can invite them straight to this table, and see when they are at one of their own.
             </p>
-            <Link href="/me" className="mt-4 inline-block"><Button variant="secondary" size="sm">Save a profile</Button></Link>
+            <Link href="/me" className="mt-4 inline-block"><Button variant="secondary" size="sm">Log in or create account</Button></Link>
           </section>
         )}
       </div>
@@ -191,6 +192,8 @@ function WithFriends({ social, code, seated, children }: { social: ReturnType<ty
 
 function JoinForm({ code, onJoined }: { code: string; onJoined: (s: { playerId: string; token: string; name: string }) => void }) {
   const [name, setName] = useStoredName();
+  const profile = useStoredProfile();
+  const accountReady = useAccountReady();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const submit = async (e: FormEvent) => {
@@ -213,13 +216,13 @@ function JoinForm({ code, onJoined }: { code: string; onJoined: (s: { playerId: 
     <div className="mx-auto max-w-[420px] pt-24 animate-rise">
       <p className="t-caption text-ink-3">Join table</p>
       <h1 className="t-title tnum mt-1.5 tracking-[0.06em]">{code}</h1>
-      <p className="t-body mt-2 text-ink-2">Pick a name. You take the next open seat.</p>
+      <p className="t-body mt-2 text-ink-2">Your display name is how the table sees you.</p>
       <form onSubmit={submit} className="mt-6 flex flex-col gap-4">
-        <Field label="Your name">
-          <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="What the table calls you" maxLength={18} autoFocus />
+        <Field label="Display name">
+          <input className={inputClass} value={name} readOnly={!!profile} onChange={(e) => setName(e.target.value)} placeholder="What the table calls you" maxLength={18} autoFocus />
         </Field>
         {error ? <p className="t-sub text-accent-ink">{error}</p> : null}
-        <Button type="submit" variant="primary" size="lg" disabled={busy || !name.trim()}>{busy ? "Taking a seat" : "Take a seat"}</Button>
+        <Button type="submit" variant="primary" size="lg" disabled={!accountReady || busy || !name.trim()}>{busy ? "Taking a seat" : "Take a seat"}</Button>
       </form>
     </div>
   );

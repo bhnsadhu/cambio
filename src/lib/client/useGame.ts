@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Action, PlayerView, PublicView } from "@/lib/game/types";
+import { profileGeneration, useStoredProfile } from "./profile";
 import { api, RequestError, type ActionResponse } from "./api";
 import { subscribeGame, type ConnectionStatus } from "./realtime";
 import { getServerSessionSnapshot, getSessionSnapshot, setSessionValue, subscribeSession, type Session } from "./session";
@@ -28,6 +29,7 @@ const POLL_MS = 5000;
 const NUDGE_AFTER_MS = 6000;
 
 export function useGame(code: string): GameHook {
+  const account = useStoredProfile();
   const session = useSyncExternalStore(subscribeSession, () => getSessionSnapshot(code), getServerSessionSnapshot);
   const [view, setView] = useState<PlayerView | null>(null);
   const [me, setMe] = useState<string | null>(null);
@@ -78,14 +80,16 @@ export function useGame(code: string): GameHook {
   }, []);
 
   const refresh = useCallback(async () => {
+    const gen = profileGeneration();
     const token = sessionRef.current?.token ?? null;
     try {
       const res = await api.state(code, token);
       // A response for a different seat than the one we hold now is stale
       // (hydration fires one fetch before the stored seat is known).
-      if ((sessionRef.current?.token ?? null) !== token) return;
+      if (gen !== profileGeneration() || (sessionRef.current?.token ?? null) !== token) return;
       acceptFull(res.view, res.me);
-      if (token && !res.me) setSession(null);
+      if (res.seat && (!sessionRef.current || sessionRef.current.name !== res.seat.name)) setSession(res.seat);
+      else if (token && !res.me) setSession(null);
       setStatus("ready");
     } catch (e) {
       if (e instanceof RequestError && e.status === 404) setStatus("notfound");
@@ -97,7 +101,7 @@ export function useGame(code: string): GameHook {
     sessionRef.current = session;
     const t = window.setTimeout(() => { void refresh(); }, 0);
     return () => window.clearTimeout(t);
-  }, [session, refresh]);
+  }, [session, account?.token, refresh]);
 
   // Realtime subscription + fallback poll + reconnect refresh.
   useEffect(() => {
@@ -130,6 +134,7 @@ export function useGame(code: string): GameHook {
   const send = useCallback(async (action: Action): Promise<ActionResponse | null> => {
     const s = sessionRef.current;
     if (!s) return null;
+    const gen = profileGeneration();
     const actionId = crypto.randomUUID();
     setBusy(true);
     try {
@@ -141,9 +146,11 @@ export function useGame(code: string): GameHook {
         // Network hiccup: the action id makes a retry safe.
         res = await api.action(code, s.token, actionId, action);
       }
+      if (gen !== profileGeneration()) return null;
       acceptFull(res.view, res.me);
       return res;
     } catch (e) {
+      if (gen !== profileGeneration()) return null;
       if (e instanceof RequestError) {
         if (e.status === 401) setSession(null);
         toast(e.message, "bad");

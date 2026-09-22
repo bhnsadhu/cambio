@@ -77,3 +77,15 @@ export function storeName(name: string) {
   nameCache = name;
   for (const l of nameListeners) l();
 }
+
+/** A new account must never inherit another account's cached game seats. */
+export function clearAllSessions() {
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key?.startsWith("cambio:seat:")) localStorage.removeItem(key);
+    }
+  } catch { /* Storage can be disabled. */ }
+  cache.clear();
+  for (const listener of listeners) listener();
+}

@@ -4,18 +4,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { api, RequestError } from "@/lib/client/api";
-import { createProfile } from "@/lib/client/profile";
+import { useAccountReady } from "@/lib/client/profile";
+import { AuthForm } from "./Account";
 import { saveSession, storeName } from "@/lib/client/session";
 import { usePresence, useSocial } from "@/lib/client/social";
 import { useStoredName } from "@/lib/client/useStoredName";
 import { CardBack, FaceCard } from "./cards";
 import { FriendsPanel, Notifications } from "./Friends";
-import { ProfileBadge, ProfileCard, SaveProfile } from "./Profile";
+import { ProfileBadge, ProfileCard } from "./Profile";
 import { Button, Field, inputClass, PlayerName, Wordmark } from "./ui";
 
 export function Landing() {
   const router = useRouter();
   const social = useSocial();
+  const accountReady = useAccountReady();
   // Online and free to be asked to a table.
   usePresence(null);
   const [name, setName] = useStoredName();
@@ -60,11 +62,11 @@ export function Landing() {
           <span className="t-sub text-ink-3">Four seats. One code.</span>
           {social.profile
             ? <ProfileBadge profile={social.profile} />
-            : <Link href="/me"><Button variant="ghost" size="sm">Save a profile</Button></Link>}
+            : <Link href="/me"><Button variant="ghost" size="sm">Log in or create account</Button></Link>}
         </div>
       </header>
 
-      <section className="grid grid-cols-[1.1fr_1fr] gap-16 pt-16">
+      <section className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-10 lg:gap-16 pt-16">
         <div>
           {/* One clean row: same baseline, same size, no tilt, even spacing. */}
           <div className="mb-8 flex items-end gap-3" aria-hidden>
@@ -97,10 +99,10 @@ export function Landing() {
               <h2 className="t-headline">Open a table</h2>
               <p className="t-sub mt-1 text-ink-2">You host. You get a code to share.</p>
             </div>
-            <Field label="Your name">
-              <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name at the table" maxLength={18} />
+            <Field label="Display name">
+              <input className={inputClass} value={name} readOnly={!!social.profile} onChange={(e) => setName(e.target.value)} placeholder="Your name at the table" maxLength={18} />
             </Field>
-            <Button type="submit" variant="primary" size="lg" disabled={busy !== null || !name.trim()}>
+            <Button type="submit" variant="primary" size="lg" disabled={!accountReady || busy !== null || !name.trim()}>
               {busy === "create" ? "Opening" : "Open a table"}
             </Button>
           </form>
@@ -122,11 +124,11 @@ export function Landing() {
                   spellCheck={false}
                 />
               </Field>
-              <Field label="Your name">
-                <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" maxLength={18} />
+              <Field label="Display name">
+                <input className={inputClass} value={name} readOnly={!!social.profile} onChange={(e) => setName(e.target.value)} placeholder="Your name" maxLength={18} />
               </Field>
             </div>
-            <Button type="submit" variant="secondary" size="lg" disabled={busy !== null || !name.trim() || code.length < 5}>
+            <Button type="submit" variant="secondary" size="lg" disabled={!accountReady || busy !== null || !name.trim() || code.length < 5}>
               {busy === "join" ? "Joining" : "Join"}
             </Button>
           </form>
@@ -136,7 +138,7 @@ export function Landing() {
 
       {/* Who you are, and who you play with. A profile is optional: the game
           works without one, and remembers nothing. */}
-      <section className="grid grid-cols-[1.1fr_1fr] gap-6 pt-20">
+      <section className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-6 pt-20">
         {social.profile ? (
           <>
             <div className="flex flex-col gap-3">
@@ -150,11 +152,11 @@ export function Landing() {
             <div>
               <h2 className="t-title2">Keep a record.</h2>
               <p className="t-body mt-2 max-w-[420px] text-ink-2">
-                Save a profile and every round counts: wins at the top, a rank that climbs with them, your best hand,
+                Create an account and every round counts: wins at the top, a rank that climbs with them, your best hand,
                 your longest streak. Add friends by handle, see when they are at a table, and take the seat next to them.
               </p>
             </div>
-            <SaveProfile initialName={name} onSaved={async (n) => { await createProfile(n); await social.refresh(); }} />
+            <AuthForm initialMode="register" initialName={name} />
           </>
         )}
       </section>

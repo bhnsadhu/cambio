@@ -1,86 +1,46 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { AccountSettings, AuthForm } from "@/components/Account";
 import { FriendsPanel, Notifications } from "@/components/Friends";
-import { ProfileCard, SaveProfile } from "@/components/Profile";
+import { ProfileCard } from "@/components/Profile";
 import { Button, Wordmark } from "@/components/ui";
 import { usePresence, useSocial } from "@/lib/client/social";
-import { createProfile, renameProfile, signOut } from "@/lib/client/profile";
-import { getStoredName } from "@/lib/client/session";
+import { useAccountReady, useStoredProfile } from "@/lib/client/profile";
+import { useStoredName } from "@/lib/client/useStoredName";
 
-/** Your record, your friends, and the handle other people add you by. */
 export default function MePage() {
   const social = useSocial();
-  const [renaming, setRenaming] = useState(false);
-  const [leaving, setLeaving] = useState(false);
-  const profile = social.profile;
-  // Online, but not at a table.
+  const stored = useStoredProfile();
+  const ready = useAccountReady();
+  const [name] = useStoredName();
   usePresence(null);
-
   return (
-    <main className="mx-auto min-h-screen w-full max-w-[1000px] px-8 pb-20">
-      <header className="flex h-14 items-center justify-between">
+    <main className="mx-auto min-h-screen w-full max-w-[1080px] px-5 pb-20 sm:px-8">
+      <header className="flex h-16 items-center justify-between gap-3">
         <Link href="/" aria-label="Cambio home"><Wordmark /></Link>
-        <Link href="/"><Button variant="ghost" size="sm">Back to the tables</Button></Link>
+        <Link href="/" className="t-sub text-ink-2 hover:text-ink">Back to the tables</Link>
       </header>
-
-      {!profile ? (
-        <div className="mx-auto max-w-[460px] pt-16 animate-rise">
-          <h1 className="t-title">Keep a record.</h1>
-          <p className="t-body mt-2 mb-6 text-ink-2">
-            A profile remembers every round you play: wins, rank, best hand, and the friends you play them with.
-          </p>
-          <SaveProfile initialName={getStoredName()} onSaved={async (name) => { await createProfile(name); await social.refresh(); }} />
-        </div>
-      ) : (
-        <div className="grid grid-cols-[1.25fr_1fr] gap-6 pt-8 animate-rise">
-          <div className="flex flex-col gap-6">
-            <ProfileCard profile={profile} />
-            <section className="rounded-panel bg-surface p-6 hairline">
-              <h2 className="t-headline">Your handle</h2>
-              <p className="t-sub mt-1 text-ink-2">
-                Friends add you with <span className="font-semibold text-ink">@{profile.handle}</span>. It is yours for good;
-                the name above it is the one the table sees.
-              </p>
-              <div className="mt-4 flex gap-2">
-                {renaming ? (
-                  <div className="w-full">
-                    <SaveProfile
-                      initialName={profile.displayName}
-                      onSaved={async (name) => { await renameProfile(name); await social.refresh(); setRenaming(false); }}
-                    />
-                  </div>
-                ) : leaving ? (
-                  <div className="flex flex-col gap-2">
-                    <p className="t-sub text-ink-2">
-                      Sign out of <span className="font-medium text-ink">@{profile.handle}</span> on this device? This
-                      browser holds the only key to it. Without it, the record cannot be reached again.
-                    </p>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={async () => { await signOut(); setLeaving(false); await social.refresh(); }}
-                      >
-                        Sign out
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => setLeaving(false)}>Stay signed in</Button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <Button variant="secondary" size="sm" onClick={() => setRenaming(true)}>Change name</Button>
-                    <Button variant="ghost" size="sm" onClick={() => setLeaving(true)}>Sign out</Button>
-                  </>
-                )}
-              </div>
-            </section>
+      {!ready ? <div role="status" className="mx-auto max-w-[460px] py-20 text-ink-2">Checking your account...</div>
+        : !stored ? <div className="mx-auto max-w-[460px] pt-10 animate-rise">
+          <h1 className="t-title mb-6">Your Cambio account</h1>
+          <AuthForm initialName={name} />
+          <Link href="/" className="mt-5 block text-center"><Button variant="ghost">Play as a guest</Button></Link>
+        </div> : <>
+          <header className="pt-8 pb-6"><h1 className="t-title">Account settings</h1><p className="t-body mt-2 text-ink-2">Your name, your login, and your record.</p></header>
+          {stored.username ? <nav aria-label="Account sections" className="mb-6 flex flex-wrap gap-2">
+            {[["display-name", "Display name"], ["username", "Username"], ["password", "Password"], ["sign-out", "Sign out"], ["delete-account", "Delete account"]].map(([id, label]) => <a key={id} href={`#${id}`} className="t-sub rounded-full bg-surface-2 px-4 py-2 hover:bg-surface-3">{label}</a>)}
+          </nav> : null}
+          <div className="grid items-start gap-6 md:grid-cols-2">
+            <div className="flex flex-col gap-5">
+              {!stored.username ? <AuthForm legacy initialName={stored.profile.displayName} /> : <AccountSettings key={stored.profile.id} stored={stored} />}
+            </div>
+            <div className="flex flex-col gap-6">
+              <ProfileCard profile={social.profile ?? stored.profile} />
+              <FriendsPanel social={social} />
+            </div>
           </div>
-          <FriendsPanel social={social} />
-        </div>
-      )}
-
+        </>}
       <Notifications social={social} />
     </main>
   );

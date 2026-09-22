@@ -1,4 +1,5 @@
 import type { Action, PlayerView } from "@/lib/game/types";
+import type { Session } from "./session";
 import { profileToken } from "./profile";
 
 export interface ApiError { code: string; message: string }
@@ -28,7 +29,7 @@ async function call<T>(path: string, init: RequestInit & { token?: string | null
 }
 
 export interface Seat { code: string; playerId: string; token: string }
-export interface StateResponse { view: PlayerView; me: string | null }
+export interface StateResponse { view: PlayerView; me: string | null; seat?: Session | null }
 export interface ActionResponse extends StateResponse { note: { kind: "stick"; correct: boolean } | { kind: "cambio" } | null }
 
 export const api = {

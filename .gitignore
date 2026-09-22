@@ -42,3 +42,8 @@ next-env.d.ts
 
 # keep the env template
 !.env.example
+
+# local service state and browser test artifacts
+supabase/.temp/
+/test-results/
+/playwright-report/

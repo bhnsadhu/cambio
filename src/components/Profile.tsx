@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { averageScore, standingFor, standingLine, stickRate, winRate } from "@/lib/social/rank";
 import type { Profile } from "@/lib/social/types";
-import { Button, Chip, Field, inputClass } from "./ui";
+import { Chip } from "./ui";
 
 /**
  * A player's standing, after the way a phone game shows it: the number that
@@ -44,13 +44,13 @@ export function ProfileCard({ profile, compact = false }: { profile: Profile; co
 
       {compact ? null : (
         <>
-          <dl className="mt-6 grid grid-cols-4 gap-3">
+          <dl className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Stat k="Played" v={profile.roundsPlayed} />
             <Stat k="Win rate" v={profile.roundsPlayed ? `${Math.round(rate * 100)}%` : "N/A"} />
             <Stat k="Best hand" v={profile.bestScore ?? "N/A"} accent={profile.bestScore !== null} />
             <Stat k="Streak" v={profile.currentStreak} sub={profile.bestStreak ? `Best ${profile.bestStreak}` : undefined} />
           </dl>
-          <dl className="mt-3 grid grid-cols-4 gap-3">
+          <dl className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Stat k="Tables" v={profile.tablesPlayed} />
             <Stat k="Avg hand" v={avg === null ? "N/A" : avg.toFixed(1)} />
             <Stat k="Cambio" v={`${profile.cambioWins}/${profile.cambioCalls}`} sub="Made / called" />
@@ -76,54 +76,13 @@ function Stat({ k, v, sub, accent }: { k: string; v: ReactNode; sub?: string; ac
 export function ProfileBadge({ profile }: { profile: Profile }) {
   const standing = standingFor(profile.points);
   return (
-    <Link href="/me" className="press inline-flex items-center gap-2 rounded-full bg-surface-2 py-1 pl-3 pr-1.5 text-[13px] hover:bg-surface-3">
+    <Link href="/me" aria-label="Account settings" className="press inline-flex items-center gap-2 rounded-full bg-surface-2 py-1 pl-3 pr-1.5 text-[13px] hover:bg-surface-3">
       <span className="font-medium text-ink">{profile.displayName}</span>
+      <span className="text-ink-2">Account</span>
       <span className="text-ink-3">{standing.tier.name}</span>
       <span className="t-money inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-accent px-1.5 text-[12px] font-semibold text-black">
         {profile.roundsWon}
       </span>
     </Link>
-  );
-}
-
-/**
- * Saving a profile is one field and one button: no password, no email. The
- * device holds the key, the same way it holds a seat at a table.
- */
-export function SaveProfile({ initialName = "", onSaved }: { initialName?: string; onSaved: (name: string) => Promise<unknown> }) {
-  // The remembered name arrives after hydration, so the field follows it
-  // until it is typed in rather than freezing on an empty first render.
-  const [typed, setTyped] = useState<string | null>(null);
-  const name = typed ?? initialName;
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    setError(null);
-    try {
-      await onSaved(name.trim());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save that profile.");
-    } finally {
-      setBusy(false);
-    }
-  };
-  return (
-    <form onSubmit={submit} className="flex flex-col gap-4 rounded-panel bg-surface p-6 hairline">
-      <div>
-        <h2 className="t-headline">Save a profile</h2>
-        <p className="t-sub mt-1 text-ink-2">
-          Keeps your wins, your rank and your friends across games. No password: this browser holds the key.
-        </p>
-      </div>
-      <Field label="Your name">
-        <input className={inputClass} value={name} onChange={(e) => setTyped(e.target.value)} placeholder="What the table calls you" maxLength={18} />
-      </Field>
-      {error ? <p className="t-sub text-accent-ink">{error}</p> : null}
-      <Button type="submit" variant="primary" size="lg" disabled={busy || !name.trim()}>
-        {busy ? "Saving" : "Save profile"}
-      </Button>
-    </form>
   );
 }
