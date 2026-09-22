@@ -64,7 +64,7 @@ try {
     await pause(300);
   }
   if (!appReady) throw new Error('The test app did not start.');
-  testProcess = spawn(process.execPath, ['node_modules/@playwright/test/cli.js', 'test', '--reporter=line'], { env, stdio: 'inherit' });
+  testProcess = spawn(process.execPath, ['node_modules/@playwright/test/cli.js', 'test', '--reporter=line', ...process.argv.slice(2)], { env, stdio: 'inherit' });
   const result = await new Promise((resolve) => testProcess.once('exit', resolve));
   if (result !== 0) throw new Error('Account browser tests failed.');
   console.log('Database and browser lifecycle checks passed.');

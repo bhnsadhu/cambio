@@ -84,9 +84,10 @@ export function Landing() {
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-[1080px] px-5 pb-16 sm:px-8">
-      <header className="flex h-16 items-center justify-between gap-3">
+      <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 py-3">
         <Wordmark />
-        <nav className="flex items-center gap-4" aria-label="Main navigation">
+        <nav className="flex flex-wrap items-center gap-3 sm:gap-4" aria-label="Main navigation">
+          <Link href="/leaderboard" className="t-sub text-ink-2 hover:text-ink">Leaderboard</Link>
           {accountReady ? profile ? <>
             <Link href={`/p/${profile.handle}`} className="t-sub text-ink-2 hover:text-ink">Your record</Link>
             <AccountLink />

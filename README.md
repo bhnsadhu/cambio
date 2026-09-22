@@ -16,6 +16,7 @@ Open the link, create a table, and press **Start round**. Any seat still empty g
 | **Complete game engine** | Turn logic, power cards, anytime sticking, and every way a round can end, in about 850 lines of pure TypeScript with no I/O. |
 | **Bots that play from memory** | Three house bots fill empty seats and act only on information they have legitimately seen, at three difficulties. |
 | **Persistent accounts** | Wins, rank, best hand and streak across every table, with friends, invites and a light for whoever is playing right now. |
+| **Friends and global leaderboards** | Compare lifetime points with accepted friends or all players. Equal points share a rank, and your position stays visible even outside the current page. Guests can browse the global leaderboard. |
 | **Serverless architecture** | Runs on serverless functions and one Postgres database, with no dedicated game server. |
 | **Game and account tests** | Includes seeded bot versus bot tables played to the score, checking that every move is legal, no card is created or lost, and each difficulty beats the one below it. |
 

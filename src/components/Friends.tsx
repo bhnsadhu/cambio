@@ -59,11 +59,13 @@ export function FriendsPanel({
   );
 
   return (
-    <section className="flex flex-col gap-5 rounded-panel bg-surface p-6 hairline" aria-label="Friends">
+    <section id="friends" className="flex flex-col gap-5 rounded-panel bg-surface p-6 hairline" aria-label="Friends">
       <header className="flex items-baseline justify-between gap-3">
         <h2 className="t-headline">Friends</h2>
         <span className="t-footnote text-ink-3">{friends.length} saved</span>
       </header>
+
+      <Link href="/leaderboard?scope=friends" className="t-sub text-ink-2 hover:text-ink">Friends leaderboard</Link>
 
       <form onSubmit={add} className="flex gap-2">
         <input

@@ -3,7 +3,7 @@ import { loginHref, returnPath } from "./navigation";
 
 describe("Account return destinations", () => {
   it("resumes known screens and preserves a table or player", () => {
-    for (const path of ["/", "/me", "/g/ABCDE", "/p/player123"]) expect(returnPath(path)).toBe(path);
+    for (const path of ["/", "/me", "/g/ABCDE", "/p/player123", "/leaderboard", "/leaderboard?scope=friends", "/leaderboard?scope=all"]) expect(returnPath(path)).toBe(path);
     expect(loginHref("/g/ABCDE", "register")).toBe("/login?next=%2Fg%2FABCDE&mode=register");
   });
   it("cannot redirect outside the app or back into an authentication loop", () => {
