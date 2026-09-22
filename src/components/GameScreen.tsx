@@ -68,6 +68,11 @@ function GameShell({ code }: { code: string }) {
   }, [game, router]);
 
   const seated = !!game.session;
+  // Who is actually in a chair here, by profile: the table's own word on it,
+  // which beats a heartbeat that may have lapsed.
+  const seatedProfiles = (view?.public.players ?? [])
+    .map((p) => p.profileId)
+    .filter((id): id is string => !!id);
   const showExplainer = replay || (seated && !!view && prefs.onboarded !== true);
   const closeExplainer = useCallback(() => { setPref("onboarded", true); setReplay(false); }, []);
   const flights = useFlights(view, game.me);
@@ -89,7 +94,7 @@ function GameShell({ code }: { code: string }) {
     body = <MidRound code={code} onWatch={() => setWatching(true)} />;
   } else if (view.public.phase === "lobby") {
     body = (
-      <WithFriends social={social} code={code}>
+      <WithFriends social={social} code={code} seated={seatedProfiles}>
       <Lobby
         view={view.public}
         me={game.me}
@@ -163,13 +168,13 @@ function GameShell({ code }: { code: string }) {
  * While the table is still being set, the friends list sits beside it: a
  * friend is one click from an invite to this exact code.
  */
-function WithFriends({ social, code, children }: { social: ReturnType<typeof useSocial>; code: string; children: React.ReactNode }) {
+function WithFriends({ social, code, seated, children }: { social: ReturnType<typeof useSocial>; code: string; seated: string[]; children: React.ReactNode }) {
   return (
     <div className="mx-auto grid w-full max-w-[1280px] grid-cols-[minmax(0,1fr)_320px] gap-8">
       {children}
       <div className="pt-12">
         {social.profile ? (
-          <FriendsPanel social={social} inviteCode={code} />
+          <FriendsPanel social={social} inviteCode={code} seated={seated} />
         ) : (
           <section className="rounded-panel bg-surface p-6 hairline">
             <h2 className="t-headline">Playing with friends?</h2>

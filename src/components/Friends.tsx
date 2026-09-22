@@ -15,9 +15,20 @@ import { Button, Pip, PresenceDot, inputClass, presenceOf } from "./ui";
  * button says so — the whole point of knowing who is playing is being able to
  * sit down with them.
  */
-export function FriendsPanel({ social, inviteCode = null }: { social: SocialHook; inviteCode?: string | null }) {
+export function FriendsPanel({
+  social,
+  inviteCode = null,
+  seated = [],
+}: {
+  social: SocialHook;
+  inviteCode?: string | null;
+  /** profile ids actually sitting at `inviteCode`, straight from the table */
+  seated?: string[];
+}) {
   // `inviteCode` doubles as "the table I am at": a friend already sitting at
-  // it is not somewhere to go, and is not worth inviting either.
+  // it is not somewhere to go, and is not worth inviting either. The seating
+  // comes from the table itself rather than from their heartbeat, which can
+  // lapse while they are still very much in the chair.
   const [handle, setHandle] = useState("");
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -94,7 +105,9 @@ export function FriendsPanel({ social, inviteCode = null }: { social: SocialHook
 
       {friends.length ? (
         <ul className="flex flex-col gap-2">
-          {friends.map((f) => <FriendRow key={f.id} friend={f} social={social} inviteCode={inviteCode} />)}
+          {friends.map((f) => (
+            <FriendRow key={f.id} friend={f} social={social} inviteCode={inviteCode} atThisTable={seated.includes(f.id)} />
+          ))}
         </ul>
       ) : (
         <p className="t-sub text-ink-3">
@@ -128,16 +141,16 @@ export function FriendsPanel({ social, inviteCode = null }: { social: SocialHook
   );
 }
 
-function FriendRow({ friend, social, inviteCode }: { friend: Friend; social: SocialHook; inviteCode: string | null }) {
+function FriendRow({ friend, social, inviteCode, atThisTable = false }: { friend: Friend; social: SocialHook; inviteCode: string | null; atThisTable?: boolean }) {
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const live = friend.playing;
-  const here = !!live && !!inviteCode && live.code === inviteCode;
+  const here = atThisTable || (!!live && !!inviteCode && live.code === inviteCode);
   const canJoin = !!live && !here && live.openSeats > 0;
   const asked = social.social.sent.some((s) => s.toId === friend.id && s.code === inviteCode);
   // You can only ask someone who is free to be asked: not already at this
   // table, not sitting at another one.
-  const invitable = !!inviteCode && !live;
+  const invitable = !!inviteCode && !live && !here;
 
   const invite = async () => {
     if (!inviteCode) return;
@@ -156,18 +169,18 @@ function FriendRow({ friend, social, inviteCode }: { friend: Friend; social: Soc
             <Link href={`/p/${friend.handle}`} className="hover:text-accent">{friend.displayName}</Link>
           </p>
           <p className="t-footnote flex items-center gap-1.5 text-ink-3">
-            <PresenceDot state={presenceOf(friend)} />
-            {live
-              ? here
-                ? <>At this table with you</>
-                : canJoin
+            <PresenceDot state={here ? "playing" : presenceOf(friend)} />
+            {here
+              ? <>At this table with you</>
+              : live
+                ? canJoin
                   ? <>At table {live.code} · seat open</>
                   : <>At table {live.code} · {live.phase === "lobby" ? "filling up" : "mid round"}</>
-              : friend.online
-                ? <>Online</>
-                : friend.playedTogether > 0
-                  ? <>{friend.yourWins}&ndash;{friend.theirWins} across {friend.playedTogether} {friend.playedTogether === 1 ? "round" : "rounds"}</>
-                  : <>@{friend.handle}</>}
+                : friend.online
+                  ? <>Online</>
+                  : friend.playedTogether > 0
+                    ? <>{friend.yourWins}&ndash;{friend.theirWins} across {friend.playedTogether} {friend.playedTogether === 1 ? "round" : "rounds"}</>
+                    : <>@{friend.handle}</>}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
