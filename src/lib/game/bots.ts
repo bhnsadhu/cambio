@@ -35,6 +35,26 @@ export function planBots(state: GameState, now: number, jitter: Jitter): BotPlan
   if (state.paused) return plans;
   const bots = state.players.filter((p) => p.isBot);
 
+  // The ready check that opens a round. Bots are in the moment they are
+  // asked; the seat that never answers is carried by the deadline instead of
+  // holding the table up for good.
+  if (state.phase === "ready") {
+    for (const bot of bots) {
+      if (state.readyIds.includes(bot.id)) continue;
+      plans.push({ playerId: bot.id, action: { type: "ready" }, delayMs: 0, intent: `${bot.id}:ready:${state.round}` });
+    }
+    if (state.readyDeadline !== null && state.players.some((p) => !state.readyIds.includes(p.id))) {
+      const reporter = bots[0] ?? state.players[0];
+      plans.push({
+        playerId: reporter.id,
+        action: { type: "timeout" },
+        delayMs: Math.max(0, state.readyDeadline - now),
+        intent: `ready-timeout:${state.readyDeadline}`,
+      });
+    }
+    return plans;
+  }
+
   // Anyone may advance the opening peek once its window has closed.
   if (state.phase === "peek" && state.openingPeekUntil !== null) {
     const actor = bots[0] ?? state.players[0];

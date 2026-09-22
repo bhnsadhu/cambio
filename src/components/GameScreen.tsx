@@ -10,6 +10,7 @@ import { useStoredName } from "@/lib/client/useStoredName";
 import { PositionsProvider } from "@/lib/client/positions";
 import { setPref, usePrefs } from "@/lib/client/prefs";
 import { Lobby } from "./Lobby";
+import { ReadyCheck } from "./ReadyCheck";
 import { Table } from "./Table";
 import { Explainer } from "./Explainer";
 import { HowToPlay } from "./HowToPlay";
@@ -82,6 +83,8 @@ function GameShell({ code }: { code: string }) {
     body = <MidRound code={code} onWatch={() => setWatching(true)} />;
   } else if (view.public.phase === "lobby") {
     body = <Lobby view={view.public} me={game.me} busy={game.busy} onStart={() => void game.send({ type: "start" })} />;
+  } else if (view.public.phase === "ready") {
+    body = <ReadyCheck view={view.public} me={game.me} busy={game.busy} skew={game.skew} onReady={() => void game.send({ type: "ready" })} />;
   } else {
     body = <Table game={game} flights={flights} onLeave={() => void leave()} />;
   }

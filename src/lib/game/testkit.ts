@@ -45,12 +45,25 @@ export function table(ctx: EngineCtx, humans = 4) {
   return { state, ids, hostId };
 }
 
+/** Every human seat answers the ready check; bots already have. */
+export function readyAll(state: GameState, ids: string[], ctx: EngineCtx): GameState {
+  let s = state;
+  for (const id of ids) if (!s.readyIds.includes(id)) s = act(s, id, { type: "ready" }, ctx);
+  return s;
+}
+
+/** Closes the lobby and deals: host starts, every seat says ready. */
+export function dealt(ctx: ReturnType<typeof makeCtx>, humans = 4) {
+  const t = table(ctx, humans);
+  const state = readyAll(act(t.state, t.hostId, { type: "start" }, ctx), t.ids, ctx);
+  return { ...t, state };
+}
+
 /** Starts the round and advances past the opening peek. */
 export function started(ctx: ReturnType<typeof makeCtx>, humans = 4) {
-  const t = table(ctx, humans);
-  let state = act(t.state, t.hostId, { type: "start" }, ctx);
+  const t = dealt(ctx, humans);
   ctx.tick(10_001);
-  state = act(state, t.hostId, { type: "advance" }, ctx);
+  const state = act(t.state, t.hostId, { type: "advance" }, ctx);
   return { ...t, state };
 }
 

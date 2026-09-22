@@ -42,6 +42,11 @@ export const OPENING_PEEK_MS = 5_000;
 export const DEAL_MS = 2_600;
 /** An idle human forfeits the turn and draws a penalty after this long. */
 export const TURN_TIMEOUT_MS = 30_000;
+/**
+ * How long a ready check waits on a seat that never answers. The round then
+ * starts without them rather than leaving the table stuck on one empty chair.
+ */
+export const READY_TIMEOUT_MS = 45_000;
 export const PEEK_REVEAL_MS = 6_000;
 export const KING_LOOK_MS = 120_000;
 export const MAX_LOG = 40;
@@ -121,6 +126,8 @@ export function createGame(
     pauseVote: null,
     cambio: null,
     reveals: [],
+    readyIds: [],
+    readyDeadline: null,
     dealingUntil: null,
     openingPeekUntil: null,
     replayVotes: [],
@@ -195,6 +202,10 @@ export function applyAction(input: GameState, env: ActionEnvelope, ctx: EngineCt
   let note: ApplyResult["note"];
   switch (a.type) {
     case "start": doStart(state, actor, ctx); break;
+    case "ready": {
+      if (!doReady(state, actor, ctx)) return { state: input, changed: false };
+      break;
+    }
     case "advance": {
       if (!doAdvance(state, ctx)) return { state: input, changed: false };
       break;
@@ -250,6 +261,53 @@ function doStart(state: GameState, actor: Player, ctx: EngineCtx) {
   // A table that came back to the lobby between rounds keeps counting up.
   state.round = state.results.length + 1;
   state.leadSeat = 0;
+  openReadyCheck(state, ctx);
+}
+
+/**
+ * The host closing the lobby does not deal: it sets the seats and asks every
+ * one of them whether they are in. Nothing is shuffled until the last seat
+ * has answered, so nobody is dealt a hand while they are still reading the
+ * rules. Bots answer the instant they are asked.
+ */
+function openReadyCheck(state: GameState, ctx: EngineCtx) {
+  state.phase = "ready";
+  state.readyIds = state.players.filter((p) => p.isBot).map((p) => p.id);
+  state.readyDeadline = ctx.now + READY_TIMEOUT_MS;
+  state.dealingUntil = null;
+  state.openingPeekUntil = null;
+  state.reveals = [];
+  state.replayVotes = [];
+  const waiting = state.players.filter((p) => !state.readyIds.includes(p.id));
+  addLog(state, ctx, waiting.length
+    ? `Seats are set. Ready check: waiting on ${joinNames(waiting.map((p) => p.name))}.`
+    : `Seats are set.`,
+    { kind: "table", tone: "accent", weight: "loud" });
+  settleReady(state, ctx);
+}
+
+/**
+ * One click each. Returns false when this seat had already said yes, so a
+ * double click is a harmless no-op rather than an error.
+ */
+function doReady(state: GameState, actor: Player, ctx: EngineCtx): boolean {
+  requirePhase(state, ["ready"]);
+  if (state.readyIds.includes(actor.id)) return false;
+  state.readyIds.push(actor.id);
+  const waiting = state.players.filter((p) => !state.readyIds.includes(p.id));
+  addLog(state, ctx, waiting.length
+    ? `${actor.name} is ready. Waiting on ${joinNames(waiting.map((p) => p.name))}.`
+    : `${actor.name} is ready.`,
+    { kind: "table", weight: "normal", actorId: actor.id });
+  settleReady(state, ctx);
+  return true;
+}
+
+/** Deals the moment the last seat has answered the check. */
+function settleReady(state: GameState, ctx: EngineCtx) {
+  if (state.players.some((p) => !state.readyIds.includes(p.id))) return;
+  state.readyDeadline = null;
+  addLog(state, ctx, `Everyone is ready.`, { kind: "table", tone: "accent", weight: "normal" });
   dealRound(state, ctx);
 }
 
@@ -283,10 +341,14 @@ function doPlayAgain(state: GameState, actor: Player, ctx: EngineCtx): boolean {
  * The bots are stood down on the way, since `start` seats them again.
  */
 function doLeaveTable(state: GameState, actor: Player, ctx: EngineCtx) {
-  requirePhase(state, ["lobby", "scoring"]);
-  const wasPlaying = state.phase === "scoring";
+  requirePhase(state, ["lobby", "ready", "scoring"]);
+  // A seat leaving a set table takes it apart: the bots stand down so the
+  // seats can close up, and `start` seats them again.
+  const wasPlaying = state.phase === "scoring" || state.phase === "ready";
   state.players = state.players.filter((p) => p.id !== actor.id && (!wasPlaying || !p.isBot));
   state.replayVotes = [];
+  state.readyIds = [];
+  state.readyDeadline = null;
   if (wasPlaying) {
     state.phase = "lobby";
     state.turn = null;
@@ -350,6 +412,8 @@ function dealRound(state: GameState, ctx: EngineCtx) {
   state.cambio = null;
   state.reveals = [];
   state.botKnown = {};
+  state.readyIds = [];
+  state.readyDeadline = null;
   state.dealingUntil = null;
   for (const p of state.players) {
     p.hand = [null, null, null, null];
@@ -692,6 +756,19 @@ function doGive(state: GameState, actor: Player, cardId: string, ctx: EngineCtx)
  * any client or the bot runner may fire on a timer.
  */
 function doTimeout(state: GameState, ctx: EngineCtx): boolean {
+  // A ready check nobody answers cannot hold the table forever: once the
+  // window closes, every remaining seat is taken as ready and the round is
+  // dealt. A seat that walked away forfeits its turns to the turn clock.
+  if (state.phase === "ready") {
+    if (state.readyDeadline === null || ctx.now < state.readyDeadline) return false;
+    const waiting = state.players.filter((p) => !state.readyIds.includes(p.id));
+    if (waiting.length === 0) return false;
+    for (const p of waiting) state.readyIds.push(p.id);
+    addLog(state, ctx, `${joinNames(waiting.map((p) => p.name))} did not answer the ready check. The round starts anyway.`,
+      { kind: "timeout", tone: "bad", weight: "normal", subjectIds: waiting.map((p) => p.id) });
+    settleReady(state, ctx);
+    return true;
+  }
   if (state.phase !== "playing" && state.phase !== "final") return false;
   let acted = false;
 
@@ -1002,6 +1079,7 @@ function requireTurn(state: GameState, actor: Player, stage: GameState["turn"] e
 function describePhase(phase: GameState["phase"]): string {
   switch (phase) {
     case "lobby": return "in the lobby";
+    case "ready": return "waiting on the ready check";
     case "peek": return "in the opening peek";
     case "playing": return "in play";
     case "final": return "in its final turns";

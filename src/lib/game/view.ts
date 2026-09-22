@@ -31,6 +31,8 @@ export function projectPublic(state: GameState, version: number, now: number): P
     discardTop: top ? { ...top } : null,
     turn: state.turn ? { playerId: state.turn.playerId, stage: state.turn.stage, startedAt: state.turn.startedAt } : null,
     turnDeadline: state.turn && !state.players.find((p) => p.id === state.turn!.playerId)?.isBot ? state.turn.startedAt + TURN_TIMEOUT_MS : null,
+    readyIds: (state.readyIds ?? []).slice(),
+    readyDeadline: state.readyDeadline ?? null,
     pendingPower: state.pendingPower
       ? { playerId: state.pendingPower.playerId, kind: state.pendingPower.kind, lookedDone: !!state.pendingPower.looked }
       : null,

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { applyAction, canStick, cardCount, createGame, DEAL_MS, GameError, joinGame, OPENING_PEEK_MS, ownerOf, TURN_TIMEOUT_MS } from "./engine";
+import { applyAction, canStick, cardCount, createGame, DEAL_MS, GameError, joinGame, OPENING_PEEK_MS, ownerOf, READY_TIMEOUT_MS, TURN_TIMEOUT_MS } from "./engine";
 import { cardValue, powerOf } from "./cards";
 import { projectFor } from "./view";
 import { planBots } from "./bots";
-import { act, card, makeCtx, player, rig, rigDeck, started, table } from "./testkit";
+import { act, card, makeCtx, player, readyAll, rig, rigDeck, started, table } from "./testkit";
 import type { GameState } from "./types";
 
 const topOf = (s: GameState) => s.cards[s.discard[s.discard.length - 1]];
@@ -13,9 +13,19 @@ describe("lobby", () => {
     const ctx = makeCtx();
     const t = table(ctx, 2);
     expect(t.state.players.map((p) => p.seat)).toEqual([0, 1]);
-    const s = act(t.state, t.hostId, { type: "start" }, ctx);
-    expect(s.players.map((p) => p.name)).toEqual(["Host", "P2", "Camryn", "Camron"]);
-    expect(s.players.filter((p) => p.isBot).map((p) => p.seat)).toEqual([2, 3]);
+    const ready = act(t.state, t.hostId, { type: "start" }, ctx);
+    expect(ready.players.map((p) => p.name)).toEqual(["Host", "P2", "Camryn", "Camron"]);
+    expect(ready.players.filter((p) => p.isBot).map((p) => p.seat)).toEqual([2, 3]);
+    // Seats are set, but nothing is dealt until every seat says ready. The
+    // bots are in the moment the check opens.
+    expect(ready.phase).toBe("ready");
+    expect(ready.deck).toHaveLength(0);
+    expect(ready.readyIds).toEqual(ready.players.filter((p) => p.isBot).map((p) => p.id));
+    const half = act(ready, t.hostId, { type: "ready" }, ctx);
+    expect(half.phase).toBe("ready");
+    // a second click from the same seat changes nothing
+    expect(applyAction(half, { actionId: "r2", playerId: t.hostId, action: { type: "ready" } }, ctx).changed).toBe(false);
+    const s = act(half, t.ids[1], { type: "ready" }, ctx);
     expect(s.phase).toBe("peek");
     expect(s.deck.length).toBe(54 - 16);
     for (const p of s.players) expect(cardCount(p)).toBe(4);
@@ -39,7 +49,7 @@ describe("lobby", () => {
   it("deals before the peek: the reveal window opens once the cards have landed", () => {
     const ctx = makeCtx();
     const t = table(ctx, 1);
-    const s = act(t.state, t.hostId, { type: "start" }, ctx);
+    const s = readyAll(act(t.state, t.hostId, { type: "start" }, ctx), t.ids, ctx);
     const host = player(s, t.hostId);
     const rev = s.reveals.find((r) => r.toPlayerId === host.id)!;
     expect(rev.kind).toBe("opening");
@@ -586,7 +596,9 @@ describe("cambio and round end", () => {
     const { state: rejoined, playerId } = joinGame(empty, "Late", ctx);
     expect(rejoined.hostId).toBe(playerId);
     expect(rejoined.players[0].isHost).toBe(true);
-    expect(act(rejoined, playerId, { type: "start" }, ctx).phase).toBe("peek");
+    const set = act(rejoined, playerId, { type: "start" }, ctx);
+    expect(set.phase).toBe("ready");
+    expect(act(set, playerId, { type: "ready" }, ctx).phase).toBe("peek");
   });
 
   it("the host leaving hands the table to the next seat", () => {
@@ -719,7 +731,7 @@ describe("idle timeout", () => {
   it("does nothing before the deadline or for a bot's turn", () => {
     const ctx = makeCtx(6);
     const t = table(ctx, 1);
-    let s = act(t.state, t.hostId, { type: "start" }, ctx);
+    let s = readyAll(act(t.state, t.hostId, { type: "start" }, ctx), t.ids, ctx);
     ctx.tick(DEAL_MS + OPENING_PEEK_MS + 1);
     s = act(s, t.hostId, { type: "advance" }, ctx);
     ctx.tick(TURN_TIMEOUT_MS - 1000);
@@ -847,7 +859,7 @@ describe("pausing", () => {
   it("holds the opening peek and its reveals for the length of the pause", () => {
     const ctx = makeCtx(23);
     const t = table(ctx, 2);
-    let s = act(t.state, t.hostId, { type: "start" }, ctx);
+    let s = readyAll(act(t.state, t.hostId, { type: "start" }, ctx), t.ids, ctx);
     const peekUntil = s.openingPeekUntil!;
     ctx.tick(1_000);
     s = act(s, t.hostId, { type: "pauseRequest" }, ctx);
@@ -874,5 +886,74 @@ describe("pausing", () => {
     expect(() => act(s, ids[1], { type: "pauseRequest" }, ctx)).toThrow(/already a request/);
     // agreeing twice is a no-op rather than an error
     expect(applyAction(s, { actionId: "v2", playerId: ids[0], action: { type: "pauseVote", agree: true } }, ctx).changed).toBe(false);
+  });
+});
+
+describe("ready check", () => {
+  it("carries a seat that never answers, once the window closes", () => {
+    const ctx = makeCtx(41);
+    const t = table(ctx, 2);
+    let s = act(t.state, t.hostId, { type: "start" }, ctx);
+    expect(s.readyDeadline).toBe(ctx.now + READY_TIMEOUT_MS);
+    s = act(s, t.hostId, { type: "ready" }, ctx);
+    // the other human is still reading the rules: nothing is dealt yet
+    ctx.tick(READY_TIMEOUT_MS - 1);
+    expect(applyAction(s, { actionId: "rt0", playerId: t.hostId, action: { type: "timeout" } }, ctx).changed).toBe(false);
+    expect(s.phase).toBe("ready");
+    ctx.tick(2);
+    s = act(s, t.hostId, { type: "timeout" }, ctx);
+    expect(s.phase).toBe("peek");
+    expect(s.readyDeadline).toBeNull();
+    expect(s.log.some((l) => /did not answer the ready check/.test(l.text))).toBe(true);
+    // and the check does not fire twice
+    expect(applyAction(s, { actionId: "rt2", playerId: t.hostId, action: { type: "timeout" } }, ctx).changed).toBe(false);
+  });
+
+  it("bots answer at once and the runner carries the deadline", () => {
+    const ctx = makeCtx(42);
+    const t = table(ctx, 2);
+    const s = act(t.state, t.hostId, { type: "start" }, ctx);
+    const bots = s.players.filter((p) => p.isBot);
+    expect(bots.map((p) => p.id).every((id) => s.readyIds.includes(id))).toBe(true);
+    const plans = planBots(s, ctx.now, () => 0.5);
+    expect(plans.map((p) => p.action.type)).toEqual(["timeout"]);
+    expect(plans[0].delayMs).toBe(READY_TIMEOUT_MS);
+  });
+
+  it("nothing is dealt and no card exists until the last seat is in", () => {
+    const ctx = makeCtx(43);
+    const t = table(ctx, 3);
+    const s = act(t.state, t.hostId, { type: "start" }, ctx);
+    expect(Object.keys(s.cards)).toHaveLength(0);
+    expect(s.players.every((p) => cardCount(p) === 0)).toBe(true);
+    expect(s.reveals).toHaveLength(0);
+    expect(() => act(s, t.hostId, { type: "draw" }, ctx)).toThrow(/ready check/);
+    const dealtState = readyAll(s, t.ids, ctx);
+    expect(dealtState.phase).toBe("peek");
+    expect(Object.keys(dealtState.cards)).toHaveLength(54);
+  });
+
+  it("a seat leaving the ready check stands the table back down", () => {
+    const ctx = makeCtx(44);
+    const t = table(ctx, 2);
+    let s = act(t.state, t.hostId, { type: "start" }, ctx);
+    expect(s.players).toHaveLength(4);
+    s = act(s, t.ids[1], { type: "leaveTable" }, ctx);
+    expect(s.phase).toBe("lobby");
+    expect(s.players.map((p) => p.id)).toEqual([t.hostId]);
+    expect(s.readyIds).toEqual([]);
+    expect(s.readyDeadline).toBeNull();
+    // the host can set the table again
+    expect(act(s, t.hostId, { type: "start" }, ctx).phase).toBe("ready");
+  });
+
+  it("the ready check is projected to every seat", () => {
+    const ctx = makeCtx(45);
+    const t = table(ctx, 2);
+    const s = act(t.state, t.hostId, { type: "start" }, ctx);
+    const v = projectFor(s, 1, t.ids[1], ctx.now).public;
+    expect(v.phase).toBe("ready");
+    expect(v.readyIds).toEqual(s.readyIds);
+    expect(v.readyDeadline).toBe(s.readyDeadline);
   });
 });

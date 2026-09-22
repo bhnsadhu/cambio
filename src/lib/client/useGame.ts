@@ -169,6 +169,12 @@ export function useGame(code: string): GameHook {
         reportedDeadline.current = v.turnDeadline;
         void send({ type: "timeout" });
       }
+      // A ready check nobody answers: report it so the round is dealt anyway.
+      if (v.phase === "ready" && v.readyDeadline !== null && serverNow >= v.readyDeadline + 700
+          && sessionRef.current && reportedDeadline.current !== v.readyDeadline) {
+        reportedDeadline.current = v.readyDeadline;
+        void send({ type: "timeout" });
+      }
       if (v.phase === "peek" && v.openingPeekUntil !== null && serverNow >= v.openingPeekUntil + 150) {
         // The deadline is part of the key: a pause pushes it forward, and the
         // resumed peek still needs someone to advance it.
@@ -183,7 +189,8 @@ export function useGame(code: string): GameHook {
         (v.turnDeadline !== null && serverNow > v.turnDeadline + 3000) ||
         (v.pendingPower && v.players.find((p) => p.id === v.pendingPower!.playerId)?.isBot) ||
         v.pendingGives.some((g) => v.players.find((p) => p.id === g.from)?.isBot) ||
-        (v.phase === "peek" && v.openingPeekUntil !== null && serverNow > v.openingPeekUntil + 2000);
+        (v.phase === "peek" && v.openingPeekUntil !== null && serverNow > v.openingPeekUntil + 2000) ||
+        (v.phase === "ready" && v.players.some((p) => p.isBot && !v.readyIds.includes(p.id)));
       if (botMustAct && Date.now() - lastChange.current > NUDGE_AFTER_MS && Date.now() - lastNudge.current > NUDGE_AFTER_MS) {
         lastNudge.current = Date.now();
         void api.nudge(code).catch(() => {});

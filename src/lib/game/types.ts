@@ -20,6 +20,7 @@ export interface Card {
 
 export type Phase =
   | "lobby"    // waiting for seats / host to start
+  | "ready"    // seats are set; every player says when they are in
   | "peek"     // opening 10s memorisation window
   | "playing"  // normal turn loop
   | "final"    // cambio has been called; remaining last turns are being taken
@@ -183,6 +184,13 @@ export interface GameState {
   cambio: CambioState | null;
   reveals: Reveal[];
   /**
+   * The ready check that opens a round: who has said they are in. Bots are
+   * added the moment the check opens, so a table only ever waits on humans.
+   */
+  readyIds: string[];
+  /** epoch ms after which an unanswered ready check starts the round anyway */
+  readyDeadline: number | null;
+  /**
    * While the deal is still landing on the table. The opening peek only
    * starts once this passes, so a round reads as shuffle, deal, then look.
    */
@@ -208,6 +216,8 @@ export interface GameState {
 
 export type Action =
   | { type: "start" }
+  /** say you are in during the ready check that opens a round */
+  | { type: "ready" }
   | { type: "advance" }             // peek window -> first turn (idempotent)
   | { type: "draw" }
   | { type: "place" }               // discard the drawn card (may trigger power)
@@ -275,6 +285,9 @@ export interface PublicView {
   pauseVote: PauseVote | null;
   /** epoch ms after which the current human turn is forfeited */
   turnDeadline: number | null;
+  /** during the ready check: who has said they are in, and when it gives up waiting */
+  readyIds: string[];
+  readyDeadline: number | null;
   cambio: { callerId: string; reason: "called" | "zero"; remaining: string[] } | null;
   dealingUntil: number | null;
   openingPeekUntil: number | null;

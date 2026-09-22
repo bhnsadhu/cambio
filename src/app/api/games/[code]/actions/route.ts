@@ -6,7 +6,7 @@ import { GameError } from "@/lib/game/engine";
 import type { Action } from "@/lib/game/types";
 
 const ACTION_TYPES = new Set<Action["type"]>([
-  "start", "advance", "draw", "place", "swap", "callCambio", "peekOwn", "peekOther",
+  "start", "ready", "advance", "draw", "place", "swap", "callCambio", "peekOwn", "peekOther",
   "blindSwap", "kingLook", "kingDecide", "skipPower", "stick", "give", "playAgain", "timeout",
   "pauseRequest", "pauseVote", "leaveTable",
 ]);
