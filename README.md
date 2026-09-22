@@ -4,7 +4,7 @@ A real time multiplayer web app for the card game Cambio, also known as Cabo. It
 
 **Play it live: [cambio.bhanusadhu.com](https://cambio.bhanusadhu.com)**
 
-Open the link, create a table, and press **Start round**. Any seat still empty goes to Camryn, Camron or Cami.
+Open the link, create a table, and press **Start round**. Any seat still empty goes to Cameron, Camila or Cami, at easy, medium or hard. Nothing is dealt until every seat says it is ready.
 
 ---
 
@@ -14,9 +14,10 @@ Open the link, create a table, and press **Start round**. Any seat still empty g
 | --- | --- |
 | **Real time multiplayer** | Every move streams to all four seats over Supabase Realtime. Simultaneous moves are serialized, and the rules decide every late arrival. |
 | **Complete game engine** | Turn logic, power cards, anytime sticking, and every way a round can end, in about 850 lines of pure TypeScript with no I/O. |
-| **Bots that play from memory** | Three house bots fill empty seats and act only on information they have legitimately seen. |
+| **Bots that play from memory** | Three house bots fill empty seats and act only on information they have legitimately seen, at three difficulties. |
+| **Saved profiles** | Wins, rank, best hand and streak across every table, with friends, invites and a light for whoever is playing right now. |
 | **Serverless architecture** | Runs on serverless functions and one Postgres database, with no dedicated game server. |
-| **47 tests** | Includes 40 seeded bot versus bot rounds played to the score, checking that every move is legal and no card is created or lost. |
+| **72 tests** | Includes seeded bot versus bot tables played to the score, checking that every move is legal, no card is created or lost, and each difficulty beats the one below it. |
 
 ---
 
@@ -65,13 +66,14 @@ If two players act in the same few milliseconds, one commit loses the race, relo
 | **Turns** | Draw, then place the card on the pile or swap it into any slot at the table. Each turn stage is enforced, and an out of turn move returns a typed error. |
 | **Swap targets** | A swap is not confined to your own hand. Push the drawn card onto another player and they are left holding it, while the card it replaced goes face up on the pile. |
 | **Power cards** | Four powers cover peeking at your cards, peeking at opponents' cards, blind swaps, and looking before an optional swap. A power with no legal target fizzles. |
-| **Anytime sticking** | Any player who is not drawing or deciding on a card can attempt to stick a card matching the top of the pile. |
+| **Anytime sticking** | Any player may stick a card matching the top of the pile at any moment, including on their own turn, while holding a drawn card or resolving a power. |
 | **Stick resolution** | A correct stick removes the card. Sticking someone else's card means you owe them one of yours. A wrong stick draws a penalty and reveals nothing. |
 | **Competing sticks** | If two players stick the same card, the first wins and the second gets “too late” with no penalty. Sticks follow card identity rather than slot position. |
 | **Round endings** | Calling Cambio or reaching zero cards triggers exactly one more turn for everyone else, even if the trigger happens during another player's turn. |
 | **Final scoring** | Players who reach zero during final turns leave the queue. Scoring waits for any card still owed after a stick. The lowest total wins, and ties stand. |
 | **Idle players** | A human who sits on a turn for 30 seconds forfeits it and draws a penalty. An owed card that is never handed over is given at random. |
 | **Unanimous pause** | Any seat can request a pause, every seat must agree, and one decline cancels it. On resume, every clock shifts forward by the time held. |
+| **Ready checks** | The host sets the seats; the deck is only shuffled once every seat has said it is ready. Bots answer at once, and a seat that never answers is carried after 45 seconds. |
 | **Between rounds** | Another round is the table's call, not the host's. Every seat asks for one and the last yes deals, with bots agreeing the moment the round is scored. |
 | **Leaving** | Anyone who leaves instead sends the rest back to the lobby with the seats closed up, so they can invite someone or let a bot sit down. |
 | **Narration** | Every rule that fires writes a structured event: the kind of move, who made it, whose cards it touched, and which cards to light up. Card IDs travel with it and ranks never do. |
@@ -103,9 +105,34 @@ Tracking by ID means knowledge follows a card as it moves between hands. That kn
 | **Choose a blind swap** | Trade its worst known card for a known lower card, or an unknown card belonging to the opponent closest to going out |
 | **Keep a black king** | Keep its value of 0 instead of spending the power when it has a bad card to replace |
 
+Each bot seat is set before the deal, and the level changes how it thinks rather than how much it is allowed to see.
+
+| Level | How it plays |
+| --- | --- |
+| **Easy** | Lets nearly half the sticks it could make go by, dithers over the drawn card, gives away whatever is nearest, muddles a king it has just looked at, and calls Cambio on a hunch. It will even stick a card it has never seen. |
+| **Medium** | The house's basic strategy, and what the bots have always played. |
+| **Hard** | Counts what the pile has swallowed to price the cards it has not seen, weighs its hand against every other hand before calling, aims its peeks and swaps at the seat closest to winning, and sticks about twice as fast as a medium bot. |
+
+Measured over seeded tables played to the score, hard takes 153 rounds to medium's 115 head to head, and both beat easy better than two to one. The test suite asserts that ordering, so a change that weakens a level fails the build.
+
 Each move waits a randomized, human paced delay. The intent is checked again before it commits, so a bot never sticks a card a human already took.
 
 After every human action, the server starts a bot runner with `waitUntil`. A 20 second database lease keeps it to one runner per game. If a runner dies, the lease expires and the next action or a client nudge starts another.
+
+### Profiles and Friends
+
+A profile is identity without an account. The browser keeps a secret token; the database keeps only its hash, exactly the way a seat at a table is held. There is no password, no email and no sign-in screen — a name and one button.
+
+| Piece | What it does |
+| --- | --- |
+| **The record** | Every scored round is written into each seated profile: rounds played and won, total and best hand, tables, Cambio calls and the ones that stuck, sticks landed and missed, current and best streak. |
+| **Rank** | Points are a stored column, so the ladder is ordered in the database: a round won is worth four times a round played, and a Cambio you called and won is worth more again. Seven tiers run from Rookie to Cambio Master, with your standing among every saved player beside them. |
+| **Friends** | One row per relationship, pending until it is accepted. Asking someone who has already asked you accepts it instead of opening a second request. |
+| **Opponents** | Every round records who was across the table, so the friends list knows the head to head and can suggest the people you have already played. |
+| **Invites** | A code handed to one friend, from the table you are sitting at. The server checks you are actually seated there before it sends one. |
+| **Presence** | Your client says which table it is at; the server reads the phase and the open seats from the table itself, so "one seat open" is never a guess. A light goes out two minutes after a tab closes. |
+
+Every one of these goes through a `SECURITY DEFINER` RPC gated by the server secret. The anon key can no more read a profile than it can read a hand of cards.
 
 ### Hidden Information
 
@@ -150,12 +177,13 @@ First time players get a short walkthrough and a **How to play** sheet that open
 ## How to Play
 
 1. **Create a table and share the code.** Four seats are available, and bots fill any empty seats when the round starts.
-2. **Remember your opening cards.** Everyone gets four face down cards in a 2 by 2 grid. The deck is shuffled and dealt, and only then does a five second window show you your bottom two.
-3. **Draw on your turn.** Place the drawn card on the pile to activate its power, or swap it into any hand at the table, your own or someone else's.
-4. **Watch for sticks.** If you believe a card matches the top of the pile, stick it. Sticking is open to everyone except the player currently drawing or deciding.
-5. **Call Cambio.** Call at the start of your turn instead of drawing. Everyone else gets one more turn before scoring.
-6. **Finish with the lowest total.** Hands are revealed and scored. The lowest total wins, and the winner leads the next round.
-7. **Play on, or leave.** Every seat chooses. Another round starts once everyone is in; if anyone leaves, the rest go back to the lobby with a seat open.
+2. **Say you are ready.** The seats are set, the bots say yes at once, and nothing is dealt until the last seat is in.
+3. **Remember your opening cards.** Everyone gets four face down cards in a 2 by 2 grid. The deck is shuffled and dealt, and only then does a five second window show you your bottom two.
+4. **Draw on your turn.** Place the drawn card on the pile to activate its power, or swap it into any hand at the table, your own or someone else's.
+5. **Watch for sticks.** If you believe a card matches the top of the pile, stick it. Sticking is open to every seat at every moment, your own turn included; where the turn already owns the click, the table arms the stick first.
+6. **Call Cambio.** Call at the start of your turn instead of drawing. Everyone else gets one more turn before scoring.
+7. **Finish with the lowest total.** Hands are revealed and scored. The lowest total wins, and the winner leads the next round.
+8. **Play on, or leave.** Every seat chooses. Another round starts once everyone is ready; if anyone leaves, the rest go back to the lobby with a seat open.
 
 ### Scoring
 
@@ -199,8 +227,10 @@ The deck contains 52 cards plus two jokers.
 | `src/lib/server/` | Persistence and orchestration for Next.js route handlers |
 | `src/lib/server/store.ts` | Loads state, applies actions, commits with a version check, and retries conflicts |
 | `src/lib/server/runner.ts` | Runs bots under a database lease, started after actions with `waitUntil` |
-| `src/lib/client/` | `useGame` hook, Realtime subscription, actions, watchdog, and card flights |
-| `src/components/` | Table UI |
+| `src/lib/server/social.ts` | Profiles, friends, invites, presence, and writing a scored round into the record books |
+| `src/lib/social/` | Profile and friend types, and the points-to-rank ladder |
+| `src/lib/client/` | `useGame` hook, Realtime subscription, actions, watchdog, card flights, profile and friends |
+| `src/components/` | Table UI, profile cards and the friends panel |
 | `supabase/` | Database schema and RPCs |
 
 ---
@@ -211,10 +241,11 @@ You need a Supabase project.
 
 ### 1. Set up the database
 
-Apply the migration:
+Apply the migrations, in order:
 
 ```text
 supabase/migrations/0001_cambio_schema.sql
+supabase/migrations/0002_social.sql
 ```
 
 Then store a server secret:

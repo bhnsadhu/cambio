@@ -68,13 +68,13 @@ export function Scoreboard({
             {seated ? (
               ready ? (
                 <>
-                  <span className="t-sub inline-flex items-center gap-2 text-accent-ink"><Pip />You are in for another round</span>
+                  <span className="t-sub inline-flex items-center gap-2 text-accent-ink"><Pip />You are ready for another round</span>
                   <Button variant="ghost" size="sm" disabled={busy} onClick={onLeave}>Leave instead</Button>
                 </>
               ) : (
                 <div className="flex items-center gap-2.5">
                   <Button variant="secondary" size="lg" disabled={busy} onClick={onLeave}>Leave</Button>
-                  <Button variant="primary" size="lg" disabled={busy} onClick={onPlayAgain}>Play again</Button>
+                  <Button variant="primary" size="lg" disabled={busy} onClick={onPlayAgain}>I&apos;m ready</Button>
                 </div>
               )
             ) : (
@@ -92,7 +92,7 @@ export function Scoreboard({
                 . If anyone leaves, the rest go back to the lobby.
               </p>
             ) : (
-              <p className="t-footnote text-right text-ink-3">Everyone is in. Dealing.</p>
+              <p className="t-footnote text-right text-ink-3">Everyone is ready. Dealing.</p>
             )}
           </div>
         </header>
