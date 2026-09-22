@@ -140,7 +140,7 @@ function FriendRow({ friend, social, inviteCode }: { friend: Friend; social: Soc
               ? <>At table {live.code} · seat open</>
               : <>At table {live.code} · {live.phase === "lobby" ? "filling up" : "mid round"}</>
             : friend.playedTogether > 0
-              ? <>{friend.playedTogether} {friend.playedTogether === 1 ? "round" : "rounds"} against you</>
+              ? <>{friend.yourWins}&ndash;{friend.theirWins} across {friend.playedTogether} {friend.playedTogether === 1 ? "round" : "rounds"}</>
               : <>@{friend.handle}</>}
         </p>
       </div>

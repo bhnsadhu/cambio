@@ -54,8 +54,9 @@ export interface Friend {
   playing: LiveGame | null;
   /** rounds the two of you have played at the same table */
   playedTogether: number;
-  /** of those, the ones they took off you */
-  lostToThem: number;
+  /** of those, the ones you won and the ones they won */
+  yourWins: number;
+  theirWins: number;
 }
 
 export interface PendingFriend {

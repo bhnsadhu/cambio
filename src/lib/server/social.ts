@@ -160,7 +160,7 @@ interface RawSocial {
     id: string; handle: string; display_name: string; points: number;
     rounds_won: number; rounds_played: number; since: string | null;
     playing: { code: string; phase: string; open_seats: number } | null;
-    played_together: number; lost_to_them: number;
+    played_together: number; your_wins: number; their_wins: number;
   }[];
   incoming: { id: string; handle: string; display_name: string; at: string }[];
   outgoing: { id: string; handle: string; display_name: string; at: string }[];
@@ -182,7 +182,8 @@ export async function socialFor(id: string): Promise<Social> {
     since: f.since,
     playing: f.playing ? { code: f.playing.code, phase: f.playing.phase, openSeats: f.playing.open_seats } : null,
     playedTogether: f.played_together,
-    lostToThem: f.lost_to_them,
+    yourWins: f.your_wins,
+    theirWins: f.their_wins,
   }));
   const invites: Invite[] = (raw.invites ?? []).map((i) => ({
     id: i.id,

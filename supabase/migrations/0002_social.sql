@@ -320,14 +320,18 @@ begin
             when pr.code is not null and pr.updated_at > now() - interval '2 minutes'
             then jsonb_build_object('code', pr.code, 'phase', pr.phase, 'open_seats', pr.open_seats)
             else null end,
+          -- The head to head: rounds at the same table, and who took them.
+          -- Neither of you winning a round counts for neither of you.
           'played_together', coalesce(e.rounds, 0),
-          'lost_to_them', coalesce(e.rounds, 0) - coalesce(e.wins, 0)
+          'your_wins', coalesce(e.wins, 0),
+          'their_wins', coalesce(e2.wins, 0)
         ) as f
         from public.friendships fr
         join public.profiles o
           on o.id = case when fr.requester_id = p_id then fr.addressee_id else fr.requester_id end
         left join public.presence pr on pr.profile_id = o.id
         left join public.encounters e on e.profile_id = p_id and e.opponent_id = o.id
+        left join public.encounters e2 on e2.profile_id = o.id and e2.opponent_id = p_id
         where fr.status = 'accepted' and (fr.requester_id = p_id or fr.addressee_id = p_id)
       ) s
     ), '[]'::jsonb),
