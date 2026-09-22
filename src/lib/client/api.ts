@@ -1,4 +1,5 @@
 import type { Action, PlayerView } from "@/lib/game/types";
+import { profileToken } from "./profile";
 
 export interface ApiError { code: string; message: string }
 
@@ -15,6 +16,9 @@ export class RequestError extends Error {
 async function call<T>(path: string, init: RequestInit & { token?: string | null } = {}): Promise<T> {
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (init.token) headers["x-cambio-token"] = init.token;
+  // A saved profile rides along, so the seat it takes is recorded under it.
+  const profile = profileToken();
+  if (profile) headers["x-cambio-profile"] = profile;
   const res = await fetch(path, { ...init, headers, cache: "no-store" });
   const body = (await res.json().catch(() => ({}))) as { error?: ApiError } & T;
   if (!res.ok || body.error) {

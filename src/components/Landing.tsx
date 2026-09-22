@@ -1,15 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { api, RequestError } from "@/lib/client/api";
+import { createProfile } from "@/lib/client/profile";
 import { saveSession, storeName } from "@/lib/client/session";
+import { useSocial } from "@/lib/client/social";
 import { useStoredName } from "@/lib/client/useStoredName";
 import { CardBack, FaceCard } from "./cards";
+import { FriendsPanel, Notifications } from "./Friends";
+import { ProfileBadge, ProfileCard, SaveProfile } from "./Profile";
 import { Button, Field, inputClass, PlayerName, Wordmark } from "./ui";
 
 export function Landing() {
   const router = useRouter();
+  const social = useSocial();
   const [name, setName] = useStoredName();
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState<"create" | "join" | null>(null);
@@ -48,7 +54,12 @@ export function Landing() {
     <main className="mx-auto min-h-screen w-full max-w-[1120px] px-8">
       <header className="flex h-14 items-center justify-between">
         <Wordmark />
-        <span className="t-sub text-ink-3">Four seats. One code. No accounts.</span>
+        <div className="flex items-center gap-3">
+          <span className="t-sub text-ink-3">Four seats. One code.</span>
+          {social.profile
+            ? <ProfileBadge profile={social.profile} />
+            : <Link href="/me"><Button variant="ghost" size="sm">Save a profile</Button></Link>}
+        </div>
       </header>
 
       <section className="grid grid-cols-[1.1fr_1fr] gap-16 pt-16">
@@ -121,9 +132,35 @@ export function Landing() {
         </div>
       </section>
 
+      {/* Who you are, and who you play with. A profile is optional: the game
+          works without one, and remembers nothing. */}
+      <section className="grid grid-cols-[1.1fr_1fr] gap-6 pt-20">
+        {social.profile ? (
+          <>
+            <div className="flex flex-col gap-3">
+              <ProfileCard profile={social.profile} />
+              <Link href="/me" className="t-sub self-start text-ink-3 hover:text-ink">Your full record and friends →</Link>
+            </div>
+            <FriendsPanel social={social} />
+          </>
+        ) : (
+          <>
+            <div>
+              <h2 className="t-title2">Keep a record.</h2>
+              <p className="t-body mt-2 max-w-[420px] text-ink-2">
+                Save a profile and every round counts: wins at the top, a rank that climbs with them, your best hand,
+                your longest streak. Add friends by handle, see when they are at a table, and take the seat next to them.
+              </p>
+            </div>
+            <SaveProfile initialName={name} onSaved={async (n) => { await createProfile(n); await social.refresh(); }} />
+          </>
+        )}
+      </section>
+
       <footer className="t-footnote flex h-24 items-end pb-8 text-ink-3">
         Made for a laptop screen. Real time over Supabase, served by Vercel.
       </footer>
+      <Notifications social={social} />
     </main>
   );
 }

@@ -5,12 +5,15 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useGame } from "@/lib/client/useGame";
 import { api, RequestError } from "@/lib/client/api";
+import { useSocial, usePresence } from "@/lib/client/social";
 import { saveSession, storeName } from "@/lib/client/session";
 import { useStoredName } from "@/lib/client/useStoredName";
 import { PositionsProvider } from "@/lib/client/positions";
 import { setPref, usePrefs } from "@/lib/client/prefs";
 import { Lobby } from "./Lobby";
 import { ReadyCheck } from "./ReadyCheck";
+import { FriendsPanel, Notifications } from "./Friends";
+import { ProfileBadge } from "./Profile";
 import { Table } from "./Table";
 import { Explainer } from "./Explainer";
 import { HowToPlay } from "./HowToPlay";
@@ -34,9 +37,13 @@ export function GameScreen({ code }: { code: string }) {
 
 function GameShell({ code }: { code: string }) {
   const game = useGame(code);
+  const social = useSocial();
   const prefs = usePrefs();
   const router = useRouter();
   const view = game.view;
+  // Friends can see the table you are sitting at, and whether it has a seat
+  // left. Watching a table is not sitting at one, so it lights nothing up.
+  usePresence(game.session ? code : null);
   const [help, setHelp] = useState(false);
   const [replay, setReplay] = useState(false);
   const [watching, setWatching] = useState(false);
@@ -83,6 +90,7 @@ function GameShell({ code }: { code: string }) {
     body = <MidRound code={code} onWatch={() => setWatching(true)} />;
   } else if (view.public.phase === "lobby") {
     body = (
+      <WithFriends social={social} code={code}>
       <Lobby
         view={view.public}
         me={game.me}
@@ -90,9 +98,11 @@ function GameShell({ code }: { code: string }) {
         onStart={() => void game.send({ type: "start" })}
         onDifficulty={(seat, difficulty) => void game.send({ type: "setBotDifficulty", seat, difficulty })}
       />
+      </WithFriends>
     );
   } else if (view.public.phase === "ready") {
     body = (
+      <WithFriends social={social} code={code}>
       <ReadyCheck
         view={view.public}
         me={game.me}
@@ -101,6 +111,7 @@ function GameShell({ code }: { code: string }) {
         onReady={() => void game.send({ type: "ready" })}
         onDifficulty={(seat, difficulty) => void game.send({ type: "setBotDifficulty", seat, difficulty })}
       />
+      </WithFriends>
     );
   } else {
     body = <Table game={game} flights={flights} onLeave={() => void leave()} />;
@@ -121,7 +132,9 @@ function GameShell({ code }: { code: string }) {
             ) : null}
           </div>
           <div className="flex items-center gap-3">
-            {game.session ? <span className="t-sub text-ink-2">Playing as <span className="font-medium text-ink">{game.session.name}</span></span> : null}
+            {social.profile
+              ? <ProfileBadge profile={social.profile} />
+              : game.session ? <span className="t-sub text-ink-2">Playing as <span className="font-medium text-ink">{game.session.name}</span></span> : null}
             {view ? <PauseButton view={view.public} {...pause} /> : null}
             <Button variant="ghost" size="sm" onClick={() => setHelp(true)}>How to play</Button>
             {game.session ? (
@@ -149,10 +162,36 @@ function GameShell({ code }: { code: string }) {
         <FlightLayer specs={flights.specs} onLanded={flights.onLanded} />
         {view ? <PauseOverlay view={view.public} {...pause} /> : null}
         <Toasts toasts={game.toasts} />
+        <Notifications social={social} />
         {showExplainer ? <Explainer onDone={closeExplainer} /> : null}
         <HowToPlay open={help} onClose={() => setHelp(false)} onReplay={() => { setHelp(false); setReplay(true); }} />
       </main>
     </>
+  );
+}
+
+/**
+ * While the table is still being set, the friends list sits beside it: a
+ * friend is one click from an invite to this exact code.
+ */
+function WithFriends({ social, code, children }: { social: ReturnType<typeof useSocial>; code: string; children: React.ReactNode }) {
+  return (
+    <div className="mx-auto grid w-full max-w-[1280px] grid-cols-[minmax(0,1fr)_320px] gap-8">
+      {children}
+      <div className="pt-12">
+        {social.profile ? (
+          <FriendsPanel social={social} inviteCode={code} />
+        ) : (
+          <section className="rounded-panel bg-surface p-6 hairline">
+            <h2 className="t-headline">Playing with friends?</h2>
+            <p className="t-sub mt-1 text-ink-2">
+              Save a profile and you can invite them straight to this table, and see when they are at one of their own.
+            </p>
+            <Link href="/me" className="mt-4 inline-block"><Button variant="secondary" size="sm">Save a profile</Button></Link>
+          </section>
+        )}
+      </div>
+    </div>
   );
 }
 
