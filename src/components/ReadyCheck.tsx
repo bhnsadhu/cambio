@@ -1,8 +1,8 @@
 "use client";
 
 import { useClock } from "@/lib/client/useClock";
-import type { PublicView } from "@/lib/game/types";
-import { Button, Chip, DotOff, Pip, PlayerName } from "./ui";
+import type { BotDifficulty, PublicView } from "@/lib/game/types";
+import { Button, Chip, DifficultyPicker, DotOff, Pip, PlayerName } from "./ui";
 
 /**
  * The beat between a set table and a dealt round. Nothing is shuffled until
@@ -16,14 +16,17 @@ export function ReadyCheck({
   busy,
   skew,
   onReady,
+  onDifficulty,
 }: {
   view: PublicView;
   me: string | null;
   busy: boolean;
   skew: number;
   onReady: () => void;
+  onDifficulty: (seat: number, difficulty: BotDifficulty) => void;
 }) {
   const tick = useClock(500);
+  const isHost = me === view.hostId;
   const imReady = !!me && view.readyIds.includes(me);
   const waiting = view.players.filter((p) => !view.readyIds.includes(p.id));
   const left = view.readyDeadline === null || tick === 0
@@ -73,9 +76,17 @@ export function ReadyCheck({
                 <p className="t-caption text-ink-3">Seat {p.seat + 1}</p>
                 <div>
                   <p className="t-headline"><PlayerName name={p.name} isBot={p.isBot} /></p>
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                     {p.id === me ? <Chip tone="ink">You</Chip> : null}
-                    {p.isBot ? <Chip>Bot</Chip> : null}
+                    {p.isBot ? (
+                      <DifficultyPicker
+                        label={`How ${p.name} plays`}
+                        value={p.difficulty ?? "medium"}
+                        canEdit={isHost}
+                        disabled={busy}
+                        onChange={(d) => onDifficulty(p.seat, d)}
+                      />
+                    ) : null}
                   </div>
                   <p className="t-footnote mt-2 inline-flex items-center gap-1.5 text-ink-3">
                     {ready ? <Pip /> : <DotOff />}

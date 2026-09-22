@@ -66,7 +66,8 @@ export function Landing() {
           <p className="t-body mt-6 max-w-[440px] text-ink-2">
             Cambio is about remembering what you saw and reacting faster than everyone else.
             Open a table, share the five letter code, and the house bots{" "}
-            <PlayerName name="Camryn" isBot />, <PlayerName name="Camron" isBot /> and <PlayerName name="Cami" isBot /> fill any empty seats.
+            <PlayerName name="Cameron" isBot />, <PlayerName name="Camila" isBot /> and <PlayerName name="Cami" isBot /> fill any empty seats,
+            at whatever difficulty you set them.
           </p>
 
           <dl className="mt-12 grid max-w-[520px] grid-cols-2 gap-x-8 gap-y-6">

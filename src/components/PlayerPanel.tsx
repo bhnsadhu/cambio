@@ -53,7 +53,7 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
           <p className="t-footnote mt-0.5 truncate text-ink-3">
             {isMe ? <span className="font-medium text-ink">You</span> : null}
             {isMe ? " · " : ""}
-            {player.isBot ? "House bot" : player.isHost ? "Host" : "Player"}
+            {player.isBot ? `House bot · ${player.difficulty ?? "medium"}` : player.isHost ? "Host" : "Player"}
             {stageText ? <span className="text-ink-2"> · {stageText}</span> : null}
           </p>
         </div>

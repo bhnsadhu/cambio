@@ -18,6 +18,7 @@ import {
 import type {
   Action,
   ActionEnvelope,
+  BotDifficulty,
   Card,
   CambioState,
   EventKind,
@@ -32,7 +33,8 @@ import type {
 } from "./types";
 
 export const SEATS = 4;
-export const BOT_NAMES = ["Camryn", "Camron", "Cami"] as const;
+export const BOT_NAMES = ["Cameron", "Camila", "Cami"] as const;
+export const DEFAULT_BOT_DIFFICULTY: BotDifficulty = "medium";
 export const OPENING_PEEK_MS = 5_000;
 /**
  * How long the deal takes to land before the opening peek starts. The table
@@ -126,6 +128,7 @@ export function createGame(
     pauseVote: null,
     cambio: null,
     reveals: [],
+    botDifficulty: Array.from({ length: SEATS }, () => DEFAULT_BOT_DIFFICULTY),
     readyIds: [],
     readyDeadline: null,
     dealingUntil: null,
@@ -204,6 +207,10 @@ export function applyAction(input: GameState, env: ActionEnvelope, ctx: EngineCt
     case "start": doStart(state, actor, ctx); break;
     case "ready": {
       if (!doReady(state, actor, ctx)) return { state: input, changed: false };
+      break;
+    }
+    case "setBotDifficulty": {
+      if (!doSetBotDifficulty(state, actor, a.seat, a.difficulty, ctx)) return { state: input, changed: false };
       break;
     }
     case "advance": {
@@ -388,11 +395,48 @@ function fillBots(state: GameState, ctx: EngineCtx) {
   while (state.players.length < SEATS) {
     const seat = nextOpenSeat(state);
     const name = BOT_NAMES[botIndex++];
-    state.players.push({ id: ctx.newId(), seat, name, isBot: true, isHost: false, hand: [null, null, null, null] });
+    state.players.push({
+      id: ctx.newId(),
+      seat,
+      name,
+      isBot: true,
+      isHost: false,
+      difficulty: difficultyForSeat(state, seat),
+      hand: [null, null, null, null],
+    });
   }
   state.players.sort((a, b) => a.seat - b.seat);
-  const bots = state.players.filter((p) => p.isBot).map((p) => p.name);
-  if (bots.length) addLog(state, ctx, `${joinNames(bots)} filled the empty seats.`, { kind: "table" });
+  const bots = state.players.filter((p) => p.isBot);
+  if (bots.length) {
+    addLog(state, ctx, `${joinNames(bots.map((b) => `${b.name} (${b.difficulty})`))} filled the empty seats.`, { kind: "table" });
+  }
+}
+
+export function difficultyForSeat(state: GameState, seat: number): BotDifficulty {
+  return state.botDifficulty?.[seat] ?? DEFAULT_BOT_DIFFICULTY;
+}
+
+/**
+ * How hard each house bot plays is the host's call, and only while the table
+ * is still being set: once the cards are down, a seat cannot change how it
+ * thinks. The setting is kept per seat and carries to the next round.
+ */
+function doSetBotDifficulty(state: GameState, actor: Player, seat: number, difficulty: BotDifficulty, ctx: EngineCtx): boolean {
+  requirePhase(state, ["lobby", "ready", "scoring"]);
+  if (actor.id !== state.hostId) throw new GameError("NOT_HOST", "Only the host can set how the bots play.");
+  if (!Number.isInteger(seat) || seat < 0 || seat >= SEATS) throw new GameError("INVALID_TARGET", "No such seat.");
+  if (difficulty !== "easy" && difficulty !== "medium" && difficulty !== "hard") {
+    throw new GameError("INVALID_TARGET", "Pick easy, medium or hard.");
+  }
+  if (!state.botDifficulty) state.botDifficulty = Array.from({ length: SEATS }, () => DEFAULT_BOT_DIFFICULTY);
+  if (state.botDifficulty[seat] === difficulty) return false;
+  state.botDifficulty[seat] = difficulty;
+  const bot = state.players.find((p) => p.seat === seat && p.isBot);
+  if (bot) {
+    bot.difficulty = difficulty;
+    addLog(state, ctx, `${bot.name} is playing ${difficulty} from now on.`, { kind: "table", actorId: actor.id, weight: "normal" });
+  }
+  return true;
 }
 
 function dealRound(state: GameState, ctx: EngineCtx) {

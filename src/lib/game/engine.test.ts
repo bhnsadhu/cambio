@@ -14,7 +14,7 @@ describe("lobby", () => {
     const t = table(ctx, 2);
     expect(t.state.players.map((p) => p.seat)).toEqual([0, 1]);
     const ready = act(t.state, t.hostId, { type: "start" }, ctx);
-    expect(ready.players.map((p) => p.name)).toEqual(["Host", "P2", "Camryn", "Camron"]);
+    expect(ready.players.map((p) => p.name)).toEqual(["Host", "P2", "Cameron", "Camila"]);
     expect(ready.players.filter((p) => p.isBot).map((p) => p.seat)).toEqual([2, 3]);
     // Seats are set, but nothing is dealt until every seat says ready. The
     // bots are in the moment the check opens.
@@ -34,7 +34,7 @@ describe("lobby", () => {
   it("rejects a fifth human and bot names", () => {
     const ctx = makeCtx();
     const open = table(ctx, 2);
-    expect(() => joinGame(open.state, "camryn", ctx)).toThrow(/house bots/);
+    expect(() => joinGame(open.state, "cameron", ctx)).toThrow(/house bots/);
     const t = table(ctx, 4);
     expect(() => joinGame(t.state, "Fifth", ctx)).toThrow(GameError);
     expect(() => createGame("X", "   ", ctx)).toThrow(/Enter a name/);
@@ -980,5 +980,42 @@ describe("ready check", () => {
     expect(v.phase).toBe("ready");
     expect(v.readyIds).toEqual(s.readyIds);
     expect(v.readyDeadline).toBe(s.readyDeadline);
+  });
+});
+
+describe("bot difficulty", () => {
+  it("is the host's call, is kept per seat, and reaches the bot that fills it", () => {
+    const ctx = makeCtx(51);
+    const t = table(ctx, 2);
+    expect(() => act(t.state, t.ids[1], { type: "setBotDifficulty", seat: 3, difficulty: "hard" }, ctx)).toThrow(/host/);
+    let s = act(t.state, t.hostId, { type: "setBotDifficulty", seat: 2, difficulty: "easy" }, ctx);
+    s = act(s, t.hostId, { type: "setBotDifficulty", seat: 3, difficulty: "hard" }, ctx);
+    expect(s.botDifficulty).toEqual(["medium", "medium", "easy", "hard"]);
+    // setting the same level twice changes nothing
+    expect(applyAction(s, { actionId: "d1", playerId: t.hostId, action: { type: "setBotDifficulty", seat: 3, difficulty: "hard" } }, ctx).changed).toBe(false);
+    s = act(s, t.hostId, { type: "start" }, ctx);
+    expect(s.players.map((p) => p.difficulty ?? null)).toEqual([null, null, "easy", "hard"]);
+    // and it can still be changed while the table waits on the ready check
+    s = act(s, t.hostId, { type: "setBotDifficulty", seat: 2, difficulty: "hard" }, ctx);
+    expect(s.players.find((p) => p.seat === 2)!.difficulty).toBe("hard");
+    expect(projectFor(s, 1, t.hostId, ctx.now).public.players.find((p) => p.seat === 2)!.difficulty).toBe("hard");
+  });
+
+  it("is refused once the cards are down, and refuses a level or seat that does not exist", () => {
+    const ctx = makeCtx(52);
+    const { state, hostId } = started(ctx, 2);
+    expect(() => act(state, hostId, { type: "setBotDifficulty", seat: 2, difficulty: "easy" }, ctx)).toThrow(/Not possible/);
+    const t = table(ctx, 2);
+    expect(() => act(t.state, t.hostId, { type: "setBotDifficulty", seat: 9, difficulty: "easy" }, ctx)).toThrow(/No such seat/);
+    expect(() => act(t.state, t.hostId, { type: "setBotDifficulty", seat: 2, difficulty: "brutal" as "hard" }, ctx)).toThrow(/easy, medium or hard/);
+  });
+
+  it("carries the setting into the next round at the same table", () => {
+    const ctx = makeCtx(53);
+    const t = table(ctx, 1);
+    let s = act(t.state, t.hostId, { type: "setBotDifficulty", seat: 1, difficulty: "hard" }, ctx);
+    s = readyAll(act(s, t.hostId, { type: "start" }, ctx), t.ids, ctx);
+    expect(s.players.find((p) => p.seat === 1)!.difficulty).toBe("hard");
+    expect(s.botDifficulty[1]).toBe("hard");
   });
 });

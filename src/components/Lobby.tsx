@@ -1,11 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import type { PublicView } from "@/lib/game/types";
+import type { BotDifficulty, PublicView } from "@/lib/game/types";
 import { BOT_NAMES } from "@/lib/game/engine";
-import { Button, Chip, Pip, PlayerName } from "./ui";
+import { Button, Chip, DifficultyPicker, Pip, PlayerName } from "./ui";
 
-export function Lobby({ view, me, busy, onStart }: { view: PublicView; me: string | null; busy: boolean; onStart: () => void }) {
+export function Lobby({
+  view,
+  me,
+  busy,
+  onStart,
+  onDifficulty,
+}: {
+  view: PublicView;
+  me: string | null;
+  busy: boolean;
+  onStart: () => void;
+  onDifficulty: (seat: number, difficulty: BotDifficulty) => void;
+}) {
   const [copied, setCopied] = useState(false);
   const isHost = me === view.hostId;
   const host = view.players.find((p) => p.id === view.hostId);
@@ -75,6 +87,15 @@ export function Lobby({ view, me, busy, onStart }: { view: PublicView; me: strin
                     <p className="t-footnote mt-1 text-ink-3">
                       <PlayerName name={botName!} isBot /> sits here if it stays empty
                     </p>
+                    <div className="mt-2">
+                      <DifficultyPicker
+                        label={`How ${botName} plays`}
+                        value={view.botDifficulty[seat] ?? "medium"}
+                        canEdit={isHost}
+                        disabled={busy}
+                        onChange={(d) => onDifficulty(seat, d)}
+                      />
+                    </div>
                   </div>
                 )}
               </li>

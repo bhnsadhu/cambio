@@ -1,6 +1,7 @@
 "use client";
 
 import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { BOT_DIFFICULTIES, type BotDifficulty } from "@/lib/game/types";
 
 type Variant = "primary" | "secondary" | "accent" | "ghost";
 
@@ -71,6 +72,53 @@ export function PlayerName({ name, isBot }: { name: string; isBot: boolean }) {
     );
   }
   return <span>{name}</span>;
+}
+
+/** What each level means, in one line, wherever a bot seat is being set. */
+export const DIFFICULTY_BLURB: Record<BotDifficulty, string> = {
+  easy: "Lets sticks go by and keeps cards it should not. Plays like someone learning.",
+  medium: "The house's basic strategy: remembers what it has seen and plays it straight.",
+  hard: "Counts the pile, weighs every hand at the table, and reacts faster than you can.",
+};
+
+/**
+ * How hard one bot seat plays. The host picks; everyone else reads it, so a
+ * table always knows what it is sitting across from.
+ */
+export function DifficultyPicker({
+  value,
+  onChange,
+  disabled,
+  canEdit,
+  label,
+}: {
+  value: BotDifficulty;
+  onChange: (d: BotDifficulty) => void;
+  disabled?: boolean;
+  canEdit: boolean;
+  label: string;
+}) {
+  if (!canEdit) return <Chip tone={value === "hard" ? "accent" : "neutral"}>{value}</Chip>;
+  return (
+    <div role="group" aria-label={label} className="inline-flex rounded-full bg-surface-2 p-[3px]">
+      {BOT_DIFFICULTIES.map((d) => (
+        <button
+          key={d}
+          type="button"
+          disabled={disabled}
+          aria-pressed={value === d}
+          title={DIFFICULTY_BLURB[d]}
+          onClick={() => onChange(d)}
+          className={[
+            "press h-[26px] rounded-full px-2.5 text-[11.5px] font-medium capitalize disabled:opacity-40",
+            value === d ? "bg-ink text-bg" : "text-ink-3 hover:text-ink",
+          ].join(" ")}
+        >
+          {d}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {

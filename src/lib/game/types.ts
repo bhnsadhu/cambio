@@ -28,12 +28,23 @@ export type Phase =
 
 export type TurnStage = "draw" | "decide" | "power";
 
+/**
+ * How hard a house bot plays. Easy is loose and forgetful, medium is the
+ * house's basic strategy, and hard counts what the pile has swallowed and
+ * plays the odds. Set per seat before the round is dealt.
+ */
+export type BotDifficulty = "easy" | "medium" | "hard";
+
+export const BOT_DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard"];
+
 export interface Player {
   id: string;
   seat: number; // 0..3
   name: string;
   isBot: boolean;
   isHost: boolean;
+  /** bots only: how hard this seat plays */
+  difficulty?: BotDifficulty;
   /** secret; humans only. Never projected into a view. */
   token?: string;
   /** slot -> card id. `null` is an empty (stuck-away) slot. Length >= 4. */
@@ -198,6 +209,11 @@ export interface GameState {
   openingPeekUntil: number | null;
   /** at scoring time: who has asked for another round (bots agree at once) */
   replayVotes: string[];
+  /**
+   * How hard the bot in each seat plays, by seat index. Chosen in the lobby
+   * or during the ready check and kept across rounds at the same table.
+   */
+  botDifficulty: BotDifficulty[];
   /** cumulative results across rounds */
   results: RoundResult[];
   log: LogEntry[];
@@ -218,6 +234,8 @@ export type Action =
   | { type: "start" }
   /** say you are in during the ready check that opens a round */
   | { type: "ready" }
+  /** host only, before the deal: how hard the bot in a seat plays */
+  | { type: "setBotDifficulty"; seat: number; difficulty: BotDifficulty }
   | { type: "advance" }             // peek window -> first turn (idempotent)
   | { type: "draw" }
   | { type: "place" }               // discard the drawn card (may trigger power)
@@ -261,6 +279,7 @@ export interface PlayerPublic {
   name: string;
   isBot: boolean;
   isHost: boolean;
+  difficulty?: BotDifficulty;
   /** slot -> card id or null (empty slot). No ranks. */
   hand: (string | null)[];
   cardCount: number;
@@ -291,6 +310,8 @@ export interface PublicView {
   cambio: { callerId: string; reason: "called" | "zero"; remaining: string[] } | null;
   dealingUntil: number | null;
   openingPeekUntil: number | null;
+  /** how hard the bot in each seat plays, by seat index */
+  botDifficulty: BotDifficulty[];
   /** at scoring: who is ready for another round */
   replayVotes: string[];
   results: RoundResult[];

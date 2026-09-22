@@ -82,9 +82,26 @@ function GameShell({ code }: { code: string }) {
   } else if (!seated && !watching) {
     body = <MidRound code={code} onWatch={() => setWatching(true)} />;
   } else if (view.public.phase === "lobby") {
-    body = <Lobby view={view.public} me={game.me} busy={game.busy} onStart={() => void game.send({ type: "start" })} />;
+    body = (
+      <Lobby
+        view={view.public}
+        me={game.me}
+        busy={game.busy}
+        onStart={() => void game.send({ type: "start" })}
+        onDifficulty={(seat, difficulty) => void game.send({ type: "setBotDifficulty", seat, difficulty })}
+      />
+    );
   } else if (view.public.phase === "ready") {
-    body = <ReadyCheck view={view.public} me={game.me} busy={game.busy} skew={game.skew} onReady={() => void game.send({ type: "ready" })} />;
+    body = (
+      <ReadyCheck
+        view={view.public}
+        me={game.me}
+        busy={game.busy}
+        skew={game.skew}
+        onReady={() => void game.send({ type: "ready" })}
+        onDifficulty={(seat, difficulty) => void game.send({ type: "setBotDifficulty", seat, difficulty })}
+      />
+    );
   } else {
     body = <Table game={game} flights={flights} onLeave={() => void leave()} />;
   }
