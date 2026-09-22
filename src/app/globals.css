@@ -54,6 +54,7 @@
   --animate-fade: fade 200ms var(--ease-out) both;
   --animate-flip-in: flip-in 300ms var(--ease-in-out) both;
   --animate-settle: settle 220ms var(--ease-out) both;
+  --animate-slide-in: slide-in 280ms var(--ease-out) both;
 }
 
 @keyframes rise {
@@ -75,6 +76,10 @@
 @keyframes settle {
   from { transform: scale(1.04); }
   to { transform: none; }
+}
+@keyframes slide-in {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
 }
 @keyframes shimmer {
   from { background-position: 200% 0; }
