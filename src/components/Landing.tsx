@@ -6,7 +6,7 @@ import { useState, type FormEvent } from "react";
 import { loginHref } from "@/lib/account/navigation";
 import { api, RequestError } from "@/lib/client/api";
 import { dismissAccountNotice, useAccountNotice, useAccountReady } from "@/lib/client/profile";
-import { setPref } from "@/lib/client/prefs";
+import { setPref, usePrefs } from "@/lib/client/prefs";
 import { saveSession, storeName } from "@/lib/client/session";
 import { usePresence, useSocial } from "@/lib/client/social";
 import { useStoredName } from "@/lib/client/useStoredName";
@@ -22,6 +22,7 @@ export function Landing() {
   const social = useSocial();
   const accountReady = useAccountReady();
   const notice = useAccountNotice();
+  const prefs = usePrefs();
   usePresence(null);
   const [name, setName] = useStoredName();
   const [mode, setMode] = useState<"create" | "join">("create");
@@ -30,6 +31,7 @@ export function Landing() {
   const [error, setError] = useState<string | null>(null);
   const [help, setHelp] = useState(false);
   const [walkthrough, setWalkthrough] = useState(false);
+  const openHelp = () => prefs.onboarded ? setHelp(true) : setWalkthrough(true);
   const profile = social.profile;
   const next = mode === "join" && code.length === 5 ? `/g/${code}` : "/";
   const rememberGuest = () => storeName(name.trim());
@@ -94,7 +96,7 @@ export function Landing() {
           {play}
           <FriendsPanel social={social} />
         </div>
-        <Button className="mt-5" variant="ghost" onClick={() => setWalkthrough(true)}>How to play</Button>
+        <Button className="mt-5" variant="ghost" onClick={openHelp}>How to play</Button>
       </> : <section className="grid items-start gap-10 pt-10 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:pt-16">
         <div>
           <div className="mb-8 flex items-end gap-3" aria-hidden>
@@ -102,7 +104,7 @@ export function Landing() {
           </div>
           <h1 className="t-display">The memory card game,<br />live with friends.</h1>
           <p className="t-body mt-5 max-w-[420px] text-ink-2">Remember your cards. Finish with the lowest hand. Play with friends or try a round with the house bots.</p>
-          <Button className="mt-5" variant="secondary" onClick={() => setWalkthrough(true)}>How to play</Button>
+          <Button className="mt-5" variant="secondary" onClick={openHelp}>How to play</Button>
         </div>
         {play}
       </section>}

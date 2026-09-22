@@ -132,7 +132,7 @@ function GameShell({ code }: { code: string }) {
               ? <AccountLink from={`/g/${code}`} />
               : game.session ? <span className="t-sub text-ink-2">Playing as <span className="font-medium text-ink">{game.session.name}</span></span> : null}
             {view ? <PauseButton view={view.public} {...pause} /> : null}
-            <Button variant="ghost" size="sm" onClick={() => setReplay(true)}>How to play</Button>
+            <Button variant="ghost" size="sm" onClick={() => prefs.onboarded ? setHelp(true) : setReplay(true)}>How to play</Button>
             {game.session ? (
               leaving ? (
                 <span className="flex items-center gap-1.5">

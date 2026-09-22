@@ -145,13 +145,45 @@ test("guest play stays available and the walkthrough is only automatic once", as
   await expect(page.getByLabel("Display name", { exact: true })).toHaveValue("Guest Player");
   await page.getByRole("button", { name: "How to play", exact: true }).click();
   const walkthrough = page.getByRole("dialog", { name: "How Cambio works" });
+  const rules = page.getByRole("dialog", { name: "How to play", exact: true });
+  await expect(rules).toBeVisible();
+  await expect(walkthrough).toHaveCount(0);
+  await rules.getByRole("button", { name: "Show walkthrough again" }).click();
   await expect(walkthrough).toContainText("1 of 4");
   await walkthrough.getByRole("button", { name: "Next", exact: true }).click();
   await expect(walkthrough).toContainText("2 of 4");
   await walkthrough.getByRole("button", { name: "Read full rules" }).click();
   await expect(walkthrough).toHaveCount(0);
-  await page.getByRole("dialog", { name: "How to play", exact: true }).getByRole("button", { name: "Show walkthrough" }).click();
+  await rules.getByRole("button", { name: "Show walkthrough again" }).click();
   await expect(walkthrough).toContainText("1 of 4");
   await walkthrough.getByRole("button", { name: "Skip", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+test("How to play shows the walkthrough once, then remembers the text rules", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "How to play", exact: true }).click();
+  const walkthrough = page.getByRole("dialog", { name: "How Cambio works" });
+  const rules = page.getByRole("dialog", { name: "How to play", exact: true });
+  await expect(walkthrough).toContainText("1 of 4");
+  await expect(rules).toHaveCount(0);
+  for (let step = 2; step <= 4; step++) {
+    await walkthrough.getByRole("button", { name: "Next", exact: true }).click();
+    await expect(walkthrough).toContainText(`${step} of 4`);
+  }
+  await walkthrough.getByRole("button", { name: "Got it", exact: true }).click();
+  await page.getByRole("button", { name: "How to play", exact: true }).click();
+  await expect(walkthrough).toHaveCount(0);
+  await expect(rules).toBeVisible();
+  for (const heading of ["Goal", "Your turn", "Powers", "Sticking", "Cambio", "Scores"]) {
+    await expect(rules.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+  }
+  await rules.getByRole("button", { name: "Show walkthrough again" }).click();
+  await expect(rules).toHaveCount(0);
+  await expect(walkthrough).toContainText("1 of 4");
+  await walkthrough.getByRole("button", { name: "Skip", exact: true }).click();
+  await page.reload();
+  await page.getByRole("button", { name: "How to play", exact: true }).click();
+  await expect(rules).toBeVisible();
+  await expect(walkthrough).toHaveCount(0);
 });
