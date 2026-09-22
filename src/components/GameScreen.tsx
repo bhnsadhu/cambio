@@ -162,7 +162,7 @@ function GameShell({ code }: { code: string }) {
         <FlightLayer specs={flights.specs} onLanded={flights.onLanded} />
         {view ? <PauseOverlay view={view.public} {...pause} /> : null}
         <Toasts toasts={game.toasts} />
-        <Notifications social={social} />
+        <Notifications social={social} atCode={code} />
         {showExplainer ? <Explainer onDone={closeExplainer} /> : null}
         <HowToPlay open={help} onClose={() => setHelp(false)} onReplay={() => { setHelp(false); setReplay(true); }} />
       </main>

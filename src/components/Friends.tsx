@@ -15,6 +15,8 @@ import { Button, Chip, DotOff, Pip, inputClass } from "./ui";
  * sit down with them.
  */
 export function FriendsPanel({ social, inviteCode = null }: { social: SocialHook; inviteCode?: string | null }) {
+  // `inviteCode` doubles as "the table I am at": a friend already sitting at
+  // it is not somewhere to go, and is not worth inviting either.
   const [handle, setHandle] = useState("");
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -56,6 +58,8 @@ export function FriendsPanel({ social, inviteCode = null }: { social: SocialHook
       <form onSubmit={add} className="flex gap-2">
         <input
           className={`${inputClass} h-10`}
+          name="handle"
+          aria-label="Add a friend by handle"
           value={handle}
           onChange={(e) => setHandle(e.target.value)}
           placeholder="Add by @handle"
@@ -126,7 +130,8 @@ export function FriendsPanel({ social, inviteCode = null }: { social: SocialHook
 function FriendRow({ friend, social, inviteCode }: { friend: Friend; social: SocialHook; inviteCode: string | null }) {
   const [invited, setInvited] = useState(false);
   const live = friend.playing;
-  const canJoin = !!live && live.openSeats > 0;
+  const here = !!live && !!inviteCode && live.code === inviteCode;
+  const canJoin = !!live && !here && live.openSeats > 0;
   return (
     <li className="flex items-center justify-between gap-3 rounded-[16px] bg-surface-2 px-3.5 py-2.5">
       <div className="min-w-0">
@@ -136,9 +141,11 @@ function FriendRow({ friend, social, inviteCode }: { friend: Friend; social: Soc
         <p className="t-footnote flex items-center gap-1.5 text-ink-3">
           {live ? <Pip /> : <DotOff />}
           {live
-            ? canJoin
-              ? <>At table {live.code} · seat open</>
-              : <>At table {live.code} · {live.phase === "lobby" ? "filling up" : "mid round"}</>
+            ? here
+              ? <>At this table with you</>
+              : canJoin
+                ? <>At table {live.code} · seat open</>
+                : <>At table {live.code} · {live.phase === "lobby" ? "filling up" : "mid round"}</>
             : friend.playedTogether > 0
               ? <>{friend.yourWins}&ndash;{friend.theirWins} across {friend.playedTogether} {friend.playedTogether === 1 ? "round" : "rounds"}</>
               : <>@{friend.handle}</>}
@@ -147,7 +154,7 @@ function FriendRow({ friend, social, inviteCode }: { friend: Friend; social: Soc
       <div className="flex shrink-0 items-center gap-1.5">
         {canJoin ? (
           <Link href={`/g/${live!.code}`}><Button size="sm" variant="accent">Join</Button></Link>
-        ) : live ? (
+        ) : live && !here ? (
           <Link href={`/g/${live.code}`}><Button size="sm" variant="ghost">Watch</Button></Link>
         ) : null}
         {inviteCode && !live ? (
@@ -170,11 +177,14 @@ function FriendRow({ friend, social, inviteCode }: { friend: Friend; social: Soc
  * table, or a friend is playing one with a seat still open. Quiet when there
  * is nothing to say.
  */
-export function Notifications({ social }: { social: SocialHook }) {
+export function Notifications({ social, atCode = null }: { social: SocialHook; atCode?: string | null }) {
   const router = useRouter();
   const [dismissed, setDismissed] = useState<string[]>([]);
-  const invites = social.social.invites.filter((i) => !dismissed.includes(i.id));
-  const live = social.social.friends.filter((f) => f.playing && !dismissed.includes(`live:${f.playing.code}:${f.id}`));
+  // Nothing to say about the table you are already looking at.
+  const invites = social.social.invites.filter((i) => !dismissed.includes(i.id) && i.code !== atCode);
+  const live = social.social.friends.filter(
+    (f) => f.playing && f.playing.code !== atCode && !dismissed.includes(`live:${f.playing.code}:${f.id}`),
+  );
   if (!invites.length && !live.length) return null;
 
   return (

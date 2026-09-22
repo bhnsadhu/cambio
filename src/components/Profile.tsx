@@ -91,7 +91,10 @@ export function ProfileBadge({ profile }: { profile: Profile }) {
  * device holds the key, the same way it holds a seat at a table.
  */
 export function SaveProfile({ initialName = "", onSaved }: { initialName?: string; onSaved: (name: string) => Promise<unknown> }) {
-  const [name, setName] = useState(initialName);
+  // The remembered name arrives after hydration, so the field follows it
+  // until it is typed in rather than freezing on an empty first render.
+  const [typed, setTyped] = useState<string | null>(null);
+  const name = typed ?? initialName;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const submit = async (e: FormEvent) => {
@@ -115,7 +118,7 @@ export function SaveProfile({ initialName = "", onSaved }: { initialName?: strin
         </p>
       </div>
       <Field label="Your name">
-        <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="What the table calls you" maxLength={18} />
+        <input className={inputClass} value={name} onChange={(e) => setTyped(e.target.value)} placeholder="What the table calls you" maxLength={18} />
       </Field>
       {error ? <p className="t-sub text-accent-ink">{error}</p> : null}
       <Button type="submit" variant="primary" size="lg" disabled={busy || !name.trim()}>
