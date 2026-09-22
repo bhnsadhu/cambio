@@ -41,7 +41,11 @@ try {
   }
   if (!databaseReady) throw new Error('The isolated database did not start.');
   query('create role anon; create role authenticated; create publication supabase_realtime;');
-  for (const file of readdirSync('supabase/migrations').filter((name) => name.endsWith('.sql')).sort()) query(readFileSync(`supabase/migrations/${file}`, 'utf8'));
+  for (const file of readdirSync('supabase/migrations').filter((name) => name.endsWith('.sql')).sort()) {
+    if (file === '0005_usernames.sql') query(readFileSync('supabase/tests/username_migration_before.sql', 'utf8'));
+    query(readFileSync(`supabase/migrations/${file}`, 'utf8'));
+    if (file === '0005_usernames.sql') query(readFileSync('supabase/tests/username_migration_after.sql', 'utf8'));
+  }
   query("insert into private.server_config(key,value) values ('server_secret','account-test-secret'); grant select on public.game_views to anon;");
   query(readFileSync('supabase/tests/accounts.sql', 'utf8'));
   docker(['run', '-d', '--name', rest, '-e', `PGRST_DB_URI=postgres://postgres:cambio-local-test@host.docker.internal:${portFor(db, 5432)}/postgres`, '-e', 'PGRST_DB_SCHEMAS=public', '-e', 'PGRST_DB_ANON_ROLE=anon', '-p', '127.0.0.1::3000', 'postgrest/postgrest:v13.0.7']);

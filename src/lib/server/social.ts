@@ -17,15 +17,6 @@ function hash(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
-/**
- * The name a friend types to find you. Derived from the display name rather
- * than asked for, and made unique by the database if it is taken.
- */
-export function handleFrom(displayName: string): string {
-  const base = displayName.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 16);
-  return base.length >= 3 ? base : `${base}player`.slice(0, 16);
-}
-
 export function normaliseHandle(raw: string): string {
   return (raw ?? "").trim().toLowerCase().replace(/^@/, "").replace(/[^a-z0-9]/g, "").slice(0, 18);
 }

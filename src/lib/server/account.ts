@@ -2,7 +2,7 @@ import "server-only";
 import type { NextResponse } from "next/server";
 import { AccountError, displayNameValue, passwordValue, usernameValue } from "@/lib/account/validation";
 import { rpc } from "./db";
-import { handleFrom, toProfile, type RawProfile } from "./social";
+import { toProfile, type RawProfile } from "./social";
 import { hashPassword, newSessionToken, tokenHash, verifyPassword } from "./passwords";
 
 export const SESSION_COOKIE = "cambio_session";
@@ -35,7 +35,7 @@ export function accountView(account: RawAccount) {
 async function accountRpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
   try { return await rpc<T>(fn, args); } catch (error) {
     const message = error instanceof Error ? error.message : "";
-    if (message.includes("accounts_username_key")) throw new AccountError("USERNAME_TAKEN", "That username is already taken.", 409);
+    if (message.includes("accounts_username_key") || message.includes("profiles_handle_key")) throw new AccountError("USERNAME_TAKEN", "That username is already taken.", 409);
     if (message.includes("legacy_expired")) throw new AccountError("SESSION", "This saved profile is no longer available. Log in to your account.", 401);
     if (message.includes("session_expired")) throw new AccountError("SESSION", "Your session has ended. Log in again.", 401);
     throw error;
@@ -75,7 +75,7 @@ export async function registerAccount(req: Request, body: Record<string, unknown
   const legacy = req.headers.get("x-cambio-profile");
   const token = newSessionToken();
   const account = await accountRpc<RawAccount>("account_register", {
-    p_username: username, p_display_name: name, p_handle: handleFrom(name),
+    p_username: username, p_display_name: name, p_handle: username,
     p_password_hash: await hashPassword(password), p_session_hash: tokenHash(token),
     p_legacy_hash: legacy ? tokenHash(legacy) : null,
   });
