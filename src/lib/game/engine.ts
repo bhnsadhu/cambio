@@ -1,4 +1,3 @@
-import type { IdentityEnvelope } from "./types";
 /**
  * The Cambio rules engine.
  *
@@ -25,6 +24,7 @@ import type {
   EventKind,
   EventWeight,
   GameState,
+  IdentityEnvelope,
   LogEntry,
   PauseVote,
   Player,
