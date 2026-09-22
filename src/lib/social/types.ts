@@ -33,6 +33,7 @@ export interface Profile extends ProfileStats {
 export interface LiveGame {
   tableId: string;
   together: boolean;
+  doNotDisturb: boolean;
   phase: string;
   openSeats: number;
 }

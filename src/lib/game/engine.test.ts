@@ -8,6 +8,38 @@ import type { GameState } from "./types";
 
 const topOf = (s: GameState) => s.cards[s.discard[s.discard.length - 1]];
 
+describe("room settings", () => {
+  it("lets only the host set Do not disturb and preserves it across rounds and host changes", () => {
+    const ctx = makeCtx();
+    const t = table(ctx, 2);
+    expect(projectFor(t.state, 1, t.hostId, ctx.now).public.doNotDisturb).toBe(false);
+    expect(() => act(t.state, t.ids[1], { type: "setDoNotDisturb", enabled: true }, ctx)).toThrow(/Only the host/);
+    expect(() => act(t.state, t.hostId, { type: "setDoNotDisturb", enabled: "yes" as unknown as boolean }, ctx)).toThrow(/on or off/);
+    const quiet = act(t.state, t.hostId, { type: "setDoNotDisturb", enabled: true }, ctx);
+    expect(t.state.doNotDisturb).toBe(false);
+    expect(projectFor(quiet, 2, t.ids[1], ctx.now).public.doNotDisturb).toBe(true);
+    expect(act(quiet, t.hostId, { type: "start" }, ctx).doNotDisturb).toBe(true);
+    const inherited = act(quiet, t.hostId, { type: "leaveTable" }, ctx);
+    expect(inherited.doNotDisturb).toBe(true);
+    expect(act(inherited, inherited.hostId, { type: "setDoNotDisturb", enabled: false }, ctx).doNotDisturb).toBe(false);
+    expect(joinGame(quiet, "Invited by code", ctx).state.players).toHaveLength(3);
+  });
+
+  it("supports older saved tables and changes a paused room without advancing play", () => {
+    const ctx = makeCtx();
+    const t = started(ctx, 2);
+    delete t.state.doNotDisturb;
+    expect(projectFor(t.state, 1, t.hostId, ctx.now).public.doNotDisturb).toBe(false);
+    const paused = { ...t.state, paused: true, pausedAt: ctx.now };
+    const quiet = act(paused, t.hostId, { type: "setDoNotDisturb", enabled: true }, ctx);
+    expect(quiet.paused).toBe(true);
+    expect(quiet.turn).toEqual(paused.turn);
+    expect(quiet.cards).toEqual(paused.cards);
+    expect(quiet.players).toEqual(paused.players);
+    expect(applyAction(quiet, { actionId: "repeat-setting", playerId: t.hostId, action: { type: "setDoNotDisturb", enabled: true } }, ctx).changed).toBe(false);
+  });
+});
+
 describe("lobby", () => {
   it("creates a game with the host in seat 0 and fills bots on start", () => {
     const ctx = makeCtx();

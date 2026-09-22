@@ -200,3 +200,75 @@ test("invitations and join requests can be resent after one minute with one fres
     await expect(friendPage).toHaveURL(`${origin}/g/${seat.code}`);
   } finally { await host.context.close(); await friend.context.close(); }
 });
+
+test("Do not disturb belongs to the room and blocks requests while allowing invitations and shared codes", async ({ browser }) => {
+  const { host, friend, seat, tableId } = await setup(browser);
+  const member = await account(browser, "Table Member");
+  const hostPage = await host.context.newPage();
+  const friendPage = await friend.context.newPage();
+  const memberPage = await member.context.newPage();
+  const setMode = (context: BrowserContext, enabled: boolean) => post(context, `/api/games/${seat.code}/actions`, {
+    actionId: crypto.randomUUID(), action: { type: "setDoNotDisturb", enabled },
+  });
+  try {
+    await post(member.context, `/api/games/${seat.code}/join`, {});
+    await post(member.context, "/api/presence", { code: seat.code });
+    await post(member.context, "/api/social/friends", { username: friend.username });
+    await post(friend.context, "/api/social/friends/respond", { profileId: member.profile.id, accept: true });
+    await hostPage.goto(`/g/${seat.code}`);
+    await hostPage.getByRole("button", { name: "Skip", exact: true }).click();
+    const toggle = hostPage.getByRole("switch", { name: "Do not disturb", exact: true });
+    await expect(toggle).not.toBeChecked();
+    await post(friend.context, "/api/social/join-requests", { profileId: host.profile.id, tableId });
+    const pending = (await snapshot(host.context)).joinRequests[0];
+    await hostPage.reload();
+    await expect(hostPage.getByRole("region", { name: "Join request from Joining Friend" })).toBeVisible();
+    await toggle.click();
+    await expect(toggle).toBeChecked();
+    await expect(hostPage.getByRole("region", { name: "Join request from Joining Friend" })).toHaveCount(0);
+    await hostPage.reload();
+    await expect(toggle).toBeChecked();
+    await hostPage.setViewportSize({ width: 390, height: 844 });
+    await hostPage.getByRole("region", { name: "Room settings" }).screenshot({ path: "test-results/room-do-not-disturb-mobile.png", animations: "disabled" });
+    await friendPage.goto("/");
+    await expect(friendPage.getByText("Do not disturb", { exact: true })).toHaveCount(2);
+    await expect(friendPage.getByRole("button", { name: /Ask to join|Ask again/ })).toHaveCount(0);
+    await friendPage.setViewportSize({ width: 390, height: 844 });
+    await friendPage.screenshot({ path: "test-results/friends-do-not-disturb-mobile.png", fullPage: true });
+    expect(await friendPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await friendPage.goto(`/p/${host.username}`);
+    await expect(friendPage.getByText("Do not disturb. Join requests are off.", { exact: true })).toBeVisible();
+    await expect(friendPage.getByRole("button", { name: /Ask to join|Ask again/ })).toHaveCount(0);
+    const friends = (await snapshot(friend.context)).friends;
+    expect(friends.every((f: { playing: { doNotDisturb: boolean } }) => f.playing.doNotDisturb)).toBe(true);
+    for (const profileId of [host.profile.id, member.profile.id]) {
+      const denied = await (await post(friend.context, "/api/social/join-requests", { profileId, tableId })).json();
+      expect(denied.outcome).toMatchObject({ ok: false, message: expect.stringContaining("Do not disturb") });
+    }
+    expect((await snapshot(host.context)).joinRequests).toHaveLength(0);
+    expect((await (await post(host.context, "/api/social/join-requests/respond", { requestId: pending.id, accept: true })).json()).outcome.ok).toBe(false);
+    expect((await setMode(member.context, false)).status()).toBe(409);
+    expect((await setMode(friend.context, false)).status()).toBe(401);
+    await memberPage.goto(`/g/${seat.code}`);
+    await memberPage.getByRole("button", { name: "Skip", exact: true }).click();
+    await expect(memberPage.getByRole("switch", { name: "Do not disturb" })).toHaveCount(0);
+    await expect(memberPage.getByRole("region", { name: "Room settings" })).toContainText("Join requests are off");
+    await toggle.click();
+    await expect(toggle).not.toBeChecked();
+    expect((await (await post(friend.context, "/api/social/join-requests", { profileId: member.profile.id, tableId })).json()).outcome.ok).toBe(true);
+    await toggle.click();
+    await expect(toggle).toBeChecked();
+    expect((await snapshot(member.context)).joinRequests).toHaveLength(0);
+    // Even in a quiet room, a seated member can invite their friend.
+    expect((await (await post(member.context, "/api/social/invites", { profileId: friend.profile.id, code: seat.code })).json()).outcome.ok).toBe(true);
+    await friendPage.reload();
+    await friendPage.getByRole("region", { name: "Table invitation from Table Member" }).getByRole("button", { name: "Join", exact: true }).click();
+    await expect(friendPage).toHaveURL(`${origin}/g/${seat.code}`);
+    const guest = await browser.newContext({ baseURL: origin });
+    try { expect((await post(guest, `/api/games/${seat.code}/join`, { name: "Shared code guest" })).ok()).toBe(true); }
+    finally { await guest.close(); }
+    await toggle.click();
+    await expect(toggle).not.toBeChecked();
+    expect((await (await host.context.request.get(`/api/games/${seat.code}/state`)).json()).view.public.doNotDisturb).toBe(false);
+  } finally { await host.context.close(); await friend.context.close(); await member.context.close(); }
+});

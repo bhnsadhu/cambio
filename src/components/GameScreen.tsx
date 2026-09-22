@@ -20,6 +20,7 @@ import { Explainer } from "./Explainer";
 import { HowToPlay } from "./HowToPlay";
 import { FlightLayer, useFlights } from "./FlightLayer";
 import { PauseButton, PauseOverlay } from "./Pause";
+import { RoomSettings } from "./RoomSettings";
 import { Button, Chip, DotOff, Field, inputClass, Pip, Wordmark } from "./ui";
 
 /**
@@ -153,12 +154,15 @@ function GameShell({ code }: { code: string }) {
           </div>
         </header>
 
+        {seated && view ? <RoomSettings view={view.public} me={game.me} busy={game.busy}
+          onChange={(enabled) => { void game.send({ type: "setDoNotDisturb", enabled }).then(() => social.refresh()); }} /> : null}
+
         {body}
 
         <FlightLayer specs={flights.specs} onLanded={flights.onLanded} />
         {view ? <PauseOverlay view={view.public} {...pause} /> : null}
         <Toasts toasts={game.toasts} />
-        <Notifications social={social} atCode={code} />
+        <Notifications social={social} atCode={code} acceptsJoinRequests={!seated || !view?.public.doNotDisturb} />
         {showExplainer ? <Explainer onDone={closeExplainer} onRules={() => { closeExplainer(); setHelp(true); }} /> : null}
         <HowToPlay open={help} onClose={() => setHelp(false)} onReplay={() => { setHelp(false); setReplay(true); }} />
       </main>

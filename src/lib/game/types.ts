@@ -180,6 +180,8 @@ export interface RoundResult {
 export interface GameState {
   code: string;
   hostId: string;
+  /** Room preference. Older saved tables default to accepting join requests. */
+  doNotDisturb?: boolean;
   phase: Phase;
   round: number;
   players: Player[];
@@ -258,6 +260,8 @@ export type Action =
   | { type: "ready" }
   /** host only, before the deal: how hard the bot in a seat plays */
   | { type: "setBotDifficulty"; seat: number; difficulty: BotDifficulty }
+  /** Host only, at any point: block requests while keeping invitations available. */
+  | { type: "setDoNotDisturb"; enabled: boolean }
   | { type: "advance" }             // peek window -> first turn (idempotent)
   | { type: "draw" }
   | { type: "place" }               // discard the drawn card (may trigger power)
@@ -319,6 +323,7 @@ export interface PublicView {
   code: string;
   version: number;
   hostId: string;
+  doNotDisturb: boolean;
   phase: Phase;
   round: number;
   players: PlayerPublic[];

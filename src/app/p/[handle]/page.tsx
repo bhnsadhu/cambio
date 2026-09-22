@@ -68,8 +68,9 @@ export default function PlayerPage({ params }: { params: Promise<{ handle: strin
           {friend?.playing ? (
             <div className="flex items-center justify-between gap-3 rounded-panel bg-surface-2 px-5 py-4 hairline">
               <p className="t-sub">
-                {friend.playing.together ? "At your table" : "Playing at a table"}
-                {friend.playing.openSeats > 0 ? <> · {friend.playing.openSeats} {friend.playing.openSeats === 1 ? "seat" : "seats"} open</> : null}
+                {friend.playing.doNotDisturb ? "Do not disturb. Join requests are off."
+                  : friend.playing.together ? "At your table" : "Playing at a table"}
+                {!friend.playing.doNotDisturb && friend.playing.openSeats > 0 ? <> · {friend.playing.openSeats} {friend.playing.openSeats === 1 ? "seat" : "seats"} open</> : null}
               </p>
               <AskToJoin friend={friend} social={social} />
             </div>

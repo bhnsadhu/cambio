@@ -123,7 +123,7 @@ interface RawSocial {
     id: string; handle: string; display_name: string; points: number;
     rounds_won: number; rounds_played: number; since: string | null;
     online: boolean; last_seen_at: string | null;
-    playing: { table_id: string; together: boolean; phase: string; open_seats: number } | null;
+    playing: { table_id: string; together: boolean; do_not_disturb: boolean; phase: string; open_seats: number } | null;
     played_together: number; your_wins: number; their_wins: number;
   }[];
   incoming: { id: string; handle: string; display_name: string; at: string }[];
@@ -149,7 +149,8 @@ export async function socialFor(id: string): Promise<Social> {
     since: f.since,
     online: !!f.online,
     lastSeenAt: f.last_seen_at,
-    playing: f.playing ? { tableId: f.playing.table_id, together: f.playing.together, phase: f.playing.phase, openSeats: f.playing.open_seats } : null,
+    playing: f.playing ? { tableId: f.playing.table_id, together: f.playing.together, doNotDisturb: !!f.playing.do_not_disturb,
+      phase: f.playing.phase, openSeats: f.playing.open_seats } : null,
     playedTogether: f.played_together,
     yourWins: f.your_wins,
     theirWins: f.their_wins,

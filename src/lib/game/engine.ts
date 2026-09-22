@@ -122,6 +122,7 @@ export function createGame(
   const state: GameState = {
     code,
     hostId,
+    doNotDisturb: false,
     phase: "lobby",
     round: 0,
     players: [host],
@@ -219,10 +220,10 @@ export function applyAction(input: GameState, env: ActionEnvelope | IdentityEnve
     state.updatedAt = ctx.now;
     return { state, changed: true };
   }
-  // A paused table is frozen: the only moves are the ones that unfreeze it.
+  // Paused gameplay is frozen; room settings and pause votes remain available.
   // Reveals are not pruned either, so a peek that was running when the table
   // went dark still has its remaining seconds when play resumes.
-  if (state.paused && a.type !== "pauseRequest" && a.type !== "pauseVote") {
+  if (state.paused && a.type !== "pauseRequest" && a.type !== "pauseVote" && a.type !== "setDoNotDisturb") {
     // The watchdogs (any client, and the bot runner) keep firing these; they
     // are no-ops rather than errors so nothing surfaces as a failure.
     if (a.type === "timeout" || a.type === "advance") return { state: input, changed: false };
@@ -234,6 +235,14 @@ export function applyAction(input: GameState, env: ActionEnvelope | IdentityEnve
 
   let note: ApplyResult["note"];
   switch (a.type) {
+    case "setDoNotDisturb": {
+      if (actor.id !== state.hostId) throw new GameError("NOT_HOST", "Only the host can change room settings.");
+      if (typeof a.enabled !== "boolean") throw new GameError("INVALID_TARGET", "Choose whether Do not disturb is on or off.");
+      if (!!state.doNotDisturb === a.enabled) return { state: input, changed: false };
+      state.doNotDisturb = a.enabled;
+      addLog(state, ctx, a.enabled ? "Do not disturb is on. Join requests are off." : "Do not disturb is off. Friends can ask to join.", { kind: "table", actorId: actor.id });
+      break;
+    }
     case "start": doStart(state, actor, ctx); break;
     case "ready": {
       if (!doReady(state, actor, ctx)) return { state: input, changed: false };

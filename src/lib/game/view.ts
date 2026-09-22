@@ -15,6 +15,7 @@ export function projectPublic(state: GameState, version: number, now: number): P
     code: state.code,
     version,
     hostId: state.hostId,
+    doNotDisturb: state.doNotDisturb ?? false,
     phase: state.phase,
     round: state.round,
     players: state.players.map((p) => ({

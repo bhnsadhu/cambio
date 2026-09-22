@@ -44,7 +44,7 @@ export function Lobby({
             <Button variant="secondary" size="sm" onClick={copy}>{copied ? "Copied" : "Copy link"}</Button>
           </div>
           <p className="t-body mt-4 max-w-[440px] text-ink-2">
-            Share the code to invite someone. Friends can also ask to join and wait for you to accept. Seats still open when the round starts go to the house bots.
+            Share the code to invite someone. {view.doNotDisturb ? "Do not disturb is on, so friends need an invitation." : "Friends can also ask to join and wait for you to accept."} Seats still open when the round starts go to the house bots.
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">

@@ -180,7 +180,9 @@ function FriendRow({ friend, social, inviteCode, atThisTable = false }: { friend
           </p>
           <p className="t-footnote flex items-center gap-1.5 text-ink-3">
             <PresenceDot state={here ? "playing" : presenceOf(friend)} />
-            {here
+            {live?.doNotDisturb
+              ? <>Do not disturb</>
+              : here
               ? <>At this table with you</>
               : live
                 ? live.openSeats > 0
@@ -217,7 +219,7 @@ export function AskToJoin({ friend, social }: { friend: Friend; social: SocialHo
   const live = friend.playing;
   const request = social.social.sentJoinRequests.find((r) => r.toId === friend.id && r.tableId === live?.tableId);
   const cooldown = useResendCooldown(request?.at);
-  if (!live || live.together || live.openSeats === 0) return null;
+  if (!live || live.together || live.doNotDisturb || live.openSeats === 0) return null;
   const invited = social.social.invites.some((i) => i.tableId === live.tableId);
   const ask = async () => {
     setBusy(true);
@@ -237,14 +239,14 @@ export function AskToJoin({ friend, social }: { friend: Friend; social: SocialHo
 }
 
 /** Invitations and requests need a decision; passive activity stays in Friends. */
-export function Notifications({ social, atCode = null }: { social: SocialHook; atCode?: string | null }) {
+export function Notifications({ social, atCode = null, acceptsJoinRequests = true }: { social: SocialHook; atCode?: string | null; acceptsJoinRequests?: boolean }) {
   const router = useRouter();
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [trouble, setTrouble] = useState<Record<string, string>>({});
   const [answering, setAnswering] = useState<string | null>(null);
   // Nothing to say about the table you are already looking at.
   const invites = social.social.invites.filter((i) => !dismissed.includes(i.id) && i.code !== atCode);
-  const requests = social.social.joinRequests;
+  const requests = acceptsJoinRequests ? social.social.joinRequests : [];
   if (!invites.length && !requests.length) return null;
 
   /**
