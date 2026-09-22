@@ -41,7 +41,7 @@ test("complete account lifecycle preserves identity and closes revoked sessions"
   const username = `player${suffix()}`;
   const nextUsername = `new${suffix()}`;
   await page.goto("/me");
-  await page.getByRole("group", { name: "Account access options" }).getByRole("button", { name: "Create account", exact: true }).click();
+  await page.getByRole("button", { name: "Create account", exact: true }).click();
   const signup = page.getByRole("form", { name: "Create account", exact: true });
   await signup.getByLabel("Username", { exact: true }).fill(username);
   await signup.getByLabel("Display name", { exact: true }).fill("McKenzie Lee");
@@ -64,6 +64,7 @@ test("complete account lifecycle preserves identity and closes revoked sessions"
   const friend = await (await post(friendContext, "/api/account", { username: friendName, displayName: "Taylor Jones", password: firstPassword })).json();
   expect(friend.profile?.id).toBeTruthy();
   expect(friend.profile.handle).toBe(friendName);
+  await page.goto("/");
   await page.getByRole("textbox", { name: "Add a friend by username" }).fill(`@${friendName.toUpperCase()}`);
   await page.getByRole("region", { name: "Friends", exact: true }).getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByText(`Request sent to @${friendName}.`, { exact: true })).toBeVisible();
@@ -80,6 +81,7 @@ test("complete account lifecycle preserves identity and closes revoked sessions"
   expect(state.view.public.players.find((p: { id: string }) => p.id === seat.playerId).name).toBe("McKenzie Lee");
   const otherDevice = await browser.newContext({ baseURL: origin });
   expect((await post(otherDevice, "/api/account/login", { username: username.toUpperCase(), password: firstPassword })).ok()).toBeTruthy();
+  await page.goto("/me");
   const otherPage = await otherDevice.newPage();
   await otherPage.goto("/me");
   await expect(otherPage.getByRole("region", { name: "Username", exact: true })).toContainText(`@${username}`);
@@ -97,7 +99,7 @@ test("complete account lifecycle preserves identity and closes revoked sessions"
   await rename.getByRole("button", { name: "Save display name" }).click();
   await expect(page.getByRole("status")).toContainText("Display name updated");
   await expect(rename).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "Alex Rivera", exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Display name", exact: true })).toContainText("Alex Rivera");
   state = await (await context.request.get(`/api/games/${seat.code}/state`)).json();
   expect(state.view.public.players.find((p: { id: string }) => p.id === seat.playerId).name).toBe("Alex Rivera");
 
@@ -138,7 +140,7 @@ test("complete account lifecycle preserves identity and closes revoked sessions"
 
   const preLogoutCookie = (await context.cookies()).find((c) => c.name === "cambio_session")!;
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Your Cambio account" })).toBeVisible();
+  await expect(page).toHaveURL(`${origin}/`);
   expect((await context.request.post(`/api/games/${seat.code}/actions`, { headers: { origin, "x-cambio-token": seat.token }, data: { actionId: crypto.randomUUID(), action: { type: "start" } } })).status()).toBe(401);
   expect((await context.request.get("/api/account", { headers: { cookie: `cambio_session=${preLogoutCookie.value}` } })).ok()).toBeTruthy();
   expect((await (await context.request.get("/api/account", { headers: { cookie: `cambio_session=${preLogoutCookie.value}` } })).json()).profile).toBeNull();
@@ -148,6 +150,7 @@ test("complete account lifecycle preserves identity and closes revoked sessions"
   const restored = await (await context.request.get("/api/account")).json();
   expect(restored.profile.id).toBe(initial.profile.id);
   expect(restored.profile).toMatchObject({ displayName: "Alex Rivera", roundsWon: 1, bestScore: 2 });
+  await page.goto("/");
   await expect(page.getByText("Taylor Jones", { exact: true }).first()).toBeVisible();
   await page.goto(`/g/${seat.code}`);
   await expect(page.getByRole("button", { name: "Start round", exact: true })).toBeVisible();
@@ -163,7 +166,7 @@ test("complete account lifecycle preserves identity and closes revoked sessions"
   await expect(page.locator("main").getByRole("alert")).toHaveText("Your current password is incorrect.");
   await deletion.getByLabel("Current password", { exact: true }).fill(nextPassword);
   await deletion.getByRole("button", { name: "Permanently delete account" }).click();
-  await expect(page.getByRole("heading", { name: "Your Cambio account" })).toBeVisible();
+  await expect(page).toHaveURL(`${origin}/`);
   expect((await post(context, "/api/account/login", { username: nextUsername, password: nextPassword })).status()).toBe(401);
   expect((await (await otherDevice.request.get("/api/account")).json()).profile).toBeNull();
   expect((await context.request.get(`/api/profile/${nextUsername}`)).status()).toBe(404);
@@ -229,16 +232,17 @@ test("logout reaches another open tab and a delayed response cannot restore the 
     await route.fulfill({ response });
     delivered();
   });
-  await page.reload();
+  await page.goto("/");
   await capturedResponse;
+  await page.getByRole("link", { name: "Account settings", exact: true }).click();
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   release();
   await deliveredResponse;
-  await expect(page.getByRole("heading", { name: "Your Cambio account" })).toBeVisible();
+  await expect(page).toHaveURL(`${origin}/`);
   expect(await page.evaluate(() => localStorage.getItem("cambio:profile"))).toBeNull();
-  await expect(otherTab.getByRole("heading", { name: "Your Cambio account" })).toBeVisible();
+  await expect(otherTab.getByRole("heading", { name: "Welcome back" })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("form", { name: "Log in", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Log in", exact: true })).toBeVisible();
   await otherTab.close();
 });
 
@@ -283,7 +287,9 @@ test("account access, tables, and help keep clear copy and responsive settings",
   await page.screenshot({ path: "test-results/account-mobile-edit.png", fullPage: true });
   await page.getByRole("form", { name: "Username settings" }).getByRole("button", { name: "Cancel", exact: true }).click();
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Your Cambio account" })).toBeVisible();
+  await expect(page).toHaveURL(`${origin}/`);
+  await page.getByRole("link", { name: "Log in", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: "test-results/login-mobile.png", fullPage: true });
 });

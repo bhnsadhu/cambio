@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { api, RequestError } from "@/lib/client/api";
 import { useAccountReady } from "@/lib/client/profile";
-import { AuthForm } from "./Account";
+import { loginHref } from "@/lib/account/navigation";
 import { saveSession, storeName } from "@/lib/client/session";
 import { usePresence, useSocial } from "@/lib/client/social";
 import { useStoredName } from "@/lib/client/useStoredName";
 import { CardBack, FaceCard } from "./cards";
 import { FriendsPanel, Notifications } from "./Friends";
-import { ProfileBadge, ProfileCard } from "./Profile";
+import { AccountLink, ProfileCard } from "./Profile";
 import { Button, Field, inputClass, PlayerName, Wordmark } from "./ui";
 
 export function Landing() {
@@ -61,8 +61,8 @@ export function Landing() {
         <div className="flex items-center gap-3">
           <span className="t-sub text-ink-3">Four seats. One code.</span>
           {social.profile
-            ? <ProfileBadge profile={social.profile} />
-            : <Link href="/me"><Button variant="ghost" size="sm">Log in or create account</Button></Link>}
+            ? <AccountLink />
+            : <Link href={loginHref()} className="t-sub text-ink-2 hover:text-ink">Log in</Link>}
         </div>
       </header>
 
@@ -143,7 +143,7 @@ export function Landing() {
           <>
             <div className="flex flex-col gap-3">
               <ProfileCard profile={social.profile} />
-              <Link href="/me" className="t-sub self-start text-ink-3 hover:text-ink">Your full record and friends →</Link>
+              <Link href={`/p/${social.profile.handle}`} className="t-sub self-start text-ink-3 hover:text-ink">View your profile</Link>
             </div>
             <FriendsPanel social={social} />
           </>
@@ -156,7 +156,7 @@ export function Landing() {
                 your longest streak. Add friends by username, see when they are at a table, and take the seat next to them.
               </p>
             </div>
-            <AuthForm initialMode="register" initialName={name} />
+            <div className="self-center"><Link href={loginHref("/", "register")} className="t-sub inline-flex h-12 items-center rounded-full bg-ink px-6 font-medium text-bg">Create account</Link></div>
           </>
         )}
       </section>

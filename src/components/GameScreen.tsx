@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useAccountReady, useStoredProfile } from "@/lib/client/profile";
+import { loginHref } from "@/lib/account/navigation";
 import { useGame } from "@/lib/client/useGame";
 import { api, RequestError } from "@/lib/client/api";
 import { useSocial, usePresence } from "@/lib/client/social";
@@ -13,7 +14,7 @@ import { PositionsProvider } from "@/lib/client/positions";
 import { setPref, usePrefs } from "@/lib/client/prefs";
 import { Lobby } from "./Lobby";
 import { FriendsPanel, Notifications } from "./Friends";
-import { ProfileBadge } from "./Profile";
+import { AccountLink } from "./Profile";
 import { Table } from "./Table";
 import { Explainer } from "./Explainer";
 import { HowToPlay } from "./HowToPlay";
@@ -92,7 +93,7 @@ function GameShell({ code }: { code: string }) {
   } else if (!seated && view.public.phase === "lobby") {
     body = <JoinForm code={code} onJoined={(s) => { game.setSession(s); void game.refresh(); }} />;
   } else if (!seated && !watching) {
-    body = <MidRound code={code} onWatch={() => setWatching(true)} />;
+    body = <MidRound code={code} canLogin={!social.profile} onWatch={() => setWatching(true)} />;
   } else if (view.public.phase === "lobby") {
     body = (
       <WithFriends social={social} code={code} seated={seatedProfiles}>
@@ -128,7 +129,7 @@ function GameShell({ code }: { code: string }) {
           </div>
           <div className="flex items-center gap-3">
             {social.profile
-              ? <ProfileBadge profile={social.profile} />
+              ? <AccountLink from={`/g/${code}`} />
               : game.session ? <span className="t-sub text-ink-2">Playing as <span className="font-medium text-ink">{game.session.name}</span></span> : null}
             {view ? <PauseButton view={view.public} {...pause} /> : null}
             <Button variant="ghost" size="sm" onClick={() => setHelp(true)}>How to play</Button>
@@ -170,21 +171,12 @@ function GameShell({ code }: { code: string }) {
  * friend is one click from an invite to this exact code.
  */
 function WithFriends({ social, code, seated, children }: { social: ReturnType<typeof useSocial>; code: string; seated: string[]; children: React.ReactNode }) {
+  if (!social.profile) return children;
   return (
     <div className="mx-auto grid w-full max-w-[1280px] grid-cols-[minmax(0,1fr)_320px] gap-8">
       {children}
       <div className="pt-12">
-        {social.profile ? (
-          <FriendsPanel social={social} inviteCode={code} seated={seated} />
-        ) : (
-          <section className="rounded-panel bg-surface p-6 hairline">
-            <h2 className="t-headline">Playing with friends?</h2>
-            <p className="t-sub mt-1 text-ink-2">
-              Create an account and you can invite them straight to this table, and see when they are at one of their own.
-            </p>
-            <Link href="/me" className="mt-4 inline-block"><Button variant="secondary" size="sm">Log in or create account</Button></Link>
-          </section>
-        )}
+        <FriendsPanel social={social} inviteCode={code} seated={seated} />
       </div>
     </div>
   );
@@ -216,19 +208,21 @@ function JoinForm({ code, onJoined }: { code: string; onJoined: (s: { playerId: 
     <div className="mx-auto max-w-[420px] pt-24 animate-rise">
       <p className="t-caption text-ink-3">Join table</p>
       <h1 className="t-title tnum mt-1.5 tracking-[0.06em]">{code}</h1>
-      <p className="t-body mt-2 text-ink-2">Your display name is how the table sees you.</p>
-      <form onSubmit={submit} className="mt-6 flex flex-col gap-4">
-        <Field label="Display name">
-          <input className={inputClass} value={name} readOnly={!!profile} onChange={(e) => setName(e.target.value)} placeholder="What the table calls you" maxLength={18} autoFocus />
-        </Field>
+      <form onSubmit={submit} className="mt-6 flex flex-col gap-4" aria-label="Join table">
+        {!accountReady ? <p role="status" className="t-sub text-ink-2">Checking your account...</p>
+          : profile ? <p className="t-body text-ink-2">Playing as <strong className="text-ink">{name}</strong></p>
+            : <Field label="Display name">
+              <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name at the table" maxLength={18} required autoFocus />
+            </Field>}
         {error ? <p className="t-sub text-accent-ink">{error}</p> : null}
         <Button type="submit" variant="primary" size="lg" disabled={!accountReady || busy || !name.trim()}>{busy ? "Taking a seat" : "Take a seat"}</Button>
       </form>
+      {accountReady && !profile ? <p className="t-sub mt-5 text-ink-2">Have an account? <Link href={loginHref(`/g/${code}`)} className="text-ink underline underline-offset-4">Log in before joining</Link></p> : null}
     </div>
   );
 }
 
-function MidRound({ code, onWatch }: { code: string; onWatch: () => void }) {
+function MidRound({ code, canLogin, onWatch }: { code: string; canLogin: boolean; onWatch: () => void }) {
   return (
     <div className="mx-auto max-w-[460px] pt-24 animate-rise">
       <p className="t-caption text-ink-3">Table {code}</p>
@@ -238,6 +232,7 @@ function MidRound({ code, onWatch }: { code: string; onWatch: () => void }) {
         <Button variant="primary" size="lg" onClick={onWatch}>Watch</Button>
         <Link href="/"><Button variant="secondary" size="lg">Open a table</Button></Link>
       </div>
+      {canLogin ? <p className="t-sub mt-5 text-ink-2">Already playing? <Link href={loginHref(`/g/${code}`)} className="text-ink underline underline-offset-4">Log in to return to your seat</Link></p> : null}
     </div>
   );
 }

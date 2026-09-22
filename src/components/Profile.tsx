@@ -72,17 +72,9 @@ function Stat({ k, v, sub, accent }: { k: string; v: ReactNode; sub?: string; ac
   );
 }
 
-/** The one-line version for a header: rank, wins, and a way in. */
-export function ProfileBadge({ profile }: { profile: Profile }) {
-  const standing = standingFor(profile.points);
+/** Account navigation stays the same across screens, without repeating stats. */
+export function AccountLink({ from = "/" }: { from?: string }) {
   return (
-    <Link href="/me" aria-label="Account settings" className="press inline-flex items-center gap-2 rounded-full bg-surface-2 py-1 pl-3 pr-1.5 text-[13px] hover:bg-surface-3">
-      <span className="font-medium text-ink">{profile.displayName}</span>
-      <span className="text-ink-2">Account</span>
-      <span className="text-ink-3">{standing.tier.name}</span>
-      <span className="t-money inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-accent px-1.5 text-[12px] font-semibold text-black">
-        {profile.roundsWon}
-      </span>
-    </Link>
+    <Link href={from === "/" ? "/me" : `/me?${new URLSearchParams({ from })}`} aria-label="Account settings" className="press inline-flex h-8 items-center rounded-full bg-surface-2 px-3.5 text-[13px] font-medium hover:bg-surface-3">Account</Link>
   );
 }

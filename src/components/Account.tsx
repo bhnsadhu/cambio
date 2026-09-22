@@ -30,23 +30,17 @@ export function AuthForm({ initialMode = "login", initialName = "", legacy = fal
   };
   return (
     <section className="rounded-panel bg-surface p-6 hairline" aria-label={legacy ? "Secure your saved profile" : "Account access"}>
-      <h2 className="t-headline">{legacy ? "Secure your saved profile" : registering ? "Create an account" : "Welcome back"}</h2>
+      <h1 className="t-title2">{legacy ? "Secure your saved profile" : registering ? "Create an account" : "Welcome back"}</h1>
       <p className="t-sub mt-2 text-ink-2">
         {legacy ? "Add a username and password to keep this profile, including all your stats and friends. You can then log in from any browser."
-          : registering ? "Your username is for logging in and finding friends. Your display name is what players see at the table."
-            : "Log in with your username and password to get back to your stats and friends."}
+          : registering ? "Save your stats and keep your friends between games."
+            : "Log in to pick up where you left off."}
       </p>
-      {!legacy ? (
-        <div className="mt-5 flex gap-2" role="group" aria-label="Account access options">
-          <Button type="button" variant={!registering ? "primary" : "ghost"} size="sm" disabled={busy} aria-pressed={!registering} onClick={() => { setMode("login"); setError(null); setPassword(""); setConfirm(""); }}>Log in</Button>
-          <Button type="button" variant={registering ? "primary" : "ghost"} size="sm" disabled={busy} aria-pressed={registering} onClick={() => { setMode("register"); setError(null); setPassword(""); setConfirm(""); }}>Create account</Button>
-        </div>
-      ) : null}
       <form onSubmit={submit} className="mt-5 flex flex-col gap-4" aria-label={registering ? "Create account" : "Log in"}>
         <Field label="Username">
-          <input className={inputClass} name="username" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" autoCapitalize="none" spellCheck={false} minLength={3} maxLength={18} pattern="[a-zA-Z0-9]{3,18}" required disabled={busy} aria-describedby="username-help" />
+          <input className={inputClass} name="username" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" autoCapitalize="none" spellCheck={false} minLength={3} maxLength={18} pattern="[a-zA-Z0-9]{3,18}" required disabled={busy} aria-describedby={registering ? "username-help" : undefined} />
         </Field>
-        <p id="username-help" className="t-footnote -mt-2 text-ink-3">3 to 18 letters or numbers. Usernames are not case sensitive.</p>
+        {registering ? <p id="username-help" className="t-footnote -mt-2 text-ink-3">For logging in and adding friends. Use 3 to 18 letters or numbers.</p> : null}
         {registering ? <Field label="Display name">
           <input className={inputClass} name="displayName" value={name} onChange={(event) => setDisplayName(event.target.value)} autoComplete="nickname" maxLength={18} required disabled={busy} placeholder="Your name at the table" />
         </Field> : null}
@@ -59,13 +53,16 @@ export function AuthForm({ initialMode = "login", initialName = "", legacy = fal
         </> : null}
         {error ? <p role="alert" className="t-sub text-red">{error}</p> : null}
         <Button type="submit" variant="primary" size="lg" disabled={busy}>{busy ? "Please wait" : registering ? legacy ? "Secure this profile" : "Create account" : "Log in"}</Button>
-        {!registering ? <p className="t-footnote text-ink-3">Your display name can be different from your username.</p> : null}
       </form>
+      {!legacy ? <p className="t-sub mt-5 text-center text-ink-2">
+        {registering ? "Already have an account?" : "New to Cambio?"}{" "}
+        <button type="button" className="font-semibold text-ink underline underline-offset-4 disabled:opacity-40" disabled={busy} onClick={() => { setMode(registering ? "login" : "register"); setError(null); setPassword(""); setConfirm(""); }}>{registering ? "Log in" : "Create account"}</button>
+      </p> : null}
     </section>
   );
 }
 
-export function AccountSettings({ stored }: { stored: StoredProfile }) {
+export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onExit: () => void }) {
   type Editor = "name" | "username" | "password" | "delete";
   const [editing, setEditing] = useState<Editor | null>(null);
   const changeButtons = useRef<Partial<Record<Editor, HTMLButtonElement | null>>>({});
@@ -165,13 +162,13 @@ export function AccountSettings({ stored }: { stored: StoredProfile }) {
       <div className="divide-y divide-ink/10 rounded-panel bg-surface hairline">
         <section className="p-6" aria-label="Sign out">
           <h2 className="t-headline">Sign out</h2>
-          <p className="t-sub mt-2 text-ink-2">Leave this browser. Your stats and friends will be here when you log back in.</p>
-          <Button className="mt-4" type="button" disabled={!!busy} onClick={() => void perform("logout", async () => { await signOut(); return "Signed out."; })}>{busy === "logout" ? "Signing out" : "Sign out"}</Button>
+          <p className="t-sub mt-2 text-ink-2">Sign out of this browser. Your stats and friends stay saved.</p>
+          <Button className="mt-4" type="button" disabled={!!busy} onClick={() => void perform("logout", async () => { await signOut(); onExit(); return "Signed out."; })}>{busy === "logout" ? "Signing out" : "Sign out"}</Button>
         </section>
         <section className="p-6" aria-label="Delete account">
           <h2 className="t-headline">Delete account</h2>
           <p className="t-sub mt-2 text-ink-2">Permanently delete your account, stats, friends, and invites. This cannot be undone.</p>
-          {editing === "delete" ? <form id="delete-form" className={formClass} aria-label="Confirm account deletion" onSubmit={(event) => { event.preventDefault(); void perform("delete", async () => { await deleteAccount(deletePassword, confirmation); return "Account deleted."; }); }}>
+          {editing === "delete" ? <form id="delete-form" className={formClass} aria-label="Confirm account deletion" onSubmit={(event) => { event.preventDefault(); void perform("delete", async () => { await deleteAccount(deletePassword, confirmation); onExit(); return "Account deleted."; }); }}>
             <input type="hidden" name="username" value={stored.username ?? ""} autoComplete="username" />
             <Field label="Current password"><input autoFocus className={inputClass} name="currentPassword" type="password" value={deletePassword} onChange={(event) => setDeletePassword(event.target.value)} autoComplete="current-password" maxLength={128} required disabled={!!busy} /></Field>
             <Field label="Type DELETE to confirm"><input className={inputClass} name="confirmation" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} autoComplete="off" spellCheck={false} pattern="DELETE" required disabled={!!busy} /></Field>
