@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { applyAction, canStick, cardCount, createGame, DEAL_MS, GameError, joinGame, OPENING_PEEK_MS, ownerOf, READY_TIMEOUT_MS, TURN_TIMEOUT_MS } from "./engine";
+import { applyAction, canStick, cardCount, createGame, DEAL_MS, GameError, joinGame, OPENING_PEEK_MS, ownerOf, READY_TIMEOUT_MS, STICK_WINDOW_MS, TURN_TIMEOUT_MS } from "./engine";
 import { cardValue, powerOf } from "./cards";
 import { projectFor } from "./view";
 import { planBots } from "./bots";
-import { act, card, makeCtx, player, readyAll, rig, rigDeck, started, table } from "./testkit";
+import { act, card, makeCtx, player, readyAll, rig, rigDeck, settleFinalTurns, started, table } from "./testkit";
 import type { GameState } from "./types";
 
 const topOf = (s: GameState) => s.cards[s.discard[s.discard.length - 1]];
@@ -401,6 +401,7 @@ describe("cambio and round end", () => {
       s = act(s, id, { type: "draw" }, ctx);
       s = act(s, id, { type: "swap", cardId: player(s, id).hand[0]! }, ctx);
     }
+    s = settleFinalTurns(s, ctx);
     expect(s.phase).toBe("scoring");
     expect(s.results).toHaveLength(1);
     expect(s.turn).toBeNull();
@@ -498,7 +499,92 @@ describe("cambio and round end", () => {
     s = rigDeck(s, [card("d9", "6", "S")]);
     s = act(s, ids[3], { type: "draw" }, ctx);
     s = act(s, ids[3], { type: "place" }, ctx); // last turn done
+    s = settleFinalTurns(s, ctx);
     expect(s.phase).toBe("scoring");
+  });
+
+  it("sticking is never capped at one: every matching card can be stuck in sequence during the final turns, even the player's own last turn", () => {
+    const ctx = makeCtx();
+    const { state, ids } = started(ctx);
+    // Nobody but the last player to act holds a 7, so the only matches
+    // available are the two sevens sitting in their own hand.
+    let s = rig(state, ids[0], [card("a1", "9"), card("a2", "9"), card("a3", "K", "S"), card("a4", "K", "C")]);
+    s = rig(s, ids[1], [card("b1", "9"), card("b2", "K", "S"), card("b3", "K", "C"), card("b4", "9")]);
+    s = rig(s, ids[2], [card("c1", "9"), card("c2", "K", "S"), card("c3", "K", "C"), card("c4", "9")]);
+    // ids[3] is last in the queue and holds two sevens of their own, plus filler.
+    s = rig(s, ids[3], [card("e1", "7", "H"), card("e2", "7", "D"), card("e3", "K", "S"), card("e4", "K", "C")]);
+    s = act(s, ids[0], { type: "callCambio" }, ctx);
+    expect(s.cambio?.remaining).toEqual([ids[2], ids[3]]);
+    for (const id of [ids[1], ids[2]]) {
+      s = rigDeck(s, [card(`h${id}`, "K", "H")]); // harmless, carries no power
+      s = act(s, id, { type: "draw" }, ctx);
+      s = act(s, id, { type: "place" }, ctx);
+    }
+    // ids[3] takes their own last turn and places a third seven — the card
+    // that opens the match against the two still sitting in their hand. A 7
+    // carries a peek-own power, which has to be resolved before the turn
+    // (and the round) can close.
+    s = rigDeck(s, [card("d1", "7", "S")]);
+    s = act(s, ids[3], { type: "draw" }, ctx);
+    s = act(s, ids[3], { type: "place" }, ctx);
+    expect(s.pendingPower).toMatchObject({ playerId: ids[3], kind: "peekOwn" });
+    s = act(s, ids[3], { type: "skipPower" }, ctx);
+    expect(s.turn).toBeNull();
+
+    // The round is otherwise ready to score, but a card still on the table
+    // matches the pile: it must not close out from under it.
+    expect(s.phase).toBe("final");
+    expect(s.stickWindowUntil).not.toBeNull();
+    expect(canStick(s, ids[3])).toBe(true);
+
+    // First stick: the round holds open because a second seven remains.
+    s = act(s, ids[3], { type: "stick", cardId: "e1" }, ctx);
+    expect(player(s, ids[3]).hand).toEqual([null, "e2", "e3", "e4"]);
+    expect(s.phase).toBe("final");
+    expect(s.stickWindowUntil).not.toBeNull();
+
+    // Second stick of the same player's second matching card: not blocked,
+    // not capped at one, and the round closes right away now that nothing
+    // else on the table matches.
+    s = act(s, ids[3], { type: "stick", cardId: "e2" }, ctx);
+    expect(player(s, ids[3]).hand).toEqual([null, null, "e3", "e4"]);
+    expect(s.phase).toBe("scoring");
+    expect(s.results).toHaveLength(1);
+    expect(s.results[0].tally?.[ids[3]]).toMatchObject({ sticks: 2, misses: 0 });
+  });
+
+  it("an available stick that nobody claims closes the round once its window runs out, not before", () => {
+    const ctx = makeCtx();
+    const { state, ids } = started(ctx);
+    let s = rig(state, ids[0], [card("a1", "9"), card("a2", "9"), card("a3", "K", "S"), card("a4", "K", "C")]);
+    s = rig(s, ids[1], [card("b1", "9"), card("b2", "K", "S"), card("b3", "K", "C"), card("b4", "9")]);
+    // ids[2] holds a 7 that nobody ever sticks.
+    s = rig(s, ids[2], [card("c1", "7", "H"), card("c2", "K", "S"), card("c3", "K", "C"), card("c4", "9")]);
+    s = rig(s, ids[3], [card("e1", "9"), card("e2", "K", "S"), card("e3", "K", "C"), card("e4", "9")]);
+    s = act(s, ids[0], { type: "callCambio" }, ctx);
+    for (const id of [ids[1], ids[2]]) {
+      s = rigDeck(s, [card(`h${id}`, "K", "H")]);
+      s = act(s, id, { type: "draw" }, ctx);
+      s = act(s, id, { type: "place" }, ctx);
+    }
+    s = rigDeck(s, [card("d1", "7", "S")]);
+    s = act(s, ids[3], { type: "draw" }, ctx);
+    s = act(s, ids[3], { type: "place" }, ctx); // carries peek-own; resolve it to close the turn
+    s = act(s, ids[3], { type: "skipPower" }, ctx);
+    expect(s.phase).toBe("final");
+    const deadline = s.stickWindowUntil!;
+    expect(deadline).toBe(s.updatedAt + STICK_WINDOW_MS);
+
+    // Not due yet: a timeout this early changes nothing.
+    ctx.tick(STICK_WINDOW_MS - 1);
+    expect(applyAction(s, { actionId: "sw1", playerId: ids[0], action: { type: "timeout" } }, ctx).changed).toBe(false);
+    expect(s.phase).toBe("final");
+
+    // Past the deadline: the window closes even though c1 was never stuck.
+    ctx.tick(2);
+    s = act(s, ids[0], { type: "timeout" }, ctx);
+    expect(s.phase).toBe("scoring");
+    expect(player(s, ids[2]).hand[0]).toBe("c1"); // untouched, just scored as-is
   });
 
   it("scores: number=face, J/Q=10, A=1, red K=-1, black K=0, joker=0; lowest wins; ties stand", () => {
@@ -523,6 +609,7 @@ describe("cambio and round end", () => {
       s = act(s, id, { type: "draw" }, ctx);
       s = act(s, id, { type: "place" }, ctx);
     }
+    s = settleFinalTurns(s, ctx);
     expect(s.phase).toBe("scoring");
     const r = s.results[0];
     const score = (id: string) => r.scores.find((x) => x.playerId === id)!.score;
@@ -663,6 +750,7 @@ describe("winner determination", () => {
       s = act(s, id, { type: "draw" }, ctx);
       s = act(s, id, { type: "place" }, ctx);
     }
+    s = settleFinalTurns(s, ctx);
     expect(s.phase).toBe("scoring");
     const r = s.results[0];
     return { s, ids, r, score: (id: string) => r.scores.find((x) => x.playerId === id)!.score };
@@ -734,6 +822,8 @@ describe("winner determination", () => {
       s = act(s, id, { type: "draw" }, ctx);
       s = act(s, id, { type: "place" }, ctx);
     }
+    s = settleFinalTurns(s, ctx);
+    expect(s.phase).toBe("scoring");
     const r = s.results[0];
     const score = (id: string) => r.scores.find((x) => x.playerId === id)!.score;
     expect(score(ids[0])).toBe(5 + 9);

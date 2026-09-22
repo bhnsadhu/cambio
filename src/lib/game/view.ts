@@ -46,6 +46,7 @@ export function projectPublic(state: GameState, version: number, now: number): P
     cambio: state.cambio ? { callerId: state.cambio.callerId, reason: state.cambio.reason, remaining: state.cambio.remaining.slice() } : null,
     dealingUntil: state.dealingUntil ?? null,
     openingPeekUntil: state.openingPeekUntil,
+    stickWindowUntil: state.stickWindowUntil ?? null,
     botDifficulty: (state.botDifficulty ?? []).slice(),
     replayVotes: (state.replayVotes ?? []).slice(),
     results: state.phase === "scoring" || state.results.length ? structuredClone(state.results) : [],

@@ -2,7 +2,7 @@
  * Deterministic helpers for engine tests: seeded RNG, sequential ids, and a
  * way to build a table in a chosen state.
  */
-import { applyAction, createGame, joinGame, type EngineCtx } from "./engine";
+import { applyAction, createGame, joinGame, STICK_WINDOW_MS, type EngineCtx } from "./engine";
 import type { Action, Card, GameState, Rank, Suit } from "./types";
 
 export function seededRng(seed = 1): () => number {
@@ -30,6 +30,19 @@ export function makeCtx(seed = 1, now = 1_000_000): EngineCtx & { tick: (ms: num
 let actionSeq = 0;
 export function act(state: GameState, playerId: string, action: Action, ctx: EngineCtx): GameState {
   return applyAction(state, { actionId: `a${++actionSeq}`, playerId, action }, ctx).state;
+}
+
+/**
+ * The final turns can end with a card still on the table matching the pile,
+ * which holds the round open for a beat rather than scoring out from under a
+ * stick in flight (see `STICK_WINDOW_MS`). Tests that are not themselves
+ * about sticking use this to settle straight through to scoring, exactly as
+ * a timeout would once nobody claims the match.
+ */
+export function settleFinalTurns(state: GameState, ctx: EngineCtx & { tick: (ms: number) => void }): GameState {
+  if (state.phase !== "final" || state.stickWindowUntil === null) return state;
+  ctx.tick(STICK_WINDOW_MS + 1);
+  return act(state, state.players[0].id, { type: "timeout" }, ctx);
 }
 
 /** Host + `humans - 1` extra humans; the rest of the seats become bots on start. */

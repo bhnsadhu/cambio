@@ -449,6 +449,11 @@ function describeStatus(
       ? { title: "Your last turn.", detail: "Draw from the deck, then keep or place the card." }
       : { title: "Your turn.", detail: "Draw from the deck, or call Cambio to make this the final round." };
   }
+  // Every final turn is spent, but a card on the table still matches the
+  // pile: the round holds for a beat rather than closing out from under it.
+  if (pub.phase === "final" && !pub.turn) {
+    return { title: "Last call for sticks.", detail: stickHint ?? "Every turn is in. The round is closing." };
+  }
   const detail = pub.cambio
     ? <>{name(pub.players.find((p) => p.id === pub.cambio!.callerId) ?? null)} {pub.cambio.reason === "zero" ? "is out of cards" : "called Cambio"}. {pub.cambio.remaining.length ? <>Still to play: {pub.cambio.remaining.map((id) => pub.players.find((p) => p.id === id)?.name).join(", ")}.</> : "Final turn in progress."}</>
     : stickHint;

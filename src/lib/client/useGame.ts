@@ -159,6 +159,7 @@ export function useGame(code: string): GameHook {
 
   // Watchdog: advance the opening peek on time, report idle turns, nudge stalled bots.
   const reportedDeadline = useRef<number | null>(null);
+  const reportedStickWindow = useRef<number | null>(null);
   useEffect(() => {
     const t = setInterval(() => {
       const v = viewRef.current?.public;
@@ -173,6 +174,15 @@ export function useGame(code: string): GameHook {
       if (v.phase === "ready" && v.readyDeadline !== null && serverNow >= v.readyDeadline + 700
           && sessionRef.current && reportedDeadline.current !== v.readyDeadline) {
         reportedDeadline.current = v.readyDeadline;
+        void send({ type: "timeout" });
+      }
+      // A card was still on the table matching the pile when the final turns
+      // finished; the grace window for it has now run out with nobody
+      // sticking it. Report it so the round closes rather than holding open
+      // on an unclaimed match forever.
+      if (v.phase === "final" && v.stickWindowUntil !== null && serverNow >= v.stickWindowUntil + 200
+          && sessionRef.current && reportedStickWindow.current !== v.stickWindowUntil) {
+        reportedStickWindow.current = v.stickWindowUntil;
         void send({ type: "timeout" });
       }
       if (v.phase === "peek" && v.openingPeekUntil !== null && serverNow >= v.openingPeekUntil + 150) {
@@ -190,7 +200,8 @@ export function useGame(code: string): GameHook {
         (v.pendingPower && v.players.find((p) => p.id === v.pendingPower!.playerId)?.isBot) ||
         v.pendingGives.some((g) => v.players.find((p) => p.id === g.from)?.isBot) ||
         (v.phase === "peek" && v.openingPeekUntil !== null && serverNow > v.openingPeekUntil + 2000) ||
-        (v.phase === "ready" && v.players.some((p) => p.isBot && !v.readyIds.includes(p.id)));
+        (v.phase === "ready" && v.players.some((p) => p.isBot && !v.readyIds.includes(p.id))) ||
+        (v.phase === "final" && v.stickWindowUntil !== null && serverNow > v.stickWindowUntil + 1500);
       if (botMustAct && Date.now() - lastChange.current > NUDGE_AFTER_MS && Date.now() - lastNudge.current > NUDGE_AFTER_MS) {
         lastNudge.current = Date.now();
         void api.nudge(code).catch(() => {});

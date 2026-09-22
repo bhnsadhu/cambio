@@ -219,6 +219,14 @@ export interface GameState {
    */
   dealingUntil: number | null;
   openingPeekUntil: number | null;
+  /**
+   * During final turns, once every turn is spent and nothing is owed: the
+   * moment past which the round scores even if a card on the table still
+   * matches the pile. Held open, and pushed back out, by every stick that
+   * still finds a match, so a run of several correct sticks is never cut
+   * short partway through. Null whenever nothing is waiting to close.
+   */
+  stickWindowUntil: number | null;
   /** at scoring time: who has asked for another round (bots agree at once) */
   replayVotes: string[];
   /**
@@ -325,6 +333,8 @@ export interface PublicView {
   cambio: { callerId: string; reason: "called" | "zero"; remaining: string[] } | null;
   dealingUntil: number | null;
   openingPeekUntil: number | null;
+  /** see `GameState.stickWindowUntil` */
+  stickWindowUntil: number | null;
   /** how hard the bot in each seat plays, by seat index */
   botDifficulty: BotDifficulty[];
   /** at scoring: who is ready for another round */

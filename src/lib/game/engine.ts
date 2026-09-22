@@ -50,6 +50,14 @@ export const TURN_TIMEOUT_MS = 30_000;
  * starts without them rather than leaving the table stuck on one empty chair.
  */
 export const READY_TIMEOUT_MS = 45_000;
+/**
+ * Once the final turns are otherwise spent, how long a card still matching
+ * the pile holds the score back. A stick during the window reopens it fresh,
+ * so a run of several matching cards is never cut off partway through; a
+ * timeout past the deadline closes it regardless, so one unclaimed match
+ * cannot hold a round open forever.
+ */
+export const STICK_WINDOW_MS = 3_000;
 export const PEEK_REVEAL_MS = 6_000;
 export const KING_LOOK_MS = 120_000;
 export const MAX_LOG = 40;
@@ -135,6 +143,7 @@ export function createGame(
     readyDeadline: null,
     dealingUntil: null,
     openingPeekUntil: null,
+    stickWindowUntil: null,
     replayVotes: [],
     results: [],
     log: [],
@@ -464,6 +473,7 @@ function dealRound(state: GameState, ctx: EngineCtx) {
   state.readyIds = [];
   state.readyDeadline = null;
   state.dealingUntil = null;
+  state.stickWindowUntil = null;
   for (const p of state.players) {
     p.hand = [null, null, null, null];
     for (let i = 0; i < 4; i++) p.hand[i] = state.deck.pop()!;
@@ -746,6 +756,7 @@ function doStick(state: GameState, actor: Player, cardId: string, ctx: EngineCtx
   const card = state.cards[cardId];
   const top = state.cards[state.discard[state.discard.length - 1]];
   const own = owner.player.id === actor.id;
+  let note: ApplyResult["note"];
 
   if (ranksMatch(card, top)) {
     const where = placeOf(owner.player, owner.slot, actor);
@@ -760,24 +771,33 @@ function doStick(state: GameState, actor: Player, cardId: string, ctx: EngineCtx
     tallyFor(state, actor.id).sticks += 1;
     if (!own) state.pendingGives.push({ from: actor.id, to: owner.player.id, since: ctx.now });
     if (cardCount(owner.player) === 0) handleZero(state, owner.player, ctx);
-    return { kind: "stick", correct: true };
+    note = { kind: "stick", correct: true };
+  } else {
+    // The card stays where it is and its value is never shown: a wrong stick
+    // must not become a free peek for the table.
+    tallyFor(state, actor.id).misses += 1;
+    const penalty = drawFromDeck(state, ctx);
+    // Which card was wrongly stuck is never named or highlighted: that it is
+    // *not* the rank on the pile is information the table has not earned.
+    if (penalty) {
+      addToHand(actor, penalty);
+      addLog(state, ctx, `${actor.name} stuck a card that did not match ${shortLabel(top)}, and took a penalty card.`,
+        { kind: "stickMiss", tone: "bad", weight: "normal", actorId: actor.id, subjectIds: [actor.id] });
+    } else {
+      addLog(state, ctx, `${actor.name} stuck a card that did not match ${shortLabel(top)}, but there was no penalty card left to draw.`,
+        { kind: "stickMiss", tone: "bad", weight: "normal", actorId: actor.id, subjectIds: [actor.id] });
+    }
+    note = { kind: "stick", correct: false };
   }
 
-  // The card stays where it is and its value is never shown: a wrong stick
-  // must not become a free peek for the table.
-  tallyFor(state, actor.id).misses += 1;
-  const penalty = drawFromDeck(state, ctx);
-  // Which card was wrongly stuck is never named or highlighted: that it is
-  // *not* the rank on the pile is information the table has not earned.
-  if (penalty) {
-    addToHand(actor, penalty);
-    addLog(state, ctx, `${actor.name} stuck a card that did not match ${shortLabel(top)}, and took a penalty card.`,
-      { kind: "stickMiss", tone: "bad", weight: "normal", actorId: actor.id, subjectIds: [actor.id] });
-  } else {
-    addLog(state, ctx, `${actor.name} stuck a card that did not match ${shortLabel(top)}, but there was no penalty card left to draw.`,
-      { kind: "stickMiss", tone: "bad", weight: "normal", actorId: actor.id, subjectIds: [actor.id] });
-  }
-  return { kind: "stick", correct: false };
+  // Sticking is anytime and can land after the final turns are otherwise all
+  // spent. Recheck here rather than leaving that to whatever happened to call
+  // `maybeEndRound` last: a fresh, full window reopens if another card still
+  // matches, so a run of several correct sticks is never cut off partway
+  // through by the moment the last turn happened to end.
+  state.stickWindowUntil = null;
+  maybeEndRound(state, ctx);
+  return note;
 }
 
 function doGive(state: GameState, actor: Player, cardId: string, ctx: EngineCtx) {
@@ -865,6 +885,14 @@ function doTimeout(state: GameState, ctx: EngineCtx): boolean {
     }
   }
 
+  // A card was still sitting on the table matching the pile when the final
+  // turns finished, and the grace window given for it has now run out with
+  // nobody claiming it: close the round anyway rather than holding it open
+  // forever on one unclaimed match.
+  if (state.phase === "final" && state.stickWindowUntil !== null && ctx.now >= state.stickWindowUntil) {
+    acted = true;
+  }
+
   if (!acted) return false;
   maybeEndRound(state, ctx);
   return true;
@@ -933,6 +961,7 @@ function settlePause(state: GameState, ctx: EngineCtx) {
   for (const g of state.pendingGives) if (g.since !== undefined) g.since += held;
   if (state.dealingUntil !== null) state.dealingUntil += held;
   if (state.openingPeekUntil !== null) state.openingPeekUntil += held;
+  if (state.stickWindowUntil !== null) state.stickWindowUntil += held;
   for (const r of state.reveals) r.until += held;
   state.paused = false;
   state.pausedAt = null;
@@ -1001,7 +1030,28 @@ function maybeEndRound(state: GameState, ctx: EngineCtx) {
   if (state.turn) return;
   if (state.cambio && state.cambio.remaining.length > 0) return;
   if (state.pendingGives.length > 0) return;
+
+  // Every turn is spent and nothing is owed: the round is otherwise ready to
+  // score. But a card still sitting in some hand may match the pile, and
+  // sticking is anytime — it must not be cut off by the very moment the last
+  // turn ends. Hold the round open for a beat instead. `doStick` clears the
+  // deadline before calling back in here, so a fresh stick reopens a full
+  // window rather than racing an old one; only a `timeout` past an
+  // already-set deadline is allowed to close it with a match still unclaimed.
+  const expired = state.stickWindowUntil !== null && ctx.now >= state.stickWindowUntil;
+  if (!expired && stickAvailable(state)) {
+    if (state.stickWindowUntil === null) state.stickWindowUntil = ctx.now + STICK_WINDOW_MS;
+    return;
+  }
+  state.stickWindowUntil = null;
   scoreRound(state, ctx);
+}
+
+/** Does any card still on the table match the rank on top of the discard? */
+function stickAvailable(state: GameState): boolean {
+  if (state.discard.length === 0) return false;
+  const rank = state.cards[state.discard[state.discard.length - 1]].rank;
+  return state.players.some((p) => cardCount(p) > 0 && p.hand.some((id) => id !== null && state.cards[id].rank === rank));
 }
 
 function scoreRound(state: GameState, ctx: EngineCtx) {
@@ -1033,6 +1083,7 @@ function scoreRound(state: GameState, ctx: EngineCtx) {
   state.pausedBy = null;
   state.pauseVote = null;
   state.reveals = [];
+  state.stickWindowUntil = null;
   const names = winners.map((w) => w.name);
   addLog(state, ctx, winners.length > 1
     ? `Round ${state.round} ends in a tie: ${joinNames(names)} on ${min}.`
