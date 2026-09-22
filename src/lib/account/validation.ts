@@ -12,6 +12,13 @@ export function usernameValue(raw: unknown): string {
   return raw.trim().toLowerCase();
 }
 
+/** Friend lookup accepts an optional @, but never repairs a mistyped name. */
+export function usernameForLookup(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const value = raw.trim().replace(/^@/, "");
+  return /^[a-zA-Z0-9]{3,18}$/.test(value) ? value.toLowerCase() : null;
+}
+
 export function passwordValue(raw: unknown, isNew = true): string {
   if (typeof raw !== "string" || raw.length > 128 || raw.length < (isNew ? 15 : 1)) {
     throw new AccountError("PASSWORD", isNew ? "Use 15 to 128 characters for your password." : "Enter your password.");

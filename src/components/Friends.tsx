@@ -29,13 +29,13 @@ export function FriendsPanel({
   // it is not somewhere to go, and is not worth inviting either. The seating
   // comes from the table itself rather than from their heartbeat, which can
   // lapse while they are still very much in the chair.
-  const [handle, setHandle] = useState("");
+  const [username, setUsername] = useState("");
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const add = async (e: FormEvent) => {
     e.preventDefault();
-    const wanted = handle.trim().replace(/^@/, "");
+    const wanted = username.trim().replace(/^@/, "").toLowerCase();
     if (!wanted) return;
     setBusy(true);
     setNote(null);
@@ -47,7 +47,7 @@ export function FriendsPanel({
         : outcome === "friends" ? `You are already friends with @${wanted}.`
         : `@${wanted} has already been asked.`,
       );
-      setHandle("");
+      setUsername("");
     } catch (err) {
       setNote(err instanceof Error ? err.message : "Could not send that request.");
     } finally {
@@ -70,16 +70,16 @@ export function FriendsPanel({
       <form onSubmit={add} className="flex gap-2">
         <input
           className={`${inputClass} h-10`}
-          name="handle"
-          aria-label="Add a friend by handle"
-          value={handle}
-          onChange={(e) => setHandle(e.target.value)}
-          placeholder="Add by @handle"
-          maxLength={20}
+          name="username"
+          aria-label="Add a friend by username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="Add by username"
+          maxLength={19}
           spellCheck={false}
           autoCapitalize="none"
         />
-        <Button type="submit" variant="secondary" disabled={busy || !handle.trim()}>Add</Button>
+        <Button type="submit" variant="secondary" disabled={busy || !username.trim()}>Add</Button>
       </form>
       {note ? <p className="t-footnote text-ink-2">{note}</p> : null}
 
@@ -111,7 +111,7 @@ export function FriendsPanel({
         </ul>
       ) : (
         <p className="t-sub text-ink-3">
-          No friends yet. Share your @handle, or add someone you have played against.
+          No friends yet. Share your username, or add someone you have played against.
         </p>
       )}
 

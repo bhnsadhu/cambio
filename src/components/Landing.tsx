@@ -153,7 +153,7 @@ export function Landing() {
               <h2 className="t-title2">Keep a record.</h2>
               <p className="t-body mt-2 max-w-[420px] text-ink-2">
                 Create an account and every round counts: wins at the top, a rank that climbs with them, your best hand,
-                your longest streak. Add friends by handle, see when they are at a table, and take the seat next to them.
+                your longest streak. Add friends by username, see when they are at a table, and take the seat next to them.
               </p>
             </div>
             <AuthForm initialMode="register" initialName={name} />

@@ -1,5 +1,6 @@
 import "server-only";
 import { createHash } from "node:crypto";
+import { usernameForLookup } from "@/lib/account/validation";
 import type { GameState, RoundResult } from "@/lib/game/types";
 import type { Friend, Invite, Opponent, PendingFriend, Profile, Social } from "@/lib/social/types";
 import { rpc } from "./db";
@@ -15,10 +16,6 @@ import { rpc } from "./db";
 
 function hash(token: string): string {
   return createHash("sha256").update(token).digest("hex");
-}
-
-export function normaliseHandle(raw: string): string {
-  return (raw ?? "").trim().toLowerCase().replace(/^@/, "").replace(/[^a-z0-9]/g, "").slice(0, 18);
 }
 
 /* ------------------------------------------------------------------ */
@@ -71,8 +68,8 @@ export async function profileByToken(token: string | null): Promise<Profile | nu
   return row ? toProfile(row) : null;
 }
 
-export async function profileByHandle(handle: string): Promise<Profile | null> {
-  const clean = normaliseHandle(handle);
+export async function profileByUsername(username: unknown): Promise<Profile | null> {
+  const clean = usernameForLookup(username);
   if (!clean) return null;
   const row = await rpc<RawProfile | null>("profile_by_handle", { p_handle: clean });
   return row ? toProfile(row) : null;

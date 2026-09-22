@@ -1,6 +1,6 @@
 "use client";
 
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 import { BOT_DIFFICULTIES, type BotDifficulty } from "@/lib/game/types";
 
 type Variant = "primary" | "secondary" | "accent" | "ghost";
@@ -11,7 +11,7 @@ export function Button({
   className = "",
   children,
   ...rest
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; size?: "sm" | "md" | "lg"; children: ReactNode }) {
+}: ComponentPropsWithRef<"button"> & { variant?: Variant; size?: "sm" | "md" | "lg"; children: ReactNode }) {
   const base =
     "press inline-flex items-center justify-center gap-2 rounded-full font-medium select-none whitespace-nowrap " +
     "disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30";

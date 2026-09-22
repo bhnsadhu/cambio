@@ -1,15 +1,15 @@
-import { profileByHandle, profileByToken, socialFor } from "@/lib/server/social";
+import { profileByUsername, profileByToken, socialFor } from "@/lib/server/social";
 import { fail, ok, profileTokenFrom } from "@/lib/server/http";
 import { GameError } from "@/lib/game/engine";
 
 export type Relation = "self" | "friends" | "incoming" | "outgoing" | "none";
 
-/** Anyone's profile by @handle, plus where the viewer stands with them. */
+/** Anyone's profile by username, plus where the viewer stands with them. */
 export async function GET(req: Request, { params }: { params: Promise<{ handle: string }> }) {
   try {
     const { handle } = await params;
-    const profile = await profileByHandle(handle);
-    if (!profile) throw new GameError("NOT_FOUND", "No player with that handle.");
+    const profile = await profileByUsername(handle);
+    if (!profile) throw new GameError("NOT_FOUND", "No player with that username.");
     const me = await profileByToken(profileTokenFrom(req));
     let relation: Relation = "none";
     let playedTogether = 0;

@@ -33,7 +33,7 @@ export function AuthForm({ initialMode = "login", initialName = "", legacy = fal
       <h2 className="t-headline">{legacy ? "Secure your saved profile" : registering ? "Create an account" : "Welcome back"}</h2>
       <p className="t-sub mt-2 text-ink-2">
         {legacy ? "Add a username and password to keep this profile, including all your stats and friends. You can then log in from any browser."
-          : registering ? "Your username is for logging in. Your display name is what other players see."
+          : registering ? "Your username is for logging in and finding friends. Your display name is what players see at the table."
             : "Log in with your username and password to get back to your stats and friends."}
       </p>
       {!legacy ? (
@@ -46,7 +46,7 @@ export function AuthForm({ initialMode = "login", initialName = "", legacy = fal
         <Field label="Username">
           <input className={inputClass} name="username" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" autoCapitalize="none" spellCheck={false} minLength={3} maxLength={18} pattern="[a-zA-Z0-9]{3,18}" required disabled={busy} aria-describedby="username-help" />
         </Field>
-        <p id="username-help" className="t-footnote -mt-2 text-ink-3">3 to 18 letters or numbers. Capitalization does not affect your login.</p>
+        <p id="username-help" className="t-footnote -mt-2 text-ink-3">3 to 18 letters or numbers. Usernames are not case sensitive.</p>
         {registering ? <Field label="Display name">
           <input className={inputClass} name="displayName" value={name} onChange={(event) => setDisplayName(event.target.value)} autoComplete="nickname" maxLength={18} required disabled={busy} placeholder="Your name at the table" />
         </Field> : null}
@@ -66,6 +66,9 @@ export function AuthForm({ initialMode = "login", initialName = "", legacy = fal
 }
 
 export function AccountSettings({ stored }: { stored: StoredProfile }) {
+  type Editor = "name" | "username" | "password" | "delete";
+  const [editing, setEditing] = useState<Editor | null>(null);
+  const changeButtons = useRef<Partial<Record<Editor, HTMLButtonElement | null>>>({});
   const [nameDraft, setDisplayName] = useState<string | null>(null);
   const displayName = nameDraft ?? stored.profile.displayName;
   const [usernameDraft, setUsername] = useState<string | null>(null);
@@ -74,65 +77,108 @@ export function AccountSettings({ stored }: { stored: StoredProfile }) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [deleting, setDeleting] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(null);
+  const edit = (next: Editor | null) => {
+    setDisplayName(null); setUsername(null); setUsernamePassword("");
+    setCurrentPassword(""); setPassword(""); setConfirmPassword("");
+    setDeletePassword(""); setConfirmation(""); setNotice(null);
+    setEditing(next);
+    if (next === null && editing) requestAnimationFrame(() => changeButtons.current[editing]?.focus({ preventScroll: true }));
+  };
   const perform = async (kind: string, work: () => Promise<string>) => {
     setBusy(kind); setNotice(null);
-    try { setNotice({ text: await work(), error: false }); }
+    try {
+      const text = await work();
+      setEditing(null);
+      requestAnimationFrame(() => changeButtons.current[kind as Editor]?.focus({ preventScroll: true }));
+      setNotice({ text, error: false });
+    }
     catch (error) { setNotice({ text: errorText(error), error: true }); }
     finally { setBusy(null); }
   };
   const noticeRef = useRef<HTMLParagraphElement>(null);
   useEffect(() => { if (notice) noticeRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }); }, [notice]);
-  const panel = "scroll-mt-6 flex flex-col gap-4 rounded-panel bg-surface p-6 hairline";
+  const change = (kind: Editor, label: string) => (
+    <Button ref={(button) => { changeButtons.current[kind] = button; }} type="button" size="sm" className="shrink-0" aria-label={`Change ${label}`} aria-expanded={editing === kind} aria-controls={editing === kind ? `${kind}-form` : undefined} disabled={!!busy} onClick={() => edit(editing === kind ? null : kind)}>Change</Button>
+  );
+  const cancel = <Button type="button" variant="ghost" disabled={!!busy} onClick={() => edit(null)}>Cancel</Button>;
+  const row = "flex items-start justify-between gap-4";
+  const formClass = "mt-5 flex flex-col gap-4";
+  const actions = "flex flex-wrap gap-2";
   return (
     <div className="flex flex-col gap-5" aria-label="Account settings">
       {notice ? <p ref={noticeRef} role={notice.error ? "alert" : "status"} className={`t-sub rounded-[16px] p-4 ${notice.error ? "bg-surface-2 text-red" : "bg-accent-soft text-accent"}`}>{notice.text}</p> : null}
-      <form id="display-name" className={panel} aria-label="Display name settings" onSubmit={(event) => { event.preventDefault(); void perform("name", async () => {
-        const result = await updateAccount({ displayName }); setDisplayName(null);
-        return result.warning ?? "Display name updated everywhere you play.";
-      }); }}>
-        <div><h2 className="t-headline">Display name</h2><p className="t-sub mt-1 text-ink-2">The name shown at the table and in your friends list. It does not change your login.</p></div>
-        <Field label="Display name"><input className={inputClass} name="displayName" value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoComplete="nickname" maxLength={18} required disabled={!!busy} /></Field>
-        <Button type="submit" variant="primary" disabled={!!busy}>{busy === "name" ? "Saving" : "Save display name"}</Button>
-      </form>
-      <form id="username" className={panel} aria-label="Username settings" onSubmit={(event) => { event.preventDefault(); void perform("username", async () => {
-        await updateAccount({ username, currentPassword: usernamePassword }); setUsername(null); setUsernamePassword("");
-        return "Username updated. Use it the next time you log in.";
-      }); }}>
-        <div><h2 className="t-headline">Login username</h2><p className="t-sub mt-1 text-ink-2">Your current username is <strong>{stored.username}</strong>. Your public friend handle stays @{stored.profile.handle}.</p></div>
-        <Field label="Username"><input className={inputClass} name="username" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" autoCapitalize="none" spellCheck={false} pattern="[a-zA-Z0-9]{3,18}" minLength={3} maxLength={18} required disabled={!!busy} /></Field>
-        <Field label="Current password"><input className={inputClass} name="currentPassword" type="password" value={usernamePassword} onChange={(event) => setUsernamePassword(event.target.value)} autoComplete="current-password" maxLength={128} required disabled={!!busy} /></Field>
-        <Button type="submit" disabled={!!busy}>{busy === "username" ? "Saving" : "Save username"}</Button>
-      </form>
-      <form id="password" className={panel} aria-label="Password settings" onSubmit={(event) => { event.preventDefault(); void perform("password", async () => {
-        if (password !== confirmPassword) throw new Error("Your new passwords do not match.");
-        await updateAccount({ password, currentPassword }); setCurrentPassword(""); setPassword(""); setConfirmPassword("");
-        return "Password changed. Other devices have been signed out.";
-      }); }}>
-        <div><h2 className="t-headline">Password</h2><p className="t-sub mt-1 text-ink-2">Use 15 to 128 characters. Changing your password signs out other sessions.</p></div>
-        <input type="hidden" name="username" value={stored.username ?? ""} autoComplete="username" />
-        <Field label="Current password"><input className={inputClass} name="currentPassword" type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} autoComplete="current-password" maxLength={128} required disabled={!!busy} /></Field>
-        <Field label="New password"><input className={inputClass} name="newPassword" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" minLength={15} maxLength={128} required disabled={!!busy} /></Field>
-        <Field label="Confirm new password"><input className={inputClass} name="confirmPassword" type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" minLength={15} maxLength={128} required disabled={!!busy} /></Field>
-        <Button type="submit" disabled={!!busy}>{busy === "password" ? "Updating" : "Change password"}</Button>
-      </form>
-      <section id="sign-out" className={panel} aria-label="Sign out">
-        <div><h2 className="t-headline">Sign out</h2><p className="t-sub mt-1 text-ink-2">Sign out of this browser. Your stats and friends stay saved. Log in again with your username and password.</p></div>
-        <Button type="button" disabled={!!busy} onClick={() => void perform("logout", async () => { await signOut(); return "Signed out."; })}>{busy === "logout" ? "Signing out" : "Sign out"}</Button>
-      </section>
-      <section id="delete-account" className={`${panel} border border-red/30`} aria-label="Delete account">
-        <div><h2 className="t-headline">Delete account</h2><p className="t-sub mt-1 text-ink-2">Permanently delete your account, stats, friendships, and invites. This cannot be undone.</p></div>
-        {deleting ? <form className="flex flex-col gap-4" aria-label="Confirm account deletion" onSubmit={(event) => { event.preventDefault(); void perform("delete", async () => { await deleteAccount(deletePassword, confirmation); return "Account deleted."; }); }}>
-          <Field label="Current password"><input className={inputClass} name="currentPassword" type="password" value={deletePassword} onChange={(event) => setDeletePassword(event.target.value)} autoComplete="current-password" maxLength={128} required disabled={!!busy} /></Field>
-          <Field label="Type DELETE to confirm"><input className={inputClass} name="confirmation" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} autoComplete="off" spellCheck={false} pattern="DELETE" required disabled={!!busy} /></Field>
-          <Button type="submit" className="bg-red text-white hover:bg-red/80" disabled={!!busy || confirmation !== "DELETE"}>{busy === "delete" ? "Deleting" : "Permanently delete account"}</Button>
-          <Button type="button" variant="ghost" disabled={!!busy} onClick={() => { setDeleting(false); setDeletePassword(""); setConfirmation(""); }}>Cancel</Button>
-        </form> : <Button type="button" className="text-red" disabled={!!busy} onClick={() => { setNotice(null); setDeleting(true); }}>Delete account</Button>}
-      </section>
+      <div className="divide-y divide-ink/10 rounded-panel bg-surface hairline">
+        <section className="p-6" aria-labelledby="display-name-heading">
+          <div className={row}>
+            <div className="min-w-0"><h2 id="display-name-heading" className="t-headline">Display name</h2><p className="t-body mt-1 break-words">{stored.profile.displayName}</p></div>
+            {change("name", "display name")}
+          </div>
+          <p className="t-sub mt-2 text-ink-2">The name players see at the table.</p>
+          {editing === "name" ? <form id="name-form" className={formClass} aria-label="Display name settings" onSubmit={(event) => { event.preventDefault(); void perform("name", async () => {
+            const result = await updateAccount({ displayName }); setDisplayName(null);
+            return result.warning ?? "Display name updated everywhere you play.";
+          }); }}>
+            <Field label="Display name"><input autoFocus className={inputClass} name="displayName" value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoComplete="nickname" maxLength={18} required disabled={!!busy} /></Field>
+            <div className={actions}><Button type="submit" variant="primary" disabled={!!busy}>{busy === "name" ? "Saving" : "Save display name"}</Button>{cancel}</div>
+          </form> : null}
+        </section>
+        <section className="p-6" aria-labelledby="username-heading">
+          <div className={row}>
+            <div className="min-w-0"><h2 id="username-heading" className="t-headline">Username</h2><p className="t-body mt-1 break-all">@{stored.username}</p></div>
+            {change("username", "username")}
+          </div>
+          <p className="t-sub mt-2 text-ink-2">Use it to log in. Friends use it to find and add you.</p>
+          {editing === "username" ? <form id="username-form" className={formClass} aria-label="Username settings" onSubmit={(event) => { event.preventDefault(); void perform("username", async () => {
+            await updateAccount({ username, currentPassword: usernamePassword }); setUsername(null); setUsernamePassword("");
+            return "Username updated. Use it to log in and share it with friends.";
+          }); }}>
+            <p className="t-sub text-ink-2">Changing this also changes your profile link. Your friends and stats stay with you.</p>
+            <Field label="Username"><input autoFocus className={inputClass} name="username" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" autoCapitalize="none" spellCheck={false} pattern="[a-zA-Z0-9]{3,18}" minLength={3} maxLength={18} required disabled={!!busy} aria-describedby="change-username-help" /></Field>
+            <p id="change-username-help" className="t-footnote -mt-2 text-ink-3">3 to 18 letters or numbers. Usernames are not case sensitive.</p>
+            <Field label="Current password"><input className={inputClass} name="currentPassword" type="password" value={usernamePassword} onChange={(event) => setUsernamePassword(event.target.value)} autoComplete="current-password" maxLength={128} required disabled={!!busy} /></Field>
+            <div className={actions}><Button type="submit" variant="primary" disabled={!!busy}>{busy === "username" ? "Saving" : "Save username"}</Button>{cancel}</div>
+          </form> : null}
+        </section>
+        <section className="p-6" aria-labelledby="password-heading">
+          <div className={row}>
+            <div><h2 id="password-heading" className="t-headline">Password</h2><p className="t-sub mt-2 text-ink-2">Keep your account secure.</p></div>
+            {change("password", "password")}
+          </div>
+          {editing === "password" ? <form id="password-form" className={formClass} aria-label="Password settings" onSubmit={(event) => { event.preventDefault(); void perform("password", async () => {
+            if (password !== confirmPassword) throw new Error("Your new passwords do not match.");
+            await updateAccount({ password, currentPassword }); setCurrentPassword(""); setPassword(""); setConfirmPassword("");
+            return "Password changed. Other devices have been signed out.";
+          }); }}>
+            <p className="t-sub text-ink-2">Use 15 to 128 characters. Changing your password signs out other devices.</p>
+            <input type="hidden" name="username" value={stored.username ?? ""} autoComplete="username" />
+            <Field label="Current password"><input autoFocus className={inputClass} name="currentPassword" type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} autoComplete="current-password" maxLength={128} required disabled={!!busy} /></Field>
+            <Field label="New password"><input className={inputClass} name="newPassword" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" minLength={15} maxLength={128} required disabled={!!busy} /></Field>
+            <Field label="Confirm new password"><input className={inputClass} name="confirmPassword" type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" minLength={15} maxLength={128} required disabled={!!busy} /></Field>
+            <div className={actions}><Button type="submit" variant="primary" disabled={!!busy}>{busy === "password" ? "Saving" : "Save password"}</Button>{cancel}</div>
+          </form> : null}
+        </section>
+      </div>
+      <div className="divide-y divide-ink/10 rounded-panel bg-surface hairline">
+        <section className="p-6" aria-label="Sign out">
+          <h2 className="t-headline">Sign out</h2>
+          <p className="t-sub mt-2 text-ink-2">Leave this browser. Your stats and friends will be here when you log back in.</p>
+          <Button className="mt-4" type="button" disabled={!!busy} onClick={() => void perform("logout", async () => { await signOut(); return "Signed out."; })}>{busy === "logout" ? "Signing out" : "Sign out"}</Button>
+        </section>
+        <section className="p-6" aria-label="Delete account">
+          <h2 className="t-headline">Delete account</h2>
+          <p className="t-sub mt-2 text-ink-2">Permanently delete your account, stats, friends, and invites. This cannot be undone.</p>
+          {editing === "delete" ? <form id="delete-form" className={formClass} aria-label="Confirm account deletion" onSubmit={(event) => { event.preventDefault(); void perform("delete", async () => { await deleteAccount(deletePassword, confirmation); return "Account deleted."; }); }}>
+            <input type="hidden" name="username" value={stored.username ?? ""} autoComplete="username" />
+            <Field label="Current password"><input autoFocus className={inputClass} name="currentPassword" type="password" value={deletePassword} onChange={(event) => setDeletePassword(event.target.value)} autoComplete="current-password" maxLength={128} required disabled={!!busy} /></Field>
+            <Field label="Type DELETE to confirm"><input className={inputClass} name="confirmation" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} autoComplete="off" spellCheck={false} pattern="DELETE" required disabled={!!busy} /></Field>
+            <div className={actions}><Button type="submit" className="bg-red text-white hover:bg-red/80" disabled={!!busy || confirmation !== "DELETE"}>{busy === "delete" ? "Deleting" : "Permanently delete account"}</Button>{cancel}</div>
+          </form> : <Button ref={(button) => { changeButtons.current.delete = button; }} className="mt-4 text-red" type="button" disabled={!!busy} onClick={() => edit("delete")}>Delete account</Button>}
+        </section>
+      </div>
     </div>
   );
 }

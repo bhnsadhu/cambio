@@ -53,7 +53,7 @@ export default function PlayerPage({ params }: { params: Promise<{ handle: strin
       {error ? (
         <div className="pt-16 animate-rise">
           <h1 className="t-title">{error}</h1>
-          <p className="t-body mt-2 text-ink-2">Check the handle with whoever sent it.</p>
+          <p className="t-body mt-2 text-ink-2">Check the username with whoever sent it.</p>
         </div>
       ) : !state ? (
         <div className="skeleton mt-8 h-[320px] rounded-panel" aria-busy />

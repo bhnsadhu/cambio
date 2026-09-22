@@ -24,7 +24,7 @@ export interface SocialHook {
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
-  addFriend: (handle: string) => Promise<string>;
+  addFriend: (username: string) => Promise<string>;
   respond: (profileId: string, accept: boolean) => Promise<void>;
   remove: (profileId: string) => Promise<void>;
   invite: (profileId: string, code: string) => Promise<InviteOutcome>;
@@ -63,7 +63,7 @@ export function useSocial(): SocialHook {
       // The record moves while you play; keep the cached copy in step. The
       // generation keeps a read that outlived a sign-out from bringing the
       // profile back.
-      if (res.profile) saveStoredProfile({ ...held, profile: res.profile }, gen);
+      if (res.profile) saveStoredProfile({ ...held, profile: res.profile, ...(held.username ? { username: res.profile.handle } : {}) }, gen);
       else saveStoredProfile(null, gen);
       setError(null);
     } catch (e) {
@@ -84,10 +84,10 @@ export function useSocial(): SocialHook {
     };
   }, [identity, refresh]);
 
-  const addFriend = useCallback(async (handle: string) => {
+  const addFriend = useCallback(async (username: string) => {
     const res = await callProfile<{ outcome: string }>("/api/social/friends", {
       method: "POST",
-      body: JSON.stringify({ handle }),
+      body: JSON.stringify({ username }),
     });
     await refresh();
     return res.outcome;

@@ -27,10 +27,7 @@ export default function MePage() {
           <AuthForm initialName={name} />
           <Link href="/" className="mt-5 block text-center"><Button variant="ghost">Play as a guest</Button></Link>
         </div> : <>
-          <header className="pt-8 pb-6"><h1 className="t-title">Account settings</h1><p className="t-body mt-2 text-ink-2">Your name, your login, and your record.</p></header>
-          {stored.username ? <nav aria-label="Account sections" className="mb-6 flex flex-wrap gap-2">
-            {[["display-name", "Display name"], ["username", "Username"], ["password", "Password"], ["sign-out", "Sign out"], ["delete-account", "Delete account"]].map(([id, label]) => <a key={id} href={`#${id}`} className="t-sub rounded-full bg-surface-2 px-4 py-2 hover:bg-surface-3">{label}</a>)}
-          </nav> : null}
+          <header className="pt-8 pb-6"><h1 className="t-title">Account settings</h1><p className="t-body mt-2 text-ink-2">Manage your details and account access.</p></header>
           <div className="grid items-start gap-6 md:grid-cols-2">
             <div className="flex flex-col gap-5">
               {!stored.username ? <AuthForm legacy initialName={stored.profile.displayName} /> : <AccountSettings key={stored.profile.id} stored={stored} />}

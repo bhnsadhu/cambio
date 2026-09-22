@@ -121,7 +121,7 @@ After every human action, the server starts a bot runner with `waitUntil`. A 20 
 
 ### Profiles and Friends
 
-Accounts use a unique username and password, separate from the display name shown to other players. Public friend handles remain stable when the username changes. Guests can still play without creating an account.
+Accounts use a unique username and password, separate from the display name shown to other players. The same username is used for login, friend lookup, and public profile links. Changing it updates all three together and preserves existing friends and stats. Guests can still play without creating an account.
 
 Passwords use salted scrypt hashes. Random session tokens live in HttpOnly cookies with SameSite protection and a 30 day lifetime; only their hashes are stored in the database. Login and sensitive changes have persistent request limits. Clearing browser storage does not delete an account: logging in restores its profile ID, stats, friends, and existing seats.
 
@@ -254,6 +254,7 @@ supabase/migrations/0001_cambio_schema.sql
 supabase/migrations/0002_social.sql
 supabase/migrations/0003_presence_invites.sql
 supabase/migrations/0004_accounts.sql
+supabase/migrations/0005_usernames.sql
 ```
 
 Then store a server secret:
