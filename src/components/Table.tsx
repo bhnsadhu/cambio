@@ -49,6 +49,18 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
   const myTurn = !!mine && pub.turn?.playerId === mine.id;
   const owner = (cardId: string) => pub.players.find((p) => p.hand.includes(cardId)) ?? null;
 
+  /**
+   * Sticking is an anytime action and never waits on whose turn it is, so it
+   * is tracked apart from the turn's own mode: it is open whenever the rules
+   * say it is, including while this player is drawing, deciding or resolving
+   * a power. (Mirrors `canStick` in the engine.)
+   */
+  const stickOpen = useMemo(() => {
+    if (!mine || pub.paused) return false;
+    if (pub.phase !== "playing" && pub.phase !== "final") return false;
+    return !!pub.discardTop && mine.cardCount > 0 && !pub.pendingGives.some((g) => g.from === mine.id);
+  }, [mine, pub]);
+
   const mode: Mode = useMemo(() => {
     if (!mine) return { kind: "none" };
     if (pub.phase !== "playing" && pub.phase !== "final") return { kind: "none" };
@@ -58,14 +70,25 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
       return { kind: "power", power: pub.pendingPower.kind, lookedDone: pub.pendingPower.lookedDone };
     }
     if (myTurn && pub.turn?.stage === "decide") return { kind: "decide" };
-    const canStick =
-      !!pub.discardTop && mine.cardCount > 0 && !(myTurn && (pub.turn?.stage === "draw" || pub.turn?.stage === "decide"));
-    if (canStick) return { kind: "stick" };
+    if (stickOpen) return { kind: "stick" };
     return { kind: "none" };
-  }, [mine, pub, myTurn]);
+  }, [mine, pub, myTurn, stickOpen]);
+
+  /**
+   * When the turn already owns the click — a card to place, a power to use, a
+   * debt to pay — sticking is armed first, so one click cannot mean two
+   * things. With nothing else to do, cards stick on the first click.
+   */
+  // Keyed by the card on the pile, so an arm never outlives the rank it was
+  // aimed at: the next card down disarms it without an effect.
+  const [armedAt, setArmedAt] = useState<string | null>(null);
+  const armed = stickOpen && !!pub.discardTop && armedAt === pub.discardTop.id;
+  const setArmed = (on: boolean) => setArmedAt(on && pub.discardTop ? pub.discardTop.id : null);
+  const stickNeedsArming = stickOpen && mode.kind !== "stick";
+  const acting: Mode = armed && stickOpen ? { kind: "stick" } : mode;
 
   // A selection only survives inside the mode it was made in.
-  const modeKey = mode.kind === "power" ? `power:${mode.power}:${mode.lookedDone}` : mode.kind;
+  const modeKey = acting.kind === "power" ? `power:${acting.power}:${acting.lookedDone}` : acting.kind;
   const selected = sel && sel.key === modeKey ? sel.cardId : null;
   const setSelected = (cardId: string | null) => setSel(cardId ? { cardId, key: modeKey } : null);
 
@@ -123,15 +146,15 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
   const cueFor = (cardId: string): string | null => {
     if (!mine || game.busy) return null;
     const own = mine.hand.includes(cardId);
-    switch (mode.kind) {
+    switch (acting.kind) {
       case "give": return own ? "Give" : null;
       // The drawn card can go into any hand. Your own slot takes it on one
       // click; someone else's asks for a second, since it costs them the card.
       case "decide": return own ? "Swap" : cardId === selected ? "Confirm" : "Push";
       case "stick": return "Stick";
       case "power": {
-        if (mode.lookedDone) return null;
-        switch (mode.power) {
+        if (acting.lookedDone) return null;
+        switch (acting.power) {
           case "peekOwn": return own ? "Peek" : null;
           case "peekOther": return own ? null : "Peek";
           case "blindSwap": return pairCue(cardId, selected ? "Swap with" : "Swap");
@@ -144,6 +167,7 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
 
   const fire = async (action: Action) => {
     setSelected(null);
+    setArmed(false);
     const res = await game.send(action);
     if (res?.note?.kind === "stick") game.toast(res.note.correct ? "Stuck." : "Not a match. Penalty card drawn.", res.note.correct ? "good" : "bad");
   };
@@ -159,7 +183,7 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
   const onCard = (cardId: string) => {
     if (!mine || game.busy) return;
     const own = mine.hand.includes(cardId);
-    switch (mode.kind) {
+    switch (acting.kind) {
       case "give": if (own) void fire({ type: "give", cardId }); return;
       case "decide":
         if (own) { void fire({ type: "swap", cardId }); return; }
@@ -168,7 +192,7 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
         return;
       case "stick": void fire({ type: "stick", cardId }); return;
       case "power":
-        switch (mode.power) {
+        switch (acting.power) {
           case "peekOwn": if (own) void fire({ type: "peekOwn", cardId }); return;
           case "peekOther": if (!own) void fire({ type: "peekOther", cardId }); return;
           case "blindSwap": onPair(cardId, (a, b) => void fire({ type: "blindSwap", cardIdA: a, cardIdB: b })); return;
@@ -195,7 +219,12 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
     return ids;
   }, [announcement]);
 
-  const status = describeStatus(view, mine, turnPlayer, mode, selected, powerHint, dealing);
+  const status = armed && pub.discardTop
+    ? {
+        title: <>Sticking. Pick the card you believe is a {pub.discardTop.rank === "JOKER" ? "joker" : pub.discardTop.rank}.</>,
+        detail: <>Any hand at the table. Miss and you draw a penalty; cancel to go back to your turn.</>,
+      }
+    : describeStatus(view, mine, turnPlayer, acting, selected, powerHint, dealing);
   const showDrawnSlot = myTurn && (pub.turn?.stage === "draw" || pub.turn?.stage === "decide");
   const drawn = view.private?.drawnCard ?? null;
 
@@ -270,7 +299,17 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
           </div>
           <div className="flex items-center gap-4">
             {pub.turnDeadline !== null ? <TurnTimer deadline={pub.turnDeadline} skew={game.skew} mine={myTurn} frozenAt={pub.paused ? pub.pausedAt : null} /> : null}
-            {mine && myTurn && pub.turn?.stage === "draw" ? (
+            {/* Sticking is always on the table. While the turn already owns
+                the click, it is armed first so one click cannot mean two
+                things. */}
+            {mine && armed ? (
+              <Button variant="ghost" disabled={game.busy} onClick={() => setArmed(false)}>Cancel the stick</Button>
+            ) : mine && stickNeedsArming ? (
+              <Button variant="secondary" disabled={game.busy} onClick={() => { setSelected(null); setArmed(true); }}>
+                Stick a card
+              </Button>
+            ) : null}
+            {!armed && mine && myTurn && pub.turn?.stage === "draw" ? (
               <>
                 {pub.phase === "playing" ? (
                   <Button variant="accent" disabled={game.busy} onClick={() => void fire({ type: "callCambio" })}>Call Cambio</Button>
@@ -278,7 +317,7 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
                 <Button variant="primary" size="lg" disabled={game.busy} onClick={() => void fire({ type: "draw" })}>Draw</Button>
               </>
             ) : null}
-            {mine && mode.kind === "decide" && selected ? (
+            {!armed && mine && mode.kind === "decide" && selected ? (
               <>
                 <Button variant="ghost" disabled={game.busy} onClick={() => setSelected(null)}>Cancel</Button>
                 <Button variant="accent" size="lg" disabled={game.busy} onClick={() => void fire({ type: "swap", cardId: selected })}>
@@ -286,15 +325,15 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
                 </Button>
               </>
             ) : null}
-            {mine && mode.kind === "decide" && !selected ? (
+            {!armed && mine && mode.kind === "decide" && !selected ? (
               <Button variant="primary" size="lg" disabled={game.busy} onClick={() => void fire({ type: "place" })}>
                 Place {drawn ? shortLabel(drawn) : ""} on the pile
               </Button>
             ) : null}
-            {mine && mode.kind === "power" && !mode.lookedDone ? (
+            {!armed && mine && mode.kind === "power" && !mode.lookedDone ? (
               <Button variant="ghost" disabled={game.busy} onClick={() => void fire({ type: "skipPower" })}>Skip the power</Button>
             ) : null}
-            {mine && mode.kind === "power" && mode.lookedDone ? (
+            {!armed && mine && mode.kind === "power" && mode.lookedDone ? (
               <>
                 <Button variant="ghost" disabled={game.busy} onClick={() => void fire({ type: "kingDecide", swap: false })}>Leave them</Button>
                 <Button variant="accent" disabled={game.busy} onClick={() => void fire({ type: "kingDecide", swap: true })}>Swap them</Button>

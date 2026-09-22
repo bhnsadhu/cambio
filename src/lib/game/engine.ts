@@ -670,6 +670,13 @@ function aPower(kind: PowerKind): string {
 /* Sticking                                                            */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Sticking is an anytime action, and that includes the player whose turn it
+ * is: the pile is face up for everyone, and a rank you can see is a rank you
+ * can claim. Nothing about drawing or holding a card takes that away, so the
+ * only things that stop a stick are a frozen table, a hand with nothing in
+ * it, and a debt you have not paid yet.
+ */
 export function canStick(state: GameState, playerId: string): boolean {
   if (state.paused) return false;
   if (state.phase !== "playing" && state.phase !== "final") return false;
@@ -677,8 +684,6 @@ export function canStick(state: GameState, playerId: string): boolean {
   const p = state.players.find((x) => x.id === playerId);
   if (!p || cardCount(p) === 0) return false;
   if (state.pendingGives.some((g) => g.from === playerId)) return false;
-  const t = state.turn;
-  if (t && t.playerId === playerId && (t.stage === "draw" || t.stage === "decide")) return false;
   return true;
 }
 
@@ -687,10 +692,6 @@ function doStick(state: GameState, actor: Player, cardId: string, ctx: EngineCtx
   if (state.discard.length === 0) throw new GameError("CANT_STICK", "The discard pile is empty.");
   if (state.pendingGives.some((g) => g.from === actor.id)) throw new GameError("PENDING_GIVE", "Give a card away first.");
   if (cardCount(actor) === 0) throw new GameError("CANT_STICK", "You have no cards left.");
-  const t = state.turn;
-  if (t && t.playerId === actor.id && (t.stage === "draw" || t.stage === "decide")) {
-    throw new GameError("CANT_STICK", "Finish your turn before sticking.");
-  }
   const owner = ownerOf(state, cardId);
   if (!owner) throw new GameError("TOO_LATE", "Too late. That card is already gone.");
   const card = state.cards[cardId];

@@ -294,20 +294,45 @@ describe("sticking", () => {
     expect(topOf(s).id).toBe("d1");
   });
 
-  it("the active player cannot stick before finishing their turn action, but can once the card is down", () => {
+  it("sticking stays open to the player whose turn it is, at every stage of it", () => {
     const { ctx, state, ids } = setup();
     // P1 is in the power stage: the card is down, so P1 may stick.
     expect(canStick(state, ids[0])).toBe(true);
     let s = act(state, ids[0], { type: "stick", cardId: "a2" }, ctx);
     expect(player(s, ids[0]).hand).toEqual(["a1", null, "a3", "a4"]);
-    // resolve power, now P2's turn: P2 cannot stick until they place/swap
+    // resolve power, now P2's turn, before they have drawn
     s = act(s, ids[0], { type: "peekOwn", cardId: "a3" }, ctx);
     expect(s.turn?.playerId).toBe(ids[1]);
-    expect(canStick(s, ids[1])).toBe(false);
-    expect(() => act(s, ids[1], { type: "stick", cardId: "b1" }, ctx)).toThrow(/Finish your turn/);
+    expect(canStick(s, ids[1])).toBe(true);
+    const early = act(s, ids[1], { type: "stick", cardId: "b1" }, ctx);
+    expect(player(early, ids[1]).hand).toEqual([null, "b2", "b3", "b4"]);
+    // the turn is untouched by the stick: P2 still has to draw
+    expect(early.turn).toMatchObject({ playerId: ids[1], stage: "draw" });
+    // and again while they are holding a drawn card they have not committed
     s = act(s, ids[1], { type: "draw" }, ctx);
-    expect(canStick(s, ids[1])).toBe(false);
+    expect(canStick(s, ids[1])).toBe(true);
+    const holding = act(s, ids[1], { type: "stick", cardId: "b1" }, ctx);
+    expect(player(holding, ids[1]).hand).toEqual([null, "b2", "b3", "b4"]);
+    expect(holding.turn).toMatchObject({ playerId: ids[1], stage: "decide", drawnCardId: s.turn!.drawnCardId });
+    // the drawn card is still theirs to place afterwards
+    expect(() => act(holding, ids[1], { type: "place" }, ctx)).not.toThrow();
     expect(canStick(s, ids[2])).toBe(true);
+  });
+
+  it("a stick that empties the hand of the player holding a drawn card still ends their turn cleanly", () => {
+    const { ctx, state, ids } = setup();
+    // P2 down to one card, which matches the 7 on the pile
+    let s = rig(state, ids[1], [card("b1", "7", "H")]);
+    s = act(s, ids[0], { type: "peekOwn", cardId: "a3" }, ctx);
+    s = rigDeck(s, [card("d9", "3")]);
+    s = act(s, ids[1], { type: "draw" }, ctx);
+    s = act(s, ids[1], { type: "stick", cardId: "b1" }, ctx);
+    expect(cardCount(player(s, ids[1]))).toBe(0);
+    // out of cards calls Cambio; the drawn card still has to go somewhere
+    expect(s.phase).toBe("final");
+    expect(s.cambio).toMatchObject({ callerId: ids[1], reason: "zero" });
+    s = act(s, ids[1], { type: "place" }, ctx);
+    expect(s.turn?.playerId).not.toBe(ids[1]);
   });
 
   it("two players sticking the same card: first wins, the second is 'too late' with no penalty", () => {
@@ -335,7 +360,7 @@ describe("sticking", () => {
     s = rigDeck(s, [card("d2", "2")]);
     s = act(s, ids[1], { type: "draw" }, ctx);
     s = act(s, ids[1], { type: "place" }, ctx); // 2 on top now, P3 to act
-    expect(canStick(s, ids[2])).toBe(false); // active player, hasn't committed
+    expect(canStick(s, ids[2])).toBe(true); // sticking never waits on whose turn it is
     s = act(s, ids[3], { type: "stick", cardId: "e3" }, ctx); // 7 vs 2 → penalty
     expect(cardCount(player(s, ids[3]))).toBe(5);
     s = act(s, ids[3], { type: "stick", cardId: "b2" }, ctx); // P2's 2 → correct
