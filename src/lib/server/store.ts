@@ -1,6 +1,6 @@
 import "server-only";
 import { applyAction, createGame as engineCreate, GameError, joinGame as engineJoin, type ApplyResult } from "@/lib/game/engine";
-import type { ActionEnvelope, GameState, PlayerView } from "@/lib/game/types";
+import type { ActionEnvelope, IdentityEnvelope, GameState, PlayerView } from "@/lib/game/types";
 import { projectFor, projectPublic } from "@/lib/game/view";
 import { rpc } from "./db";
 import { engineCtx, newCode } from "./ids";
@@ -80,6 +80,8 @@ export async function joinGame(code: string, name: string, profileId?: string | 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const row = await loadByCode(code);
     if (!row) throw new GameError("NOT_FOUND", "No table with that code.");
+    const existing = profileId ? row.state.players.find((p) => p.profileId === profileId && !p.isBot) : null;
+    if (existing?.token) return { row, playerId: existing.id, token: existing.token };
     const { state, playerId, token } = engineJoin(row.state, name, engineCtx(), profileId);
     const v = await commit(row, state);
     if (v !== null) return { row: { ...row, version: v, state }, playerId, token };
@@ -93,7 +95,7 @@ export interface ActionOutcome {
 }
 
 /** Apply one action with compare-and-swap retries. Throws GameError for illegal moves. */
-export async function runAction(gameId: string, env: ActionEnvelope): Promise<ActionOutcome> {
+export async function runAction(gameId: string, env: ActionEnvelope | IdentityEnvelope): Promise<ActionOutcome> {
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const row = await loadById(gameId);
     if (!row) throw new GameError("NOT_FOUND", "This table no longer exists.");
@@ -123,4 +125,15 @@ export function playerForToken(state: GameState, token: string | null): string |
   if (!token) return null;
   const p = state.players.find((x) => !x.isBot && x.token === token);
   return p ? p.id : null;
+}
+
+/** Keep names and deleted identities in game projections consistent via CAS. */
+export async function syncProfileGames(profileId: string, displayName: string | null) {
+  const games = await rpc<{ id: string }[]>("profile_games", { p_id: profileId });
+  for (const game of games) {
+    await runAction(game.id, {
+      actionId: crypto.randomUUID(), playerId: null,
+      action: { type: "syncIdentity", profileId, displayName },
+    });
+  }
 }

@@ -291,6 +291,13 @@ export interface ActionEnvelope {
   action: Action;
 }
 
+/** Server only identity maintenance, never accepted by the action HTTP route. */
+export interface IdentityEnvelope {
+  actionId: string;
+  playerId: null;
+  action: { type: "syncIdentity"; profileId: string; displayName: string | null };
+}
+
 /* ------------------------------------------------------------------ */
 /* Views (what clients receive)                                        */
 /* ------------------------------------------------------------------ */

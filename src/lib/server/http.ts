@@ -1,4 +1,6 @@
 import "server-only";
+import { sameOrigin, sessionTokenFrom } from "./account";
+import { AccountError } from "@/lib/account/validation";
 import { NextResponse } from "next/server";
 import { GameError } from "@/lib/game/engine";
 
@@ -7,6 +9,8 @@ export function ok(body: unknown, init?: ResponseInit) {
 }
 
 export function fail(e: unknown) {
+  if (e instanceof AccountError) return ok({ error: { code: e.code, message: e.message } }, { status: e.status });
+  if (e instanceof SyntaxError || e instanceof TypeError) return ok({ error: { code: "INPUT", message: "Check the form and try again." } }, { status: 400 });
   if (e instanceof GameError) {
     const status = e.code === "NOT_FOUND" ? 404 : 409;
     return ok({ error: { code: e.code, message: e.message } }, { status });
@@ -21,12 +25,14 @@ export function tokenFrom(req: Request): string | null {
 
 /** The saved profile behind this browser, if it has one. */
 export function profileTokenFrom(req: Request): string | null {
-  return req.headers.get("x-cambio-profile");
+  const session = sessionTokenFrom(req);
+  if (session && req.method !== "GET" && req.method !== "HEAD") sameOrigin(req);
+  return session ?? req.headers.get("x-cambio-profile");
 }
 
 /** Every social route needs a profile; this is the one place that says so. */
 export function requireProfileToken(req: Request): string {
   const token = profileTokenFrom(req);
-  if (!token) throw new GameError("NOT_FOUND", "Save a profile first.");
+  if (!token) throw new GameError("NOT_FOUND", "Log in to your account first.");
   return token;
 }

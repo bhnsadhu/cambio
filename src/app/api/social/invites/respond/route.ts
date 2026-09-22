@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     const seated = row.state.players.find((p) => p.profileId === me.id);
     if (seated) {
       await respondToInvite(me.id, body.inviteId, true);
-      return ok({ answer: { ok: true, code: invite.code, seat: null } satisfies InviteAnswer });
+      return ok({ answer: { ok: true, code: invite.code, seat: seated.token ? { playerId: seated.id, token: seated.token, name: seated.name } : null } satisfies InviteAnswer });
     }
 
     // One seat at a time: leave the table you are at before taking another.

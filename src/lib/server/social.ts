@@ -45,7 +45,7 @@ export function normaliseHandle(raw: string): string {
 /* Shapes                                                              */
 /* ------------------------------------------------------------------ */
 
-interface RawProfile {
+export interface RawProfile {
   id: string; handle: string; display_name: string;
   created_at: string; last_seen_at: string; last_played_at: string | null;
   rounds_played: number; rounds_won: number; tables_played: number;
@@ -56,7 +56,7 @@ interface RawProfile {
   points: number; rank: number; total_players: number;
 }
 
-function toProfile(r: RawProfile): Profile {
+export function toProfile(r: RawProfile): Profile {
   return {
     id: r.id,
     handle: r.handle,

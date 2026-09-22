@@ -1,3 +1,4 @@
+import type { IdentityEnvelope } from "./types";
 /**
  * The Cambio rules engine.
  *
@@ -196,12 +197,28 @@ export function cleanName(raw: string): string {
 /* Reducer                                                             */
 /* ------------------------------------------------------------------ */
 
-export function applyAction(input: GameState, env: ActionEnvelope, ctx: EngineCtx): ApplyResult {
+export function applyAction(input: GameState, env: ActionEnvelope | IdentityEnvelope, ctx: EngineCtx): ApplyResult {
   if (input.appliedActionIds.includes(env.actionId)) {
     return { state: input, changed: false };
   }
   const state = clone(input);
   const a = env.action;
+  if (a.type === "syncIdentity") {
+    const players = state.players.filter((p) => p.profileId === a.profileId);
+    if (!players.length || players.every((p) => p.name === a.displayName)) return { state: input, changed: false };
+    for (const player of players) {
+      if (a.displayName === null) {
+        // Scrub this player's name from retained narration as well as seats.
+        state.log = state.log.map((entry) => ({ ...entry, text: entry.text.split(player.name).join("Deleted player") }));
+        player.name = "Deleted player";
+        player.profileId = null;
+        delete player.token;
+      } else player.name = cleanName(a.displayName);
+    }
+    state.appliedActionIds.push(env.actionId);
+    state.updatedAt = ctx.now;
+    return { state, changed: true };
+  }
   // A paused table is frozen: the only moves are the ones that unfreeze it.
   // Reveals are not pruned either, so a peek that was running when the table
   // went dark still has its remaining seconds when play resumes.

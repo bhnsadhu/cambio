@@ -1,7 +1,8 @@
-import { loadByCode, playerForToken, runAction, viewFor } from "@/lib/server/store";
+import { playerForRequest } from "@/lib/server/identity";
+import { loadByCode, runAction, viewFor } from "@/lib/server/store";
 import { spawnBots } from "@/lib/server/runner";
 import { normaliseCode } from "@/lib/server/ids";
-import { fail, ok, tokenFrom } from "@/lib/server/http";
+import { fail, ok } from "@/lib/server/http";
 import { GameError } from "@/lib/game/engine";
 import type { Action } from "@/lib/game/types";
 
@@ -20,7 +21,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ code: s
     }
     const row = await loadByCode(normaliseCode(code));
     if (!row) throw new GameError("NOT_FOUND", "No table with that code.");
-    const me = playerForToken(row.state, tokenFrom(req));
+    const player = await playerForRequest(row.state, req);
+    const me = player?.id ?? null;
     if (!me) return ok({ error: { code: "UNAUTHORISED", message: "You are not seated at this table." } }, { status: 401 });
 
     const { row: after, result } = await runAction(row.id, { actionId: body.actionId, playerId: me, action: body.action });
