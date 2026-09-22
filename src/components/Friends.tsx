@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import type { SocialHook } from "@/lib/client/social";
 import type { Friend } from "@/lib/social/types";
-import { Button, Chip, DotOff, Pip, inputClass } from "./ui";
+import { Button, DotOff, Pip, inputClass } from "./ui";
 
 /**
  * Friends, the requests either way, and what each of them is doing right now.
@@ -229,9 +229,4 @@ export function Notifications({ social, atCode = null }: { social: SocialHook; a
       ))}
     </div>
   );
-}
-
-/** A friend's standing, small enough to sit beside their name. */
-export function FriendChip({ friend }: { friend: Friend }) {
-  return <Chip tone={friend.playing ? "accent" : "neutral"}>{friend.roundsWon} wins</Chip>;
 }

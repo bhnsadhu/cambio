@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import type { Profile } from "@/lib/social/types";
 
 /**
@@ -101,27 +101,4 @@ export async function refreshProfile(): Promise<Profile | null> {
   if (!res.profile) { saveStoredProfile(null); return null; }
   saveStoredProfile({ token: stored.token, profile: res.profile });
   return res.profile;
-}
-
-/**
- * The live record for this device, refreshed on mount. Returns null when no
- * profile has been saved yet.
- */
-export function useProfile(): { profile: Profile | null; token: string | null; create: (name: string) => Promise<Profile>; rename: (name: string) => Promise<Profile | null>; forget: () => void } {
-  const stored = useStoredProfile();
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    if (!stored) return;
-    void refreshProfile().catch(() => {}).then(() => setTick((t) => t + 1));
-    // Only on the first mount of a session: the record changes when a round
-    // is scored, and the pages that care refresh themselves.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stored?.token]);
-  const create = useCallback((name: string) => createProfile(name), []);
-  const rename = useCallback((name: string) => renameProfile(name), []);
-  const forget = useCallback(() => saveStoredProfile(null), []);
-  return useMemo(
-    () => ({ profile: stored?.profile ?? null, token: stored?.token ?? null, create, rename, forget }),
-    [stored, create, rename, forget],
-  );
 }
