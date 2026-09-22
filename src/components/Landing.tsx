@@ -25,53 +25,60 @@ export function Landing() {
   const prefs = usePrefs();
   usePresence(null);
   const [name, setName] = useStoredName();
-  const [mode, setMode] = useState<"create" | "join">("create");
   const [code, setCode] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<"create" | "join" | null>(null);
+  const [error, setError] = useState<{ mode: "create" | "join"; message: string } | null>(null);
   const [help, setHelp] = useState(false);
   const [walkthrough, setWalkthrough] = useState(false);
   const openHelp = () => prefs.onboarded ? setHelp(true) : setWalkthrough(true);
   const profile = social.profile;
-  const next = mode === "join" && code.length === 5 ? `/g/${code}` : "/";
+  const next = code.length === 5 ? `/g/${code}` : "/";
   const rememberGuest = () => storeName(name.trim());
 
-  const submit = async (event: FormEvent) => {
+  const submit = async (event: FormEvent, mode: "create" | "join") => {
     event.preventDefault();
     if (busy) return;
-    setBusy(true); setError(null);
+    setBusy(mode); setError(null);
     try {
       const seat = mode === "create" ? await api.create(name) : await api.join(code, name);
       storeName(name.trim());
       saveSession(seat.code, { playerId: seat.playerId, token: seat.token, name: name.trim() });
       router.push(`/g/${seat.code}`);
     } catch (error) {
-      setError(error instanceof RequestError ? error.message : "Could not reach the table. Try again.");
-      setBusy(false);
+      setError({ mode, message: error instanceof RequestError ? error.message : "Could not reach the table. Try again." });
+      setBusy(null);
     }
   };
 
   const play = (
-    <section className="rounded-panel bg-surface p-6 hairline" aria-label="Play Cambio">
-      <h2 className="t-headline">Choose a table</h2>
-      <div className="mt-4 flex gap-2" role="group" aria-label="Table options">
-        <Button type="button" size="sm" variant={mode === "create" ? "primary" : "ghost"} aria-pressed={mode === "create"} disabled={busy} onClick={() => { setMode("create"); setError(null); }}>New table</Button>
-        <Button type="button" size="sm" variant={mode === "join" ? "primary" : "ghost"} aria-pressed={mode === "join"} disabled={busy} onClick={() => { setMode("join"); setError(null); }}>Join with code</Button>
-      </div>
-      <p className="t-sub mt-4 text-ink-2">{mode === "create" ? "You host and get a code to share. House bots fill empty seats." : "Enter the five letter code your friend shared."}</p>
-      <form onSubmit={submit} className="mt-5 flex flex-col gap-4" aria-label="Table setup">
-        {mode === "join" ? <Field label="Table code">
-          <input className={`${inputClass} tnum tracking-[0.14em]`} value={code} onChange={(event) => setCode(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5))} placeholder="ABCDE" minLength={5} maxLength={5} autoCapitalize="characters" spellCheck={false} autoComplete="off" required disabled={busy} />
-        </Field> : null}
-        {!accountReady ? <p role="status" className="t-sub text-ink-2">Checking your account...</p>
-          : profile ? <p className="t-body text-ink-2">Playing as <strong className="text-ink">{name}</strong></p>
-            : <Field label="Display name"><input className={inputClass} value={name} onChange={(event) => setName(event.target.value)} placeholder="Your name at the table" maxLength={18} autoComplete="nickname" required disabled={busy} /></Field>}
-        {error ? <p role="alert" className="t-sub text-red">{error}</p> : null}
-        <Button type="submit" variant="primary" size="lg" disabled={!accountReady || busy || !name.trim() || (mode === "join" && code.length !== 5)}>
-          {busy ? mode === "create" ? "Opening" : "Joining" : mode === "create" ? "Open a table" : "Join table"}
+    <section className="flex flex-col gap-4" aria-label="Play Cambio">
+      {!accountReady ? <p role="status" className="t-sub text-ink-2">Checking your account...</p>
+        : profile ? <p className="t-body text-ink-2">Playing as <strong className="text-ink">{name}</strong></p>
+          : <Field label="Display name"><input className={inputClass} value={name} onChange={(event) => setName(event.target.value)} placeholder="Your name at the table" maxLength={18} autoComplete="nickname" required disabled={!!busy} /></Field>}
+      <form onSubmit={(event) => void submit(event, "create")} className="flex flex-col gap-4 rounded-panel bg-surface p-6 hairline" aria-label="New table">
+        <div>
+          <h2 className="t-headline">New table</h2>
+          <p className="t-sub mt-2 text-ink-2">Host a game with friends, or try a round with the house bots.</p>
+        </div>
+        {error?.mode === "create" ? <p role="alert" className="t-sub text-red">{error.message}</p> : null}
+        <Button type="submit" variant="primary" size="lg" disabled={!accountReady || !!busy || !name.trim()}>
+          {busy === "create" ? "Opening" : "Open a table"}
         </Button>
       </form>
-      {accountReady && !profile ? <p className="t-sub mt-5 text-ink-2">Playing as a guest. <Link href={loginHref(next, "register")} onClick={rememberGuest} className="font-medium text-ink hover:text-ink-2">Create an account to save your stats</Link></p> : null}
+      <form onSubmit={(event) => void submit(event, "join")} className="flex flex-col gap-4 rounded-panel bg-surface p-6 hairline" aria-label="Join with code">
+        <div>
+          <h2 className="t-headline">Join with code</h2>
+          <p className="t-sub mt-2 text-ink-2">Enter the five character code your friend shared.</p>
+        </div>
+        <Field label="Table code">
+          <input className={`${inputClass} tnum tracking-[0.14em]`} value={code} onChange={(event) => { setCode(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5)); setError(null); }} placeholder="ABCDE" minLength={5} maxLength={5} autoCapitalize="characters" spellCheck={false} autoComplete="off" required disabled={!!busy} />
+        </Field>
+        {error?.mode === "join" ? <p role="alert" className="t-sub text-red">{error.message}</p> : null}
+        <Button type="submit" variant="secondary" size="lg" disabled={!accountReady || !!busy || !name.trim() || code.length !== 5}>
+          {busy === "join" ? "Joining" : "Join table"}
+        </Button>
+      </form>
+      {accountReady && !profile ? <p className="t-sub text-ink-2">Playing as a guest. <Link href={loginHref(next, "register")} onClick={rememberGuest} className="font-medium text-ink hover:text-ink-2">Create an account to save your stats</Link></p> : null}
     </section>
   );
 
