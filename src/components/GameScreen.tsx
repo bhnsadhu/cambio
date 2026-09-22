@@ -221,12 +221,12 @@ function JoinForm({ code, onJoined }: { code: string; onJoined: (s: { playerId: 
       <p className="t-caption text-ink-3">Join table</p>
       <h1 className="t-title tnum mt-1.5 tracking-[0.06em]">{code}</h1>
       <form onSubmit={submit} className="mt-6 flex flex-col gap-4" aria-label="Join table">
-        {!accountReady ? <p role="status" className="t-sub text-ink-2">Checking your account...</p>
+        {!accountReady ? <p role="status" className="t-sub text-ink-2">Checking your account</p>
           : profile ? <p className="t-body text-ink-2">Playing as <strong className="text-ink">{name}</strong></p>
             : <Field label="Display name">
               <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name at the table" maxLength={18} required autoFocus />
             </Field>}
-        {error ? <p className="t-sub text-accent-ink">{error}</p> : null}
+        {error ? <p role="alert" className="t-sub text-red">{error}</p> : null}
         <Button type="submit" variant="primary" size="lg" disabled={!accountReady || busy || !name.trim()}>{busy ? "Taking a seat" : "Take a seat"}</Button>
       </form>
       {accountReady && !profile ? <p className="t-sub mt-5 text-ink-2">Have an account? <Link href={loginHref(`/g/${code}`)} onClick={() => storeName(name.trim())} className="font-medium text-ink hover:text-ink-2">Log in before joining</Link></p> : null}

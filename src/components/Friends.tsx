@@ -236,7 +236,7 @@ export function AskToJoin({ friend, social }: { friend: Friend; social: SocialHo
     </Button>
     {!invited && cooldown > 0 ? <span className="t-footnote text-ink-3">Again in {cooldown}s</span> : null}
     {request?.status === "declined" ? <p className="t-footnote text-ink-3">Request declined</p> : null}
-    {error ? <p role="alert" className="t-footnote text-accent-ink">{error}</p> : null}
+    {error ? <p role="alert" className="t-footnote text-red">{error}</p> : null}
   </div>;
 }
 
@@ -289,7 +289,7 @@ export function Notifications({ social, atCode = null, acceptsJoinRequests = tru
       {requests.map((request) => (
         <div key={request.id} role="region" aria-label={`Join request from ${request.from.displayName}`} className="animate-rise rounded-[18px] bg-surface-2 p-3.5 shadow-float hairline-strong">
           <p className="t-sub"><span className="font-semibold">{request.from.displayName}</span> asked to join your table.</p>
-          {trouble[request.id] ? <p role="alert" className="t-footnote mt-1.5 text-accent-ink">{trouble[request.id]}</p> : null}
+          {trouble[request.id] ? <p role="alert" className="t-footnote mt-1.5 text-red">{trouble[request.id]}</p> : null}
           <div className="mt-2.5 flex gap-1.5">
             <Button size="sm" variant="accent" disabled={answering !== null} onClick={() => void answerRequest(request.id, true)}>Accept</Button>
             <Button size="sm" variant="ghost" disabled={answering !== null} onClick={() => void answerRequest(request.id, false)}>Decline</Button>
@@ -302,7 +302,7 @@ export function Notifications({ social, atCode = null, acceptsJoinRequests = tru
             <span className="font-semibold">{invite.from.displayName}</span>{invite.requested ? " accepted your request to join table " : " invited you to table "}
             <span className="tnum font-semibold tracking-[0.06em]">{invite.code}</span>.
           </p>
-          {trouble[invite.id] ? <p className="t-footnote mt-1.5 text-accent-ink">{trouble[invite.id]}</p> : null}
+          {trouble[invite.id] ? <p role="alert" className="t-footnote mt-1.5 text-red">{trouble[invite.id]}</p> : null}
           <div className="mt-2.5 flex gap-1.5">
             <Button size="sm" variant="accent" disabled={answering !== null} onClick={() => void accept(invite.id)}>
               {answering === invite.id ? "Taking a seat" : "Join"}
