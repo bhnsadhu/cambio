@@ -365,7 +365,9 @@ function startPeek(state: GameState, ctx: EngineCtx) {
     if (p.isBot) remember(state, p.id, bottom);
     else addReveal(state, ctx, p.id, "opening", bottom, state.openingPeekUntil);
   }
-  addLog(state, ctx, `Everyone looks at their bottom two cards.`, { kind: "deal", tone: "accent", weight: "loud" });
+  // Said as a line, never as a banner over the table. This is the one moment
+  // the player has to read their own cards, so nothing covers them.
+  addLog(state, ctx, `Everyone looks at their bottom two cards.`, { kind: "deal", tone: "accent", weight: "normal" });
 }
 
 /**

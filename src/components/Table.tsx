@@ -206,7 +206,7 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
   // One announcement at a time, and the cards it is about lit in every hand.
   // The scoreboard tells the story of the round itself, so the announcer
   // stands down while it is up.
-  const announcement = useAnnouncements(pub.log, pub.phase !== "lobby" && pub.phase !== "scoring");
+  const announcement = useAnnouncements(pub.log, pub.phase !== "lobby" && pub.phase !== "scoring", dealing);
   const spotlit = useMemo(() => {
     const ids = new Set<string>(traced);
     for (const id of announcement?.cardIds ?? []) ids.add(id);
@@ -226,8 +226,19 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
   const readyCheck = pub.phase === "ready";
   const imReady = !!mine && pub.readyIds.includes(mine.id);
   const waitingOn = pub.players.filter((p) => !pub.readyIds.includes(p.id));
+  /**
+   * The deal owns the table until its last card has landed and the line that
+   * opened the round has been read. Answering the ready check before that
+   * would run the peek under an announcement still covering the cards.
+   */
+  const dealSettling = readyCheck && (dealing || announcement?.entry.kind === "deal");
 
-  const status = readyCheck
+  const status = dealSettling
+    ? {
+        title: "Shuffling and dealing.",
+        detail: "Four cards each, face down. The ready check opens once the last card lands.",
+      }
+    : readyCheck
     ? {
         title: imReady
           ? (waitingOn.length
@@ -327,7 +338,7 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
                 <Button
                   variant={imReady ? "secondary" : "primary"}
                   size="lg"
-                  disabled={game.busy || imReady}
+                  disabled={game.busy || imReady || dealSettling}
                   onClick={() => void game.send({ type: "ready" })}
                 >
                   {imReady ? "You are ready" : "I'm ready"}

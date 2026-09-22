@@ -73,6 +73,26 @@ describe("lobby", () => {
     }
   });
 
+  it("says the deal out loud and the peek quietly, so nothing covers the cards", () => {
+    const ctx = makeCtx();
+    const t = table(ctx, 2);
+    const ready = act(t.state, t.hostId, { type: "start" }, ctx);
+    // The deal is the round's headline, and it lands while the cards are in
+    // the air rather than after anyone has looked at theirs.
+    const deal = ready.log[ready.log.length - 1];
+    expect(deal.kind).toBe("deal");
+    expect(deal.weight).toBe("loud");
+    expect(ready.phase).toBe("ready");
+    const s = readyAll(ready, t.ids, ctx);
+    // The peek opens with a line, never a banner over the table: a loud entry
+    // would sit on top of the hands for most of the five seconds.
+    const peek = s.log[s.log.length - 1];
+    expect(peek.kind).toBe("deal");
+    expect(peek.text).toContain("bottom two cards");
+    expect(peek.weight).toBe("normal");
+    expect(s.log.filter((e) => e.seq > deal.seq && e.weight === "loud")).toEqual([]);
+  });
+
   it("rejects a fifth human and bot names", () => {
     const ctx = makeCtx();
     const open = table(ctx, 2);

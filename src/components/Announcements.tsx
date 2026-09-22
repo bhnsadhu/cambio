@@ -75,7 +75,7 @@ function advance(head: Playhead): Playhead {
   return { ...head, current: next ?? null, queue: rest };
 }
 
-export function useAnnouncements(log: LogEntry[], enabled: boolean): Announcement | null {
+export function useAnnouncements(log: LogEntry[], enabled: boolean, liveFromMount = false): Announcement | null {
   const [head, setHead] = useState<Playhead>(IDLE);
   // When the announcement on screen went up. A move arriving behind it
   // shortens its stay rather than restarting it.
@@ -87,7 +87,11 @@ export function useAnnouncements(log: LogEntry[], enabled: boolean): Announcemen
   if (!enabled) {
     if (head.current || head.queue.length || head.seen !== null) setHead(IDLE);
   } else if (head.seen === null) {
-    setHead({ ...IDLE, seen: latest });
+    // A table joined mid round treats everything already written as history.
+    // A table that mounts *because* the round just started does not: the deal
+    // is the entry that ended the lobby, it lands before this hook ever runs,
+    // and it is the first thing the round has to say.
+    setHead({ ...IDLE, seen: liveFromMount && log.length ? log[log.length - 1].seq - 1 : latest });
   } else if (latest > head.seen) {
     // Pause already has a live banner and overlay. Replaying its old log
     // messages after a quick resume would incorrectly say play is paused.
