@@ -24,6 +24,7 @@ export function projectPublic(state: GameState, version: number, now: number): P
       isBot: p.isBot,
       isHost: p.isHost,
       ...(p.isBot ? { difficulty: p.difficulty ?? "medium" } : {}),
+      profileId: p.profileId ?? null,
       hand: p.hand.slice(),
       cardCount: p.hand.filter((c) => c !== null).length,
     })),

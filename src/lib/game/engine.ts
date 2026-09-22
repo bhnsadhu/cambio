@@ -30,6 +30,7 @@ import type {
   PowerKind,
   Reveal,
   RoundResult,
+  RoundTally,
 } from "./types";
 
 export const SEATS = 4;
@@ -103,11 +104,12 @@ export function createGame(
   code: string,
   hostName: string,
   ctx: EngineCtx,
+  profileId?: string | null,
 ): { state: GameState; hostId: string; token: string } {
   const name = cleanName(hostName);
   const hostId = ctx.newId();
   const token = ctx.newId() + ctx.newId();
-  const host: Player = { id: hostId, seat: 0, name, isBot: false, isHost: true, token, hand: [null, null, null, null] };
+  const host: Player = { id: hostId, seat: 0, name, isBot: false, isHost: true, token, profileId: profileId ?? null, hand: [null, null, null, null] };
   const state: GameState = {
     code,
     hostId,
@@ -138,6 +140,7 @@ export function createGame(
     log: [],
     logSeq: 0,
     botKnown: {},
+    tally: {},
     appliedActionIds: [],
     createdAt: ctx.now,
     updatedAt: ctx.now,
@@ -150,6 +153,7 @@ export function joinGame(
   input: GameState,
   rawName: string,
   ctx: EngineCtx,
+  profileId?: string | null,
 ): { state: GameState; playerId: string; token: string } {
   const state = clone(input);
   if (state.phase !== "lobby") throw new GameError("WRONG_PHASE", "This game has already started.");
@@ -163,7 +167,7 @@ export function joinGame(
   // whoever opens the link next inherits it.
   const orphaned = !state.players.some((p) => p.id === state.hostId);
   if (orphaned) state.hostId = playerId;
-  state.players.push({ id: playerId, seat, name, isBot: false, isHost: orphaned, token, hand: [null, null, null, null] });
+  state.players.push({ id: playerId, seat, name, isBot: false, isHost: orphaned, token, profileId: profileId ?? null, hand: [null, null, null, null] });
   state.players.sort((a, b) => a.seat - b.seat);
   addLog(state, ctx, `${name} took seat ${seat + 1}.`, { kind: "table", actorId: playerId, weight: "normal" });
   state.updatedAt = ctx.now;
@@ -456,6 +460,7 @@ function dealRound(state: GameState, ctx: EngineCtx) {
   state.cambio = null;
   state.reveals = [];
   state.botKnown = {};
+  state.tally = {};
   state.readyIds = [];
   state.readyDeadline = null;
   state.dealingUntil = null;
@@ -752,6 +757,7 @@ function doStick(state: GameState, actor: Player, cardId: string, ctx: EngineCtx
         ? `${actor.name} stuck ${where}: it was ${shortLabel(card)}, and it is gone.`
         : `${actor.name} stuck ${where}: it was ${shortLabel(card)}. ${owner.player.name} is a card lighter, and ${actor.name} owes them one.`,
       { kind: "stick", tone: "good", weight: "normal", actorId: actor.id, subjectIds: [owner.player.id], cardIds: [cardId] });
+    tallyFor(state, actor.id).sticks += 1;
     if (!own) state.pendingGives.push({ from: actor.id, to: owner.player.id, since: ctx.now });
     if (cardCount(owner.player) === 0) handleZero(state, owner.player, ctx);
     return { kind: "stick", correct: true };
@@ -759,6 +765,7 @@ function doStick(state: GameState, actor: Player, cardId: string, ctx: EngineCtx
 
   // The card stays where it is and its value is never shown: a wrong stick
   // must not become a free peek for the table.
+  tallyFor(state, actor.id).misses += 1;
   const penalty = drawFromDeck(state, ctx);
   // Which card was wrongly stuck is never named or highlighted: that it is
   // *not* the rank on the pile is information the table has not earned.
@@ -1006,7 +1013,14 @@ function scoreRound(state: GameState, ctx: EngineCtx) {
   const winnerIds = scores.filter((s) => s.score === min).map((s) => s.playerId);
   const winners = state.players.filter((p) => winnerIds.includes(p.id));
   const nextLeadSeat = Math.min(...winners.map((w) => w.seat));
-  const result: RoundResult = { round: state.round, scores, winnerIds, nextLeadSeat };
+  const result: RoundResult = {
+    round: state.round,
+    scores,
+    winnerIds,
+    nextLeadSeat,
+    callerId: state.cambio && state.cambio.reason === "called" ? state.cambio.callerId : null,
+    tally: structuredClone(state.tally ?? {}),
+  };
   state.results.push(result);
   state.phase = "scoring";
   // Bots are always in for another round; the table only waits on humans.
@@ -1029,6 +1043,12 @@ function scoreRound(state: GameState, ctx: EngineCtx) {
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */
 /* ------------------------------------------------------------------ */
+
+function tallyFor(state: GameState, playerId: string): RoundTally {
+  if (!state.tally) state.tally = {};
+  if (!state.tally[playerId]) state.tally[playerId] = { sticks: 0, misses: 0 };
+  return state.tally[playerId];
+}
 
 export function cardCount(p: Player): number {
   return p.hand.filter((c) => c !== null).length;

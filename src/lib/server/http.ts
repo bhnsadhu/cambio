@@ -18,3 +18,15 @@ export function fail(e: unknown) {
 export function tokenFrom(req: Request): string | null {
   return req.headers.get("x-cambio-token");
 }
+
+/** The saved profile behind this browser, if it has one. */
+export function profileTokenFrom(req: Request): string | null {
+  return req.headers.get("x-cambio-profile");
+}
+
+/** Every social route needs a profile; this is the one place that says so. */
+export function requireProfileToken(req: Request): string {
+  const token = profileTokenFrom(req);
+  if (!token) throw new GameError("NOT_FOUND", "Save a profile first.");
+  return token;
+}

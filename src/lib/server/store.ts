@@ -4,6 +4,7 @@ import type { ActionEnvelope, GameState, PlayerView } from "@/lib/game/types";
 import { projectFor, projectPublic } from "@/lib/game/view";
 import { rpc } from "./db";
 import { engineCtx, newCode } from "./ids";
+import { recordRound } from "./social";
 
 /**
  * Persistence with optimistic concurrency.
@@ -55,10 +56,10 @@ export async function commit(row: GameRow, state: GameState): Promise<number | n
   return v;
 }
 
-export async function createGame(hostName: string): Promise<{ row: GameRow; playerId: string; token: string }> {
+export async function createGame(hostName: string, profileId?: string | null): Promise<{ row: GameRow; playerId: string; token: string }> {
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = newCode();
-    const { state, hostId, token } = engineCreate(code, hostName, engineCtx());
+    const { state, hostId, token } = engineCreate(code, hostName, engineCtx(), profileId);
     try {
       const rows = await rpc<{ id: string; version: number }[]>("game_create", {
         p_code: code,
@@ -75,11 +76,11 @@ export async function createGame(hostName: string): Promise<{ row: GameRow; play
   throw new Error("Could not allocate a join code.");
 }
 
-export async function joinGame(code: string, name: string): Promise<{ row: GameRow; playerId: string; token: string }> {
+export async function joinGame(code: string, name: string, profileId?: string | null): Promise<{ row: GameRow; playerId: string; token: string }> {
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const row = await loadByCode(code);
     if (!row) throw new GameError("NOT_FOUND", "No table with that code.");
-    const { state, playerId, token } = engineJoin(row.state, name, engineCtx());
+    const { state, playerId, token } = engineJoin(row.state, name, engineCtx(), profileId);
     const v = await commit(row, state);
     if (v !== null) return { row: { ...row, version: v, state }, playerId, token };
   }
@@ -99,7 +100,16 @@ export async function runAction(gameId: string, env: ActionEnvelope): Promise<Ac
     const result = applyAction(row.state, env, engineCtx());
     if (!result.changed) return { row, result };
     const v = await commit(row, result.state);
-    if (v !== null) return { row: { ...row, version: v, state: result.state }, result };
+    if (v !== null) {
+      // The commit that scored a round is the one that writes it into the
+      // record books: exactly one attempt can win that race, so nothing is
+      // counted twice. A failure here never costs anyone their move.
+      if (result.state.results.length > row.state.results.length) {
+        const scored = result.state.results[result.state.results.length - 1];
+        await recordRound(result.state, scored).catch((e) => console.error("[stats]", gameId, e));
+      }
+      return { row: { ...row, version: v, state: result.state }, result };
+    }
     await new Promise((r) => setTimeout(r, 15 + attempt * 20));
   }
   throw new Error("The table is busy; try again.");

@@ -45,6 +45,8 @@ export interface Player {
   isHost: boolean;
   /** bots only: how hard this seat plays */
   difficulty?: BotDifficulty;
+  /** the saved profile playing this seat, when the player has one */
+  profileId?: string | null;
   /** secret; humans only. Never projected into a view. */
   token?: string;
   /** slot -> card id. `null` is an empty (stuck-away) slot. Length >= 4. */
@@ -157,12 +159,22 @@ export interface LogEntry {
   weight?: EventWeight;
 }
 
+/** What one seat did in a round, beyond its score. */
+export interface RoundTally {
+  sticks: number;
+  misses: number;
+}
+
 export interface RoundResult {
   round: number;
   scores: { playerId: string; score: number; cards: Card[] }[];
   winnerIds: string[];
   /** seat that leads the next round */
   nextLeadSeat: number;
+  /** who called Cambio, when someone called it rather than running out of cards */
+  callerId?: string | null;
+  /** sticks landed and missed this round, by player */
+  tally?: Record<string, RoundTally>;
 }
 
 export interface GameState {
@@ -220,6 +232,8 @@ export interface GameState {
   logSeq: number;
   /** bot memory: cards each bot has seen, by card id */
   botKnown: Record<string, string[]>;
+  /** this round's sticks and misses, by player, for the record books */
+  tally: Record<string, RoundTally>;
   /** idempotency: recently applied action ids */
   appliedActionIds: string[];
   createdAt: number;
@@ -280,6 +294,7 @@ export interface PlayerPublic {
   isBot: boolean;
   isHost: boolean;
   difficulty?: BotDifficulty;
+  profileId?: string | null;
   /** slot -> card id or null (empty slot). No ranks. */
   hand: (string | null)[];
   cardCount: number;
