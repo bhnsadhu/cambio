@@ -3,7 +3,36 @@
 import type { ComponentPropsWithRef, ReactNode } from "react";
 import { BOT_DIFFICULTIES, type BotDifficulty } from "@/lib/game/types";
 
-type Variant = "primary" | "secondary" | "accent" | "ghost";
+type Variant = "primary" | "secondary" | "accent" | "ghost" | "danger";
+type Size = "sm" | "md" | "lg";
+
+const BUTTON_BASE =
+  "press inline-flex items-center justify-center gap-2 rounded-full font-medium select-none whitespace-nowrap " +
+  "disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30";
+
+const BUTTON_SIZES: Record<Size, string> = {
+  sm: "h-8 px-3.5 text-[13px]",
+  md: "h-10 px-4.5 text-[14px]",
+  lg: "h-12 px-6 text-[15px]",
+};
+
+const BUTTON_VARIANTS: Record<Variant, string> = {
+  primary: "bg-ink text-bg hover:bg-tile-2",
+  secondary: "bg-surface-2 text-ink hover:bg-surface-3",
+  accent: "bg-accent text-bg hover:brightness-110",
+  ghost: "bg-transparent text-ink-2 hover:text-ink hover:bg-surface-2",
+  /** The one destructive look. Red is never used for anything reversible. */
+  danger: "bg-red text-ink hover:brightness-110",
+};
+
+/**
+ * The button look on its own, for the places that need a link rather than a
+ * button. A styled Link and a Button stay the same shape because they read
+ * from here instead of copying the classes.
+ */
+export function buttonClass({ variant = "secondary", size = "md", className = "" }: { variant?: Variant; size?: Size; className?: string } = {}) {
+  return `${BUTTON_BASE} ${BUTTON_SIZES[size]} ${BUTTON_VARIANTS[variant]} ${className}`;
+}
 
 export function Button({
   variant = "secondary",
@@ -11,19 +40,9 @@ export function Button({
   className = "",
   children,
   ...rest
-}: ComponentPropsWithRef<"button"> & { variant?: Variant; size?: "sm" | "md" | "lg"; children: ReactNode }) {
-  const base =
-    "press inline-flex items-center justify-center gap-2 rounded-full font-medium select-none whitespace-nowrap " +
-    "disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30";
-  const sizes = { sm: "h-8 px-3.5 text-[13px]", md: "h-10 px-4.5 text-[14px]", lg: "h-12 px-6 text-[15px]" }[size];
-  const variants: Record<Variant, string> = {
-    primary: "bg-ink text-bg hover:bg-tile-2",
-    secondary: "bg-surface-2 text-ink hover:bg-surface-3",
-    accent: "bg-accent text-black hover:brightness-110",
-    ghost: "bg-transparent text-ink-2 hover:text-ink hover:bg-surface-2",
-  };
+}: ComponentPropsWithRef<"button"> & { variant?: Variant; size?: Size; children: ReactNode }) {
   return (
-    <button className={`${base} ${sizes} ${variants[variant]} ${className}`} {...rest}>
+    <button className={buttonClass({ variant, size, className })} {...rest}>
       {children}
     </button>
   );

@@ -21,7 +21,7 @@ import { HowToPlay } from "./HowToPlay";
 import { FlightLayer, useFlights } from "./FlightLayer";
 import { PauseButton, PauseOverlay } from "./Pause";
 import { RoomSettings } from "./RoomSettings";
-import { Button, Chip, DotOff, Field, inputClass, Pip, Wordmark } from "./ui";
+import { Button, buttonClass, Chip, DotOff, Field, inputClass, Pip, Wordmark } from "./ui";
 
 /**
  * Card flights are tracked here rather than inside the table so that the
@@ -156,7 +156,7 @@ function GameShell({ code }: { code: string }) {
                 <Button variant="ghost" size="sm" onClick={() => setLeaving(true)}>Leave</Button>
               )
             ) : (
-              <Link href="/"><Button variant="ghost" size="sm">Home</Button></Link>
+              <Link href="/" className={buttonClass({ variant: "ghost", size: "sm" })}>Home</Link>
             )}
             <Chip tone="neutral">
               {game.connection === "live" ? <Pip /> : <DotOff />}
@@ -242,7 +242,7 @@ function MidRound({ code, canLogin, onWatch }: { code: string; canLogin: boolean
       <p className="t-body mt-2 text-ink-2">Seats are set once a round starts. You can watch this one, or open a table of your own.</p>
       <div className="mt-6 flex gap-3">
         <Button variant="primary" size="lg" onClick={onWatch}>Watch</Button>
-        <Link href="/"><Button variant="secondary" size="lg">Open a table</Button></Link>
+        <Link href="/" className={buttonClass({ variant: "secondary", size: "lg" })}>Open a table</Link>
       </div>
       {canLogin ? <p className="t-sub mt-5 text-ink-2">Already playing? <Link href={loginHref(`/g/${code}`)} className="font-medium text-ink hover:text-ink-2">Log in to return to your seat</Link></p> : null}
     </div>
@@ -254,7 +254,7 @@ function Empty({ title, body }: { title: string; body: string }) {
     <div className="mx-auto max-w-[420px] pt-24 animate-rise">
       <h1 className="t-title">{title}</h1>
       <p className="t-body mt-2 text-ink-2">{body}</p>
-      <Link href="/" className="mt-6 inline-block"><Button variant="primary">Back to start</Button></Link>
+      <Link href="/" className={buttonClass({ variant: "primary", className: "mt-6" })}>Back to start</Link>
     </div>
   );
 }

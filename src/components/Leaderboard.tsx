@@ -9,7 +9,7 @@ import type { LeaderboardScope, LeaderboardSnapshot } from "@/lib/social/leaderb
 import { ordinal } from "@/lib/social/rank";
 import { Notifications } from "./Friends";
 import { AccountLink } from "./Profile";
-import { Button, Chip, Wordmark } from "./ui";
+import { Button, buttonClass, Chip, Wordmark } from "./ui";
 
 export function Leaderboard({ initialScope }: { initialScope: LeaderboardScope | null }) {
   const ready = useAccountReady();
@@ -34,12 +34,12 @@ export function Leaderboard({ initialScope }: { initialScope: LeaderboardScope |
       <nav className="mb-6 flex gap-2" aria-label="Leaderboard views">
         {(["friends", "all"] as const).map((value) => (
           <Link key={value} href={`/leaderboard?scope=${value}`} aria-current={scope === value ? "page" : undefined}
-            className={`press inline-flex h-10 items-center rounded-full px-5 text-[14px] font-medium ${scope === value ? "bg-ink text-bg" : "bg-surface-2 text-ink-2 hover:text-ink"}`}>
+            className={buttonClass({ variant: scope === value ? "primary" : "secondary" })}>
             {value === "friends" ? "Friends" : "All players"}
           </Link>
         ))}
       </nav>
-      {!ready ? <p role="status" className="t-sub text-ink-2">Loading the leaderboard...</p>
+      {!ready ? <p role="status" className="t-sub text-ink-2">Loading the leaderboard</p>
         : scope === "friends" && !stored ? <section className="rounded-panel bg-surface p-6 hairline">
           <h2 className="t-headline">Compare scores with your friends</h2>
           <p className="t-body mt-2 text-ink-2">Log in or create an account to add friends and see your rank together.</p>

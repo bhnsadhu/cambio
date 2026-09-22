@@ -4,7 +4,7 @@ import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
 import { AskToJoin, Notifications } from "@/components/Friends";
 import { AccountLink, ProfileCard } from "@/components/Profile";
-import { Button, Wordmark } from "@/components/ui";
+import { Button, buttonClass, Wordmark } from "@/components/ui";
 import { callProfile, useAccountReady } from "@/lib/client/profile";
 import { loginHref } from "@/lib/account/navigation";
 import { usePresence, useSocial } from "@/lib/client/social";
@@ -80,9 +80,9 @@ export default function PlayerPage({ params }: { params: Promise<{ handle: strin
           ) : null}
           <div className="flex flex-wrap items-center gap-2">
             {!social.profile ? (
-              <Link href={loginHref(`/p/${handle}`)}><Button variant="primary">Log in to add friends</Button></Link>
+              <Link href={loginHref(`/p/${handle}`)} className={buttonClass({ variant: "primary" })}>Log in to add friends</Link>
             ) : state.relation === "self" ? (
-              <Link href="/"><Button variant="primary">Find a table</Button></Link>
+              <Link href="/" className={buttonClass({ variant: "primary" })}>Find a table</Link>
             ) : state.relation === "friends" ? (
               <Button variant="ghost" disabled={busy} onClick={() => void perform(() => social.remove(state.profile.id))}>Remove friend</Button>
             ) : state.relation === "incoming" ? (

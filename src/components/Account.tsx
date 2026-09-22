@@ -176,7 +176,7 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
             <input type="hidden" name="username" value={stored.username ?? ""} autoComplete="username" />
             <Field label="Current password"><input autoFocus className={inputClass} name="currentPassword" type="password" value={deletePassword} onChange={(event) => setDeletePassword(event.target.value)} autoComplete="current-password" maxLength={128} required disabled={!!busy} /></Field>
             <Field label="Type DELETE to confirm"><input className={inputClass} name="confirmation" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} autoComplete="off" spellCheck={false} pattern="DELETE" required disabled={!!busy} /></Field>
-            <div className={actions}><Button type="submit" className="bg-red text-white hover:bg-red/80" disabled={!!busy || confirmation !== "DELETE"}>{busy === "delete" ? "Deleting" : "Permanently delete account"}</Button>{cancel}</div>
+            <div className={actions}><Button type="submit" variant="danger" disabled={!!busy || confirmation !== "DELETE"}>{busy === "delete" ? "Deleting" : "Permanently delete account"}</Button>{cancel}</div>
           </form> : <Button ref={(button) => { changeButtons.current.delete = button; }} className="mt-4 text-red" type="button" disabled={!!busy} onClick={() => edit("delete")}>Delete account</Button>}
           {feedback("delete")}
         </section>
