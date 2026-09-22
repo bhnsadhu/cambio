@@ -5,7 +5,7 @@ import { Button } from "./ui";
 
 const SECTIONS: { title: string; lines: string[] }[] = [
   { title: "Goal", lines: ["Lowest hand wins the round.", "Aces are 1. Jacks and queens are 10. Red kings are minus 1. Black kings and jokers are 0. Everything else is its number."] },
-  { title: "Your turn", lines: ["Draw the top card of the deck.", "Place it on the pile, or swap it into any card's place at the table — your own or another player's.", "Whichever card it replaces lands on the pile face up, so the whole table sees what went."] },
+  { title: "Your turn", lines: ["Draw the top card of the deck.", "Place it on the pile, or swap it into any card's place at the table, including your own or another player's.", "Whichever card it replaces lands on the pile face up, so the whole table sees what went."] },
   { title: "Powers", lines: ["Only a placed card has a power. A swapped one gives it up.", "7 or 8: look at one of your cards.", "9 or 10: look at one of someone else's.", "Jack or queen: swap any two cards belonging to two different players, unseen. You do not have to be one of them.", "Black king: look at two cards from two different players, then swap them or not."] },
   { title: "Sticking", lines: ["Whenever a card lands on the pile, anyone can click a card they believe matches it, from any hand.", "Right, and the card leaves the game. If it was someone else's, you hand them one of yours.", "Wrong, and you draw a penalty card.", "The player mid turn cannot stick until their card is down."] },
   { title: "Cambio", lines: ["Call it at the start of your turn instead of drawing. Everyone else gets one more turn.", "Running out of cards calls it for you."] },

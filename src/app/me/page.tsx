@@ -55,7 +55,7 @@ export default function MePage() {
                   <div className="flex flex-col gap-2">
                     <p className="t-sub text-ink-2">
                       Sign out of <span className="font-medium text-ink">@{profile.handle}</span> on this device? This
-                      browser holds the only key to it — without it the record cannot be reached again.
+                      browser holds the only key to it. Without it, the record cannot be reached again.
                     </p>
                     <div className="flex gap-2">
                       <Button

@@ -46,15 +46,15 @@ export function ProfileCard({ profile, compact = false }: { profile: Profile; co
         <>
           <dl className="mt-6 grid grid-cols-4 gap-3">
             <Stat k="Played" v={profile.roundsPlayed} />
-            <Stat k="Win rate" v={profile.roundsPlayed ? `${Math.round(rate * 100)}%` : "—"} />
-            <Stat k="Best hand" v={profile.bestScore ?? "—"} accent={profile.bestScore !== null} />
-            <Stat k="Streak" v={profile.currentStreak} sub={profile.bestStreak ? `best ${profile.bestStreak}` : undefined} />
+            <Stat k="Win rate" v={profile.roundsPlayed ? `${Math.round(rate * 100)}%` : "N/A"} />
+            <Stat k="Best hand" v={profile.bestScore ?? "N/A"} accent={profile.bestScore !== null} />
+            <Stat k="Streak" v={profile.currentStreak} sub={profile.bestStreak ? `Best ${profile.bestStreak}` : undefined} />
           </dl>
           <dl className="mt-3 grid grid-cols-4 gap-3">
             <Stat k="Tables" v={profile.tablesPlayed} />
-            <Stat k="Avg hand" v={avg === null ? "—" : avg.toFixed(1)} />
-            <Stat k="Cambio" v={`${profile.cambioWins}/${profile.cambioCalls}`} sub="made / called" />
-            <Stat k="Sticks" v={`${profile.sticksHit}/${profile.sticksHit + profile.sticksMissed}`} sub={stickRate(profile) === null ? "none yet" : `${Math.round(stickRate(profile)! * 100)}% landed`} />
+            <Stat k="Avg hand" v={avg === null ? "N/A" : avg.toFixed(1)} />
+            <Stat k="Cambio" v={`${profile.cambioWins}/${profile.cambioCalls}`} sub="Made / called" />
+            <Stat k="Sticks" v={`${profile.sticksHit}/${profile.sticksHit + profile.sticksMissed}`} sub={stickRate(profile) === null ? "None yet" : `${Math.round(stickRate(profile)! * 100)}% landed`} />
           </dl>
         </>
       )}

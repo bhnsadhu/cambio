@@ -61,7 +61,7 @@ export function FriendsPanel({
   );
 
   return (
-    <section className="flex flex-col gap-5 rounded-panel bg-surface p-6 hairline" aria-label="friends">
+    <section className="flex flex-col gap-5 rounded-panel bg-surface p-6 hairline" aria-label="Friends">
       <header className="flex items-baseline justify-between gap-3">
         <h2 className="t-headline">Friends</h2>
         <span className="t-footnote text-ink-3">{friends.length} saved</span>
@@ -179,7 +179,7 @@ function FriendRow({ friend, social, inviteCode, atThisTable = false }: { friend
                 : friend.online
                   ? <>Online</>
                   : friend.playedTogether > 0
-                    ? <>{friend.yourWins}&ndash;{friend.theirWins} across {friend.playedTogether} {friend.playedTogether === 1 ? "round" : "rounds"}</>
+                    ? <>{friend.yourWins} to {friend.theirWins} across {friend.playedTogether} {friend.playedTogether === 1 ? "round" : "rounds"}</>
                     : <>@{friend.handle}</>}
           </p>
         </div>

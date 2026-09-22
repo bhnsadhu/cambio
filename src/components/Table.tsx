@@ -469,7 +469,7 @@ function describeStatus(
         case "peekOther": return { title: "Look at someone else's card.", detail: `Click any card in another player's hand.${firstPower}` };
         case "blindSwap": return selected
           ? { title: <>Now pick a card from a different player than {name(holder(selected))}.</>, detail: "The two trade places. Nobody sees either card, yourself included." }
-          : { title: "Blind swap. Pick any card on the table.", detail: `Then pick one from a different player. They trade, unseen — the pair does not have to include you.${firstPower}` };
+          : { title: "Blind swap. Pick any card on the table.", detail: `Then pick one from a different player. They trade without looking. The pair does not have to include you.${firstPower}` };
         case "kingLook": return mode.lookedDone
           ? { title: "You have seen both cards.", detail: "Swap them, or leave them." }
           : selected

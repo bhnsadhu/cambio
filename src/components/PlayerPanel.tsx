@@ -3,7 +3,7 @@
 import type { Card, PlayerPublic } from "@/lib/game/types";
 import type { LocKey, Positions } from "@/lib/client/positions";
 import { CardBack, CardTile } from "./cards";
-import { Chip, Pip, PlayerName } from "./ui";
+import { Chip, DIFFICULTY_LABEL, Pip, PlayerName } from "./ui";
 
 export interface PanelProps {
   player: PlayerPublic;
@@ -35,7 +35,7 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
   const ring = inTheSpotlight ? "ring-accent" : isCaller ? "ring-accent" : ready === true ? "ring-accent" : isTurn ? "ring-turn" : "hairline";
   const surface = isTurn || inTheSpotlight || ready === true ? "bg-surface-2" : "bg-surface";
   const stageText = isTurn
-    ? turnStage === "draw" ? "to draw" : turnStage === "decide" ? "deciding" : turnStage === "power" ? "using a power" : ""
+    ? turnStage === "draw" ? "To draw" : turnStage === "decide" ? "Deciding" : turnStage === "power" ? "Using a power" : ""
     : "";
   const heldKey = `held:${player.id}`;
 
@@ -55,10 +55,10 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
           <p className="t-footnote mt-0.5 truncate text-ink-3">
             {isMe ? <span className="font-medium text-ink">You</span> : null}
             {isMe ? " · " : ""}
-            {player.isBot ? `House bot · ${player.difficulty ?? "medium"}` : player.isHost ? "Host" : "Player"}
+            {player.isBot ? `House bot · ${DIFFICULTY_LABEL[player.difficulty ?? "medium"]}` : player.isHost ? "Host" : "Player"}
             {stageText ? <span className="text-ink-2"> · {stageText}</span> : null}
             {ready === null ? null : (
-              <span className={ready ? "text-accent" : "text-ink-2"}> · {ready ? "ready" : "not ready"}</span>
+              <span className={ready ? "text-accent" : "text-ink-2"}> · {ready ? "Ready" : "Not ready"}</span>
             )}
           </p>
         </div>
@@ -68,7 +68,7 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
               ref={positions.register(heldKey)}
               className="relative block h-[34px] w-6 animate-fade"
               style={hidden.has(heldKey) ? { visibility: "hidden" } : undefined}
-              aria-label="holding a drawn card"
+              aria-label="Holding a drawn card"
             >
               <CardBack size="lg" className="h-full! w-full! rounded-[3px]! shadow-rest!" />
             </span>

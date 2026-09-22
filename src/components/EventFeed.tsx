@@ -34,7 +34,7 @@ export function EventFeed({
   useEffect(() => () => onTrace([]), [onTrace]);
 
   return (
-    <aside className="flex min-h-0 min-w-0 flex-col rounded-panel bg-surface hairline" aria-label="table log">
+    <aside className="flex min-h-0 min-w-0 flex-col rounded-panel bg-surface hairline" aria-label="Table log">
       <header className="px-4 pt-4 pb-3">
         <h3 className="t-headline">Table log</h3>
         <p className="t-footnote mt-0.5 text-ink-3">Hover a move to find its cards</p>
