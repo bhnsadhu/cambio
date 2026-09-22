@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import type { SocialHook } from "@/lib/client/social";
 import { saveSession } from "@/lib/client/session";
 import type { Friend } from "@/lib/social/types";
@@ -139,12 +139,25 @@ export function FriendsPanel({
   );
 }
 
+/** A local timer enables resending without waiting for the next social poll. */
+function useResendCooldown(at?: string) {
+  const [now, setNow] = useState(() => Date.now());
+  const remaining = at ? Math.max(0, Math.ceil((Date.parse(at) + 60_000 - now) / 1000)) : 0;
+  useEffect(() => {
+    if (!at) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [at]);
+  return remaining;
+}
+
 function FriendRow({ friend, social, inviteCode, atThisTable = false }: { friend: Friend; social: SocialHook; inviteCode: string | null; atThisTable?: boolean }) {
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const live = friend.playing;
   const here = atThisTable || !!live?.together;
-  const asked = social.social.sent.some((s) => s.toId === friend.id && s.code === inviteCode);
+  const sent = social.social.sent.find((s) => s.toId === friend.id && s.code === inviteCode);
+  const cooldown = useResendCooldown(sent?.at);
   // You can only ask someone who is free to be asked: not already at this
   // table, not sitting at another one.
   const invitable = !!inviteCode && !live && !here;
@@ -183,9 +196,12 @@ function FriendRow({ friend, social, inviteCode, atThisTable = false }: { friend
         <div className="flex shrink-0 items-center gap-1.5">
           {live && !here ? <AskToJoin friend={friend} social={social} /> : null}
           {invitable ? (
-            <Button size="sm" variant={asked ? "ghost" : "secondary"} disabled={busy || asked} onClick={invite}>
-              {asked ? "Invited" : busy ? "Inviting" : "Invite"}
-            </Button>
+            <div className="flex flex-col items-end gap-1">
+              <Button size="sm" variant="secondary" disabled={busy || cooldown > 0} onClick={invite}>
+                {busy ? "Inviting" : cooldown > 0 ? "Invited" : sent ? "Invite again" : "Invite"}
+              </Button>
+              {cooldown > 0 ? <span className="t-footnote text-ink-3">Again in {cooldown}s</span> : null}
+            </div>
           ) : null}
         </div>
       </div>
@@ -199,10 +215,10 @@ export function AskToJoin({ friend, social }: { friend: Friend; social: SocialHo
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const live = friend.playing;
+  const request = social.social.sentJoinRequests.find((r) => r.toId === friend.id && r.tableId === live?.tableId);
+  const cooldown = useResendCooldown(request?.at);
   if (!live || live.together || live.openSeats === 0) return null;
-  const request = social.social.sentJoinRequests.find((r) => r.toId === friend.id && r.tableId === live.tableId);
   const invited = social.social.invites.some((i) => i.tableId === live.tableId);
-  const pending = request?.status === "pending";
   const ask = async () => {
     setBusy(true);
     setError(null);
@@ -211,9 +227,10 @@ export function AskToJoin({ friend, social }: { friend: Friend; social: SocialHo
     setBusy(false);
   };
   return <div className="flex max-w-[200px] flex-col items-end gap-1.5">
-    <Button size="sm" variant="secondary" disabled={busy || pending || invited} onClick={() => void ask()}>
-      {invited ? "Invited" : pending ? "Request sent" : busy ? "Asking" : "Ask to join"}
+    <Button size="sm" variant="secondary" disabled={busy || cooldown > 0 || invited} onClick={() => void ask()}>
+      {invited ? "Invited" : busy ? "Asking" : cooldown > 0 ? "Request sent" : request ? "Ask again" : "Ask to join"}
     </Button>
+    {!invited && cooldown > 0 ? <span className="t-footnote text-ink-3">Again in {cooldown}s</span> : null}
     {request?.status === "declined" ? <p className="t-footnote text-ink-3">Request declined</p> : null}
     {error ? <p role="alert" className="t-footnote text-accent-ink">{error}</p> : null}
   </div>;

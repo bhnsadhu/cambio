@@ -83,6 +83,7 @@ export interface TableJoinRequest {
 
 export interface SentJoinRequest {
   id: string;
+  at: string;
   tableId: string;
   toId: string;
   status: "pending" | "declined";
@@ -99,7 +100,7 @@ export interface Opponent {
   lastPlayedAt: string;
 }
 
-/** An invite this profile has sent and not had answered yet. */
+/** The latest invitation sent to a friend at a table, including answered ones. */
 export interface SentInvite {
   id: string;
   code: string;
@@ -124,7 +125,7 @@ export interface Social {
 /** How an attempt to invite someone to a table turned out. */
 export type InviteOutcome =
   | { ok: true }
-  | { ok: false; reason: "not-friends" | "table-gone" | "table-started" | "table-full" | "not-seated" | "busy" | "here"; message: string };
+  | { ok: false; reason: "not-friends" | "table-gone" | "table-started" | "table-full" | "not-seated" | "busy" | "here" | "cooldown"; message: string };
 
 /** How answering an invite turned out. */
 export type InviteAnswer =

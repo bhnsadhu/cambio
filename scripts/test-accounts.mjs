@@ -28,7 +28,7 @@ async function cleanup() {
     server.kill('SIGTERM');
     await Promise.race([new Promise((resolve) => server.once('exit', resolve)), pause(5000)]);
   }
-  for (const name of [rest, db]) { try { docker(['rm', '-f', name]); } catch { /* Already stopped or never started. */ } }
+  for (const name of [rest, db]) { try { docker(['rm', '-f', '-v', name]); } catch { /* Already stopped or never started. */ } }
 }
 process.on('SIGINT', () => { void cleanup().finally(() => process.exit(130)); });
 process.on('SIGTERM', () => { void cleanup().finally(() => process.exit(143)); });

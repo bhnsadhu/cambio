@@ -2,7 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { usernameForLookup } from "@/lib/account/validation";
 import type { GameState, RoundResult } from "@/lib/game/types";
-import type { Friend, Invite, JoinRequestOutcome, Opponent, PendingFriend, Profile, Social } from "@/lib/social/types";
+import type { Friend, Invite, InviteOutcome, JoinRequestOutcome, Opponent, PendingFriend, Profile, Social } from "@/lib/social/types";
 import { rpc } from "./db";
 
 /**
@@ -93,8 +93,8 @@ export async function removeFriend(me: string, other: string): Promise<void> {
   await rpc<null>("friend_remove", { p_me: me, p_other: other });
 }
 
-export async function createInvite(from: string, to: string, code: string): Promise<string> {
-  return rpc<string>("invite_create", { p_from: from, p_to: to, p_code: code });
+export async function createInvite(from: string, to: string, code: string): Promise<InviteOutcome> {
+  return rpc<InviteOutcome>("invite_send", { p_from: from, p_to: to, p_code: code });
 }
 
 /** Returns the table code when an invite was accepted, null otherwise. */
@@ -131,7 +131,7 @@ interface RawSocial {
   invites: { id: string; code: string; table_id: string; requested: boolean; at: string; from: { id: string; handle: string; display_name: string } }[];
   sent: { id: string; code: string; at: string; to_id: string }[];
   join_requests: { id: string; table_id: string; at: string; from: { id: string; handle: string; display_name: string } }[];
-  sent_join_requests: { id: string; table_id: string; to_id: string; status: "pending" | "declined" }[];
+  sent_join_requests: { id: string; at: string; table_id: string; to_id: string; status: "pending" | "declined" }[];
   opponents: { id: string; handle: string; display_name: string; rounds: number; wins: number; last_played_at: string }[];
 }
 
@@ -178,7 +178,7 @@ export async function socialFor(id: string): Promise<Social> {
     sent: (raw.sent ?? []).map((s) => ({ id: s.id, code: s.code, at: s.at, toId: s.to_id })),
     joinRequests: (raw.join_requests ?? []).map((r) => ({ id: r.id, tableId: r.table_id, at: r.at,
       from: { id: r.from.id, handle: r.from.handle, displayName: r.from.display_name } })),
-    sentJoinRequests: (raw.sent_join_requests ?? []).map((r) => ({ id: r.id, tableId: r.table_id, toId: r.to_id, status: r.status })),
+    sentJoinRequests: (raw.sent_join_requests ?? []).map((r) => ({ id: r.id, at: r.at, tableId: r.table_id, toId: r.to_id, status: r.status })),
     opponents,
   };
 }

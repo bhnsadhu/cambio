@@ -57,10 +57,11 @@ test("friends request a seat, receive a decision, and join only after approval",
     await expect(notice).toBeVisible({ timeout: 15000 });
     await notice.getByRole("button", { name: "Decline", exact: true }).click();
     await expect(notice).toHaveCount(0);
+    sql(`update public.table_join_requests set created_at = now() - interval '61 seconds' where id = '${pending.id}';`);
     await friendPage.goto(`/p/${host.username}`);
     await expect(friendPage.getByText("Request declined", { exact: true })).toBeVisible();
     await expect(friendPage.getByRole("button", { name: "Take a seat" })).toHaveCount(0);
-    await friendPage.getByRole("button", { name: "Ask to join", exact: true }).click();
+    await friendPage.getByRole("button", { name: "Ask again", exact: true }).click();
     await expect(notice).toBeVisible({ timeout: 15000 });
     await notice.getByRole("button", { name: "Accept", exact: true }).click();
     const invitation = friendPage.getByRole("region", { name: "Table invitation from Table Host" });
@@ -91,6 +92,7 @@ test("direct invitations still work and shared codes invite guests", async ({ br
     await expect(invitation).toContainText("invited you");
     await invitation.getByRole("button", { name: "No thanks", exact: true }).click();
     await expect(invitation).toHaveCount(0);
+    sql(`update public.game_invites set created_at = now() - interval '61 seconds' where from_id = '${host.profile.id}';`);
     await post(host.context, "/api/social/invites", { profileId: friend.profile.id, code: seat.code });
     await page.reload();
     await invitation.getByRole("button", { name: "Join", exact: true }).click();
@@ -113,7 +115,7 @@ test("join approval checks friendship, expiry, seats, and the friend's presence 
     await post(friend.context, "/api/presence", { code: seat.code });
     expect(JSON.parse(sql(`select public.presence_of('account-test-secret', '${friend.profile.id}');`)).code).toBeNull();
     expect((await ask()).ok).toBe(true);
-    expect((await ask()).ok).toBe(true);
+    expect((await ask()).ok).toBe(false);
     let requests = (await snapshot(host.context)).joinRequests;
     expect(requests).toHaveLength(1);
     expect((await (await post(outsider.context, "/api/social/join-requests/respond", { requestId: requests[0].id, accept: true })).json()).outcome.ok).toBe(false);
@@ -155,4 +157,46 @@ test("join approval checks friendship, expiry, seats, and the friend's presence 
     expect((await answer(thirdRequest.id)).ok).toBe(false);
     expect((await snapshot(friend.context)).invites).toHaveLength(0);
   } finally { await host.context.close(); await friend.context.close(); await outsider.context.close(); }
+});
+
+test("invitations and join requests can be resent after one minute with one fresh notification", async ({ browser }) => {
+  const { host, friend, seat, tableId } = await setup(browser);
+  const hostPage = await host.context.newPage();
+  const friendPage = await friend.context.newPage();
+  try {
+    await hostPage.goto(`/g/${seat.code}`);
+    await hostPage.getByRole("button", { name: "Skip", exact: true }).click();
+    await friendPage.goto("/");
+    await friendPage.getByRole("button", { name: "Ask to join", exact: true }).click();
+    await expect(friendPage.getByRole("button", { name: "Request sent", exact: true })).toBeDisabled();
+    const first = (await snapshot(host.context)).joinRequests[0];
+    const blocked = await (await post(friend.context, "/api/social/join-requests", { profileId: host.profile.id, tableId })).json();
+    expect(blocked.outcome.ok).toBe(false);
+    expect((await snapshot(host.context)).joinRequests).toHaveLength(1);
+    sql(`update public.table_join_requests set created_at = now() - interval '61 seconds' where id = '${first.id}';`);
+    await friendPage.reload();
+    await friendPage.getByRole("button", { name: "Ask again", exact: true }).click();
+    await expect(friendPage.getByRole("button", { name: "Request sent", exact: true })).toBeDisabled();
+    const second = (await snapshot(host.context)).joinRequests;
+    expect(second).toHaveLength(1);
+    expect(second[0].id).not.toBe(first.id);
+    expect((await (await post(host.context, "/api/social/join-requests/respond", { requestId: first.id, accept: true })).json()).outcome.ok).toBe(false);
+    await post(host.context, "/api/social/join-requests/respond", { requestId: second[0].id, accept: false });
+    await hostPage.getByRole("button", { name: "Invite", exact: true }).click();
+    await expect(hostPage.getByRole("button", { name: "Invited", exact: true })).toBeDisabled();
+    const firstInvite = (await snapshot(friend.context)).invites[0];
+    const inviteBlocked = await (await post(host.context, "/api/social/invites", { profileId: friend.profile.id, code: seat.code })).json();
+    expect(inviteBlocked.outcome).toMatchObject({ ok: false, reason: "cooldown" });
+    sql(`update public.game_invites set created_at = now() - interval '61 seconds' where id = '${firstInvite.id}';`);
+    await hostPage.reload();
+    await hostPage.getByRole("button", { name: "Invite again", exact: true }).click();
+    await expect(hostPage.getByRole("button", { name: "Invited", exact: true })).toBeDisabled();
+    const secondInvite = (await snapshot(friend.context)).invites;
+    expect(secondInvite).toHaveLength(1);
+    expect(secondInvite[0].id).not.toBe(firstInvite.id);
+    expect((await (await post(friend.context, "/api/social/invites/respond", { inviteId: firstInvite.id, accept: true })).json()).answer.ok).toBe(false);
+    await friendPage.reload();
+    await friendPage.getByRole("region", { name: "Table invitation from Table Host" }).getByRole("button", { name: "Join", exact: true }).click();
+    await expect(friendPage).toHaveURL(`${origin}/g/${seat.code}`);
+  } finally { await host.context.close(); await friend.context.close(); }
 });

@@ -49,8 +49,7 @@ export async function POST(req: Request) {
       return refuse("busy", `${friend.displayName} is already in a game.`);
     }
 
-    await createInvite(me.id, friend.id, code);
-    return ok({ outcome: { ok: true } satisfies InviteOutcome });
+    return ok({ outcome: await createInvite(me.id, friend.id, code) });
   } catch (e) {
     return fail(e);
   }
