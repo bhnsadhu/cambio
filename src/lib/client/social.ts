@@ -54,7 +54,10 @@ export function useSocial(): SocialHook {
     const gen = profileGeneration();
     try {
       const res = await callProfile<{ profile: Profile | null; social: Social | null }>("/api/social");
-      if (!alive.current || gen !== profileGeneration()) return;
+      // Whoever is signed in now may not be who this read was for: a sign-out
+      // or a switch while it was in flight makes the answer somebody else's.
+      const still = storedProfile();
+      if (!alive.current || gen !== profileGeneration() || still?.token !== held.token) return;
       setFetched({ token: held.token, profile: res.profile, social: res.social ?? EMPTY_SOCIAL });
       // The record moves while you play; keep the cached copy in step. The
       // generation keeps a read that outlived a sign-out from bringing the

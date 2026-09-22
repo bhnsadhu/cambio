@@ -73,7 +73,7 @@ If two players act in the same few milliseconds, one commit loses the race, relo
 | **Final scoring** | Players who reach zero during final turns leave the queue. Scoring waits for any card still owed after a stick. The lowest total wins, and ties stand. |
 | **Idle players** | A human who sits on a turn for 30 seconds forfeits it and draws a penalty. An owed card that is never handed over is given at random. |
 | **Unanimous pause** | Any seat can request a pause, every seat must agree, and one decline cancels it. On resume, every clock shifts forward by the time held. |
-| **Ready checks** | The host sets the seats; the deck is only shuffled once every seat has said it is ready. Bots answer at once, and a seat that never answers is carried after 45 seconds. |
+| **Ready checks** | Every round deals first and asks after: four cards land face down in front of each seat, and the peek only opens once every seat has said it is ready. Bots answer at once, and a seat that never answers is carried after 45 seconds. |
 | **Between rounds** | Another round is the table's call, not the host's. Every seat asks for one and the last yes deals, with bots agreeing the moment the round is scored. |
 | **Leaving** | Anyone who leaves instead sends the rest back to the lobby with the seats closed up, so they can invite someone or let a bot sit down. |
 | **Narration** | Every rule that fires writes a structured event: the kind of move, who made it, whose cards it touched, and which cards to light up. Card IDs travel with it and ranks never do. |
@@ -177,8 +177,8 @@ First time players get a short walkthrough and a **How to play** sheet that open
 ## How to Play
 
 1. **Create a table and share the code.** Four seats are available, and bots fill any empty seats when the round starts.
-2. **Say you are ready.** The seats are set, the bots say yes at once, and nothing is dealt until the last seat is in.
-3. **Remember your opening cards.** Everyone gets four face down cards in a 2 by 2 grid. The deck is shuffled and dealt, and only then does a five second window show you your bottom two.
+2. **Say you are ready.** Your four cards are already dealt, face down. The bots say yes at once, and nothing is shown to anyone until the last seat is in.
+3. **Remember your opening cards.** Once the table is ready, a five second window shows everyone their own bottom two, all at the same time.
 4. **Draw on your turn.** Place the drawn card on the pile to activate its power, or swap it into any hand at the table, your own or someone else's.
 5. **Watch for sticks.** If you believe a card matches the top of the pile, stick it. Sticking is open to every seat at every moment, your own turn included; where the turn already owns the click, the table arms the stick first.
 6. **Call Cambio.** Call at the start of your turn instead of drawing. Everyone else gets one more turn before scoring.

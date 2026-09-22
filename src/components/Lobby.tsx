@@ -53,7 +53,7 @@ export function Lobby({
               <Button variant="primary" size="lg" disabled={busy} onClick={onStart}>Start round</Button>
               <p className="t-footnote text-ink-3">
                 {open === 0 ? "All four seats are taken." : open === 1 ? "One bot will fill the last seat." : `${open} bots will fill the empty seats.`}
-                {" "}Nothing is dealt until every seat says ready.
+                {" "}Starting deals the cards; the round itself waits on every seat to say ready.
               </p>
             </>
           ) : (
