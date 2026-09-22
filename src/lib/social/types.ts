@@ -31,7 +31,8 @@ export interface Profile extends ProfileStats {
 
 /** Where a friend is playing right now. */
 export interface LiveGame {
-  code: string;
+  tableId: string;
+  together: boolean;
   phase: string;
   openSeats: number;
 }
@@ -67,9 +68,27 @@ export interface PendingFriend {
 export interface Invite {
   id: string;
   code: string;
+  tableId: string;
+  at: string;
+  from: { id: string; handle: string; displayName: string };
+  requested: boolean;
+}
+
+export interface TableJoinRequest {
+  id: string;
+  tableId: string;
   at: string;
   from: { id: string; handle: string; displayName: string };
 }
+
+export interface SentJoinRequest {
+  id: string;
+  tableId: string;
+  toId: string;
+  status: "pending" | "declined";
+}
+
+export type JoinRequestOutcome = { ok: true } | { ok: false; message: string };
 
 export interface Opponent {
   id: string;
@@ -97,6 +116,8 @@ export interface Social {
   invites: Invite[];
   /** invites you have sent and are waiting on */
   sent: SentInvite[];
+  joinRequests: TableJoinRequest[];
+  sentJoinRequests: SentJoinRequest[];
   opponents: Opponent[];
 }
 

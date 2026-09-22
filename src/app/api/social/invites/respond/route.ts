@@ -40,6 +40,11 @@ export async function POST(req: Request) {
       return ok({ answer: { ok: true, code: invite.code, seat: seated.token ? { playerId: seated.id, token: seated.token, name: seated.name } : null } satisfies InviteAnswer });
     }
 
+    if (!row.state.players.some((p) => p.profileId === invite.from.id && !p.isBot)) {
+      await respondToInvite(me.id, body.inviteId, false);
+      return refuse("expired", "Your friend has left that table. Ask for a new invitation.");
+    }
+
     // One seat at a time: leave the table you are at before taking another.
     const where = await presenceOf(me.id);
     if (where.code && where.code !== invite.code) {

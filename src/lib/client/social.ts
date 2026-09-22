@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { InviteAnswer, InviteOutcome, Profile, Social } from "@/lib/social/types";
+import type { InviteAnswer, InviteOutcome, JoinRequestOutcome, Profile, Social } from "@/lib/social/types";
 import { callProfile, profileGeneration, saveStoredProfile, storedProfile, useStoredProfile } from "./profile";
 
 /**
@@ -16,7 +16,7 @@ const POLL_MS = 10_000;
 /** Three of these inside the 75 seconds the server calls a row stale. */
 const PRESENCE_BEAT_MS = 25_000;
 
-export const EMPTY_SOCIAL: Social = { friends: [], incoming: [], outgoing: [], invites: [], sent: [], opponents: [] };
+export const EMPTY_SOCIAL: Social = { friends: [], incoming: [], outgoing: [], invites: [], sent: [], joinRequests: [], sentJoinRequests: [], opponents: [] };
 
 export interface SocialHook {
   profile: Profile | null;
@@ -29,6 +29,8 @@ export interface SocialHook {
   remove: (profileId: string) => Promise<void>;
   invite: (profileId: string, code: string) => Promise<InviteOutcome>;
   answerInvite: (inviteId: string, accept: boolean) => Promise<InviteAnswer>;
+  askToJoin: (profileId: string, tableId: string) => Promise<JoinRequestOutcome>;
+  answerJoinRequest: (requestId: string, accept: boolean) => Promise<JoinRequestOutcome>;
 }
 
 /** What the last read returned, tagged with the profile it was read for. */
@@ -129,16 +131,26 @@ export function useSocial(): SocialHook {
     }
   }, [refresh]);
 
+  const joinRequest = useCallback(async (path: string, body: object): Promise<JoinRequestOutcome> => {
+    try {
+      const res = await callProfile<{ outcome: JoinRequestOutcome }>(path, { method: "POST", body: JSON.stringify(body) });
+      await refresh();
+      return res.outcome;
+    } catch (e) {
+      return { ok: false, message: e instanceof Error ? e.message : "Could not update that request." };
+    }
+  }, [refresh]);
+  const askToJoin = useCallback((profileId: string, tableId: string) =>
+    joinRequest("/api/social/join-requests", { profileId, tableId }), [joinRequest]);
+  const answerJoinRequest = useCallback((requestId: string, accept: boolean) =>
+    joinRequest("/api/social/join-requests/respond", { requestId, accept }), [joinRequest]);
+
   return useMemo(
-    () => ({ profile, social, loading, error, refresh, addFriend, respond, remove, invite, answerInvite }),
-    [profile, social, loading, error, refresh, addFriend, respond, remove, invite, answerInvite],
+    () => ({ profile, social, loading, error, refresh, addFriend, respond, remove, invite, answerInvite, askToJoin, answerJoinRequest }),
+    [profile, social, loading, error, refresh, addFriend, respond, remove, invite, answerInvite, askToJoin, answerJoinRequest],
   );
 }
 
-/**
- * Tells the server which table this browser is sitting at, so friends can see
- * the game and join an open seat. Clears itself when the page goes away.
- */
 /**
  * Tells the server where this browser is, so friends can see it: a table code
  * while seated at one, null while just about. Called from every page, so

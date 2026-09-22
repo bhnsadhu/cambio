@@ -22,7 +22,7 @@ export async function POST(req: Request) {
       return ok({ ok: true });
     }
     const row = await loadByCode(code);
-    if (!row) {
+    if (!row || !row.state.players.some((p) => p.profileId === me.id && !p.isBot)) {
       await setPresence(me.id, null, null, 0);
       return ok({ ok: true });
     }

@@ -6,14 +6,12 @@ import { useState, type FormEvent } from "react";
 import type { SocialHook } from "@/lib/client/social";
 import { saveSession } from "@/lib/client/session";
 import type { Friend } from "@/lib/social/types";
-import { Button, Pip, PresenceDot, inputClass, presenceOf } from "./ui";
+import { Button, PresenceDot, inputClass, presenceOf } from "./ui";
 
 /**
  * Friends, the requests either way, and what each of them is doing right now.
  *
- * A friend who is at a table shows it, and if that table still has a seat the
- * button says so — the whole point of knowing who is playing is being able to
- * sit down with them.
+ * A friend's presence is an opportunity to ask, not permission to take a seat.
  */
 export function FriendsPanel({
   social,
@@ -145,8 +143,7 @@ function FriendRow({ friend, social, inviteCode, atThisTable = false }: { friend
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const live = friend.playing;
-  const here = atThisTable || (!!live && !!inviteCode && live.code === inviteCode);
-  const canJoin = !!live && !here && live.openSeats > 0;
+  const here = atThisTable || !!live?.together;
   const asked = social.social.sent.some((s) => s.toId === friend.id && s.code === inviteCode);
   // You can only ask someone who is free to be asked: not already at this
   // table, not sitting at another one.
@@ -157,7 +154,7 @@ function FriendRow({ friend, social, inviteCode, atThisTable = false }: { friend
     setBusy(true);
     setNote(null);
     const outcome = await social.invite(friend.id, inviteCode);
-    setNote(outcome.ok ? `Asked ${friend.displayName}.` : outcome.message);
+    setNote(outcome.ok ? null : outcome.message);
     setBusy(false);
   };
 
@@ -173,9 +170,9 @@ function FriendRow({ friend, social, inviteCode, atThisTable = false }: { friend
             {here
               ? <>At this table with you</>
               : live
-                ? canJoin
-                  ? <>At table {live.code} · seat open</>
-                  : <>At table {live.code} · {live.phase === "lobby" ? "filling up" : "mid round"}</>
+                ? live.openSeats > 0
+                  ? <>At a table · seat open</>
+                  : <>{live.phase === "lobby" ? "Table full" : "Playing a round"}</>
                 : friend.online
                   ? <>Online</>
                   : friend.playedTogether > 0
@@ -184,14 +181,10 @@ function FriendRow({ friend, social, inviteCode, atThisTable = false }: { friend
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          {canJoin ? (
-            <Link href={`/g/${live!.code}`}><Button size="sm" variant="accent">Join</Button></Link>
-          ) : live && !here ? (
-            <Link href={`/g/${live.code}`}><Button size="sm" variant="ghost">Watch</Button></Link>
-          ) : null}
+          {live && !here ? <AskToJoin friend={friend} social={social} /> : null}
           {invitable ? (
             <Button size="sm" variant={asked ? "ghost" : "secondary"} disabled={busy || asked} onClick={invite}>
-              {asked ? "Asked" : busy ? "Asking" : "Invite"}
+              {asked ? "Invited" : busy ? "Inviting" : "Invite"}
             </Button>
           ) : null}
         </div>
@@ -201,11 +194,32 @@ function FriendRow({ friend, social, inviteCode, atThisTable = false }: { friend
   );
 }
 
-/**
- * The corner of the screen that knows things: a friend has asked you to a
- * table, or a friend is playing one with a seat still open. Quiet when there
- * is nothing to say.
- */
+/** The same request action on a friend's row and their public profile. */
+export function AskToJoin({ friend, social }: { friend: Friend; social: SocialHook }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const live = friend.playing;
+  if (!live || live.together || live.openSeats === 0) return null;
+  const request = social.social.sentJoinRequests.find((r) => r.toId === friend.id && r.tableId === live.tableId);
+  const invited = social.social.invites.some((i) => i.tableId === live.tableId);
+  const pending = request?.status === "pending";
+  const ask = async () => {
+    setBusy(true);
+    setError(null);
+    const outcome = await social.askToJoin(friend.id, live.tableId);
+    if (!outcome.ok) setError(outcome.message);
+    setBusy(false);
+  };
+  return <div className="flex max-w-[200px] flex-col items-end gap-1.5">
+    <Button size="sm" variant="secondary" disabled={busy || pending || invited} onClick={() => void ask()}>
+      {invited ? "Invited" : pending ? "Request sent" : busy ? "Asking" : "Ask to join"}
+    </Button>
+    {request?.status === "declined" ? <p className="t-footnote text-ink-3">Request declined</p> : null}
+    {error ? <p role="alert" className="t-footnote text-accent-ink">{error}</p> : null}
+  </div>;
+}
+
+/** Invitations and requests need a decision; passive activity stays in Friends. */
 export function Notifications({ social, atCode = null }: { social: SocialHook; atCode?: string | null }) {
   const router = useRouter();
   const [dismissed, setDismissed] = useState<string[]>([]);
@@ -213,10 +227,8 @@ export function Notifications({ social, atCode = null }: { social: SocialHook; a
   const [answering, setAnswering] = useState<string | null>(null);
   // Nothing to say about the table you are already looking at.
   const invites = social.social.invites.filter((i) => !dismissed.includes(i.id) && i.code !== atCode);
-  const live = social.social.friends.filter(
-    (f) => f.playing && f.playing.code !== atCode && !dismissed.includes(`live:${f.playing.code}:${f.id}`),
-  );
-  if (!invites.length && !live.length) return null;
+  const requests = social.social.joinRequests;
+  if (!invites.length && !requests.length) return null;
 
   /**
    * Accepting takes the seat on the server and comes back with it, so the
@@ -236,24 +248,49 @@ export function Notifications({ social, atCode = null }: { social: SocialHook; a
     router.push(`/g/${answer.code}`);
   };
 
+  const answerRequest = async (requestId: string, accept: boolean) => {
+    setAnswering(requestId);
+    const outcome = await social.answerJoinRequest(requestId, accept);
+    setAnswering(null);
+    if (!outcome.ok) setTrouble((t) => ({ ...t, [requestId]: outcome.message }));
+  };
+
+  const declineInvite = async (inviteId: string) => {
+    setAnswering(inviteId);
+    const answer = await social.answerInvite(inviteId, false);
+    setAnswering(null);
+    if (answer.ok) setDismissed((d) => [...d, inviteId]);
+    else setTrouble((t) => ({ ...t, [inviteId]: answer.message }));
+  };
+
   return (
-    <div className="fixed bottom-6 right-6 z-40 flex w-[290px] flex-col gap-2">
+    <div className="fixed bottom-6 right-6 z-40 flex max-h-[70vh] w-[290px] max-w-[calc(100vw-3rem)] flex-col gap-2 overflow-y-auto" aria-label="Table invitations and requests">
+      {requests.map((request) => (
+        <div key={request.id} role="region" aria-label={`Join request from ${request.from.displayName}`} className="animate-rise rounded-[18px] bg-surface-2 p-3.5 shadow-float hairline-strong">
+          <p className="t-sub"><span className="font-semibold">{request.from.displayName}</span> asked to join your table.</p>
+          {trouble[request.id] ? <p role="alert" className="t-footnote mt-1.5 text-accent-ink">{trouble[request.id]}</p> : null}
+          <div className="mt-2.5 flex gap-1.5">
+            <Button size="sm" variant="accent" disabled={answering !== null} onClick={() => void answerRequest(request.id, true)}>Accept</Button>
+            <Button size="sm" variant="ghost" disabled={answering !== null} onClick={() => void answerRequest(request.id, false)}>Decline</Button>
+          </div>
+        </div>
+      ))}
       {invites.map((invite) => (
-        <div key={invite.id} className="animate-rise rounded-[18px] bg-surface-2 p-3.5 shadow-float hairline-strong">
+        <div key={invite.id} role="region" aria-label={`Table invitation from ${invite.from.displayName}`} className="animate-rise rounded-[18px] bg-surface-2 p-3.5 shadow-float hairline-strong">
           <p className="t-sub">
-            <span className="font-semibold">{invite.from.displayName}</span> asked you to table{" "}
+            <span className="font-semibold">{invite.from.displayName}</span>{invite.requested ? " accepted your request to join table " : " invited you to table "}
             <span className="tnum font-semibold tracking-[0.06em]">{invite.code}</span>.
           </p>
           {trouble[invite.id] ? <p className="t-footnote mt-1.5 text-accent-ink">{trouble[invite.id]}</p> : null}
           <div className="mt-2.5 flex gap-1.5">
-            <Button size="sm" variant="accent" disabled={answering === invite.id} onClick={() => void accept(invite.id)}>
+            <Button size="sm" variant="accent" disabled={answering !== null} onClick={() => void accept(invite.id)}>
               {answering === invite.id ? "Taking a seat" : "Join"}
             </Button>
             <Button
               size="sm"
               variant="ghost"
-              disabled={answering === invite.id}
-              onClick={() => { setDismissed((d) => [...d, invite.id]); void social.answerInvite(invite.id, false); }}
+              disabled={answering !== null}
+              onClick={() => void declineInvite(invite.id)}
             >
               No thanks
             </Button>
@@ -261,22 +298,6 @@ export function Notifications({ social, atCode = null }: { social: SocialHook; a
         </div>
       ))}
 
-      {live.map((f) => (
-        <div key={f.id} className="animate-rise rounded-[18px] bg-surface-2 p-3.5 shadow-float hairline">
-          <p className="t-sub inline-flex items-center gap-2">
-            <Pip />
-            <span><span className="font-semibold">{f.displayName}</span> is at table <span className="tnum font-semibold tracking-[0.06em]">{f.playing!.code}</span>.</span>
-          </p>
-          <div className="mt-2.5 flex items-center gap-1.5">
-            <Link href={`/g/${f.playing!.code}`}>
-              <Button size="sm" variant={f.playing!.openSeats > 0 ? "accent" : "secondary"}>
-                {f.playing!.openSeats > 0 ? `Take a seat (${f.playing!.openSeats} open)` : "Watch"}
-              </Button>
-            </Link>
-            <Button size="sm" variant="ghost" onClick={() => setDismissed((d) => [...d, `live:${f.playing!.code}:${f.id}`])}>Hide</Button>
-          </div>
-        </div>
-      ))}
     </div>
   );
 }

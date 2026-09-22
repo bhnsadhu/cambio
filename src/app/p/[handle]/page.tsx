@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
-import { Notifications } from "@/components/Friends";
+import { AskToJoin, Notifications } from "@/components/Friends";
 import { AccountLink, ProfileCard } from "@/components/Profile";
 import { Button, Wordmark } from "@/components/ui";
 import { callProfile, useAccountReady } from "@/lib/client/profile";
@@ -68,14 +68,10 @@ export default function PlayerPage({ params }: { params: Promise<{ handle: strin
           {friend?.playing ? (
             <div className="flex items-center justify-between gap-3 rounded-panel bg-surface-2 px-5 py-4 hairline">
               <p className="t-sub">
-                Playing table <span className="tnum font-semibold tracking-[0.06em]">{friend.playing.code}</span> right now
+                {friend.playing.together ? "At your table" : "Playing at a table"}
                 {friend.playing.openSeats > 0 ? <> · {friend.playing.openSeats} {friend.playing.openSeats === 1 ? "seat" : "seats"} open</> : null}
               </p>
-              <Link href={`/g/${friend.playing.code}`}>
-                <Button variant={friend.playing.openSeats > 0 ? "accent" : "secondary"} size="sm">
-                  {friend.playing.openSeats > 0 ? "Take a seat" : "Watch"}
-                </Button>
-              </Link>
+              <AskToJoin friend={friend} social={social} />
             </div>
           ) : null}
           <div className="flex items-center gap-2">
