@@ -141,6 +141,7 @@ test("complete account lifecycle preserves identity and closes revoked sessions"
   const preLogoutCookie = (await context.cookies()).find((c) => c.name === "cambio_session")!;
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(`${origin}/`);
+  await expect(page.getByRole("status")).toContainText("You are signed out");
   expect((await context.request.post(`/api/games/${seat.code}/actions`, { headers: { origin, "x-cambio-token": seat.token }, data: { actionId: crypto.randomUUID(), action: { type: "start" } } })).status()).toBe(401);
   expect((await context.request.get("/api/account", { headers: { cookie: `cambio_session=${preLogoutCookie.value}` } })).ok()).toBeTruthy();
   expect((await (await context.request.get("/api/account", { headers: { cookie: `cambio_session=${preLogoutCookie.value}` } })).json()).profile).toBeNull();
@@ -167,6 +168,7 @@ test("complete account lifecycle preserves identity and closes revoked sessions"
   await deletion.getByLabel("Current password", { exact: true }).fill(nextPassword);
   await deletion.getByRole("button", { name: "Permanently delete account" }).click();
   await expect(page).toHaveURL(`${origin}/`);
+  await expect(page.getByRole("status")).toHaveText("Your account was deleted.");
   expect((await post(context, "/api/account/login", { username: nextUsername, password: nextPassword })).status()).toBe(401);
   expect((await (await otherDevice.request.get("/api/account")).json()).profile).toBeNull();
   expect((await context.request.get(`/api/profile/${nextUsername}`)).status()).toBe(404);
@@ -256,7 +258,8 @@ test("account access, tables, and help keep clear copy and responsive settings",
   const username = `layout${suffix()}`;
   expect((await post(context, "/api/account", { username, displayName: "Casey ONeil", password: firstPassword })).status()).toBe(201);
   await page.goto("/");
-  await expect(page.getByLabel("Display name", { exact: true }).first()).toHaveValue("Casey ONeil");
+  await expect(page.getByRole("form", { name: "Table setup" })).toContainText("Playing as Casey ONeil");
+  await expect(page.getByLabel("Display name", { exact: true })).toHaveCount(0);
   await noPunctuationDashes(page);
   await page.getByRole("button", { name: "Open a table", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "How Cambio works" })).toBeVisible();

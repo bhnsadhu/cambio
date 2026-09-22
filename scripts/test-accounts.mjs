@@ -37,7 +37,9 @@ try {
   docker(['run', '-d', '--name', db, '-e', 'POSTGRES_PASSWORD=cambio-local-test', '-p', '127.0.0.1::5432', 'postgres:17-alpine']);
   let databaseReady = false;
   for (let attempt = 0; attempt < 100; attempt++) {
-    try { docker(['exec', db, 'pg_isready', '-U', 'postgres']); databaseReady = true; break; } catch { await pause(200); }
+    // The image briefly starts a socket-only server during initialization.
+    // TCP readiness waits for the final server, after that restart is over.
+    try { docker(['exec', db, 'pg_isready', '-h', '127.0.0.1', '-U', 'postgres']); databaseReady = true; break; } catch { await pause(200); }
   }
   if (!databaseReady) throw new Error('The isolated database did not start.');
   query('create role anon; create role authenticated; create publication supabase_realtime;');

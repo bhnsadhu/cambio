@@ -77,7 +77,7 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
   const [deletePassword, setDeletePassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
-  const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(null);
+  const [notice, setNotice] = useState<{ kind: string; text: string; error: boolean } | null>(null);
   const edit = (next: Editor | null) => {
     setDisplayName(null); setUsername(null); setUsernamePassword("");
     setCurrentPassword(""); setPassword(""); setConfirmPassword("");
@@ -91,27 +91,27 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
       const text = await work();
       setEditing(null);
       requestAnimationFrame(() => changeButtons.current[kind as Editor]?.focus({ preventScroll: true }));
-      setNotice({ text, error: false });
+      setNotice({ kind, text, error: false });
     }
-    catch (error) { setNotice({ text: errorText(error), error: true }); }
+    catch (error) { setNotice({ kind, text: errorText(error), error: true }); }
     finally { setBusy(null); }
   };
   const noticeRef = useRef<HTMLParagraphElement>(null);
   useEffect(() => { if (notice) noticeRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }); }, [notice]);
-  const change = (kind: Editor, label: string) => (
-    <Button ref={(button) => { changeButtons.current[kind] = button; }} type="button" size="sm" className="shrink-0" aria-label={`Change ${label}`} aria-expanded={editing === kind} aria-controls={editing === kind ? `${kind}-form` : undefined} disabled={!!busy} onClick={() => edit(editing === kind ? null : kind)}>Change</Button>
-  );
+  const feedback = (kind: string) => notice?.kind === kind ? <p ref={noticeRef} role={notice.error ? "alert" : "status"} className={`t-sub mt-4 ${notice.error ? "text-red" : "text-accent"}`}>{notice.text}</p> : null;
+  const change = (kind: Editor, label: string) => editing !== kind ? (
+    <Button ref={(button) => { changeButtons.current[kind] = button; }} type="button" size="sm" className="shrink-0" aria-label={`Change ${label}`} disabled={!!busy} onClick={() => edit(kind)}>Change</Button>
+  ) : null;
   const cancel = <Button type="button" variant="ghost" disabled={!!busy} onClick={() => edit(null)}>Cancel</Button>;
   const row = "flex items-start justify-between gap-4";
   const formClass = "mt-5 flex flex-col gap-4";
   const actions = "flex flex-wrap gap-2";
   return (
     <div className="flex flex-col gap-5" aria-label="Account settings">
-      {notice ? <p ref={noticeRef} role={notice.error ? "alert" : "status"} className={`t-sub rounded-[16px] p-4 ${notice.error ? "bg-surface-2 text-red" : "bg-accent-soft text-accent"}`}>{notice.text}</p> : null}
       <div className="divide-y divide-ink/10 rounded-panel bg-surface hairline">
         <section className="p-6" aria-labelledby="display-name-heading">
           <div className={row}>
-            <div className="min-w-0"><h2 id="display-name-heading" className="t-headline">Display name</h2><p className="t-body mt-1 break-words">{stored.profile.displayName}</p></div>
+            <div className="min-w-0"><h2 id="display-name-heading" className="t-headline">Display name</h2>{editing !== "name" ? <p className="t-body mt-1 break-words">{stored.profile.displayName}</p> : null}</div>
             {change("name", "display name")}
           </div>
           <p className="t-sub mt-2 text-ink-2">The name players see at the table.</p>
@@ -122,10 +122,11 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
             <Field label="Display name"><input autoFocus className={inputClass} name="displayName" value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoComplete="nickname" maxLength={18} required disabled={!!busy} /></Field>
             <div className={actions}><Button type="submit" variant="primary" disabled={!!busy}>{busy === "name" ? "Saving" : "Save display name"}</Button>{cancel}</div>
           </form> : null}
+          {feedback("name")}
         </section>
         <section className="p-6" aria-labelledby="username-heading">
           <div className={row}>
-            <div className="min-w-0"><h2 id="username-heading" className="t-headline">Username</h2><p className="t-body mt-1 break-all">@{stored.username}</p></div>
+            <div className="min-w-0"><h2 id="username-heading" className="t-headline">Username</h2>{editing !== "username" ? <p className="t-body mt-1 break-all">@{stored.username}</p> : null}</div>
             {change("username", "username")}
           </div>
           <p className="t-sub mt-2 text-ink-2">Use it to log in. Friends use it to find and add you.</p>
@@ -139,6 +140,7 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
             <Field label="Current password"><input className={inputClass} name="currentPassword" type="password" value={usernamePassword} onChange={(event) => setUsernamePassword(event.target.value)} autoComplete="current-password" maxLength={128} required disabled={!!busy} /></Field>
             <div className={actions}><Button type="submit" variant="primary" disabled={!!busy}>{busy === "username" ? "Saving" : "Save username"}</Button>{cancel}</div>
           </form> : null}
+          {feedback("username")}
         </section>
         <section className="p-6" aria-labelledby="password-heading">
           <div className={row}>
@@ -157,6 +159,7 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
             <Field label="Confirm new password"><input className={inputClass} name="confirmPassword" type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" minLength={15} maxLength={128} required disabled={!!busy} /></Field>
             <div className={actions}><Button type="submit" variant="primary" disabled={!!busy}>{busy === "password" ? "Saving" : "Save password"}</Button>{cancel}</div>
           </form> : null}
+          {feedback("password")}
         </section>
       </div>
       <div className="divide-y divide-ink/10 rounded-panel bg-surface hairline">
@@ -164,6 +167,7 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
           <h2 className="t-headline">Sign out</h2>
           <p className="t-sub mt-2 text-ink-2">Sign out of this browser. Your stats and friends stay saved.</p>
           <Button className="mt-4" type="button" disabled={!!busy} onClick={() => void perform("logout", async () => { await signOut(); onExit(); return "Signed out."; })}>{busy === "logout" ? "Signing out" : "Sign out"}</Button>
+          {feedback("logout")}
         </section>
         <section className="p-6" aria-label="Delete account">
           <h2 className="t-headline">Delete account</h2>
@@ -174,6 +178,7 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
             <Field label="Type DELETE to confirm"><input className={inputClass} name="confirmation" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} autoComplete="off" spellCheck={false} pattern="DELETE" required disabled={!!busy} /></Field>
             <div className={actions}><Button type="submit" className="bg-red text-white hover:bg-red/80" disabled={!!busy || confirmation !== "DELETE"}>{busy === "delete" ? "Deleting" : "Permanently delete account"}</Button>{cancel}</div>
           </form> : <Button ref={(button) => { changeButtons.current.delete = button; }} className="mt-4 text-red" type="button" disabled={!!busy} onClick={() => edit("delete")}>Delete account</Button>}
+          {feedback("delete")}
         </section>
       </div>
     </div>

@@ -25,7 +25,7 @@ export function HowToPlay({ open, onClose, onReplay }: { open: boolean; onClose:
   return (
     <div className="fixed inset-0 z-50 animate-fade" role="dialog" aria-modal aria-label="How to play">
       <button type="button" aria-label="Close" className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <aside className="absolute inset-y-0 right-0 flex w-[380px] flex-col bg-surface shadow-float" style={{ animation: "slide-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both" }}>
+      <aside className="absolute inset-y-0 right-0 flex w-[380px] max-w-full flex-col bg-surface shadow-float" style={{ animation: "slide-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both" }}>
         <header className="flex items-center justify-between px-6 pt-5 pb-4">
           <h2 className="t-headline">How to play</h2>
           <Button variant="ghost" size="sm" onClick={onClose}>Close</Button>
@@ -40,7 +40,7 @@ export function HowToPlay({ open, onClose, onReplay }: { open: boolean; onClose:
             </section>
           ))}
           <div className="border-t border-line pt-5">
-            <Button variant="secondary" size="sm" onClick={onReplay}>Show the walkthrough again</Button>
+            <Button variant="secondary" size="sm" onClick={onReplay}>Show walkthrough</Button>
           </div>
         </div>
       </aside>

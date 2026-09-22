@@ -129,6 +129,10 @@ The account page provides display name, username, and password changes, plus sep
 
 Existing browser profiles can add credentials without changing their profile ID. After upgrading, the old browser key no longer grants access. A profile whose original browser key was already lost cannot be claimed by name alone.
 
+The play screen has one table setup form: choose a new table or enter a code, use your saved display name or enter a guest name, then take a seat. Friends live beside that form and can be invited from the lobby. The full record lives on the public profile page. Account settings contain only account details and session controls.
+
+Login and signup share `/login`. A validated `next` destination returns players to the table, profile, or account screen they came from. A guest name and a complete table code carry into signup from table setup. Account settings preserve a link back to the originating screen. Successful sign out and deletion return to the play screen with a dismissible confirmation. The walkthrough appears automatically only on the first table visit in that browser and can be reopened from How to play.
+
 | Piece | What it does |
 | --- | --- |
 | **The record** | Every scored round is written into each seated profile: rounds played and won, total and best hand, tables, Cambio calls and the ones that stuck, sticks landed and missed, current and best streak. |

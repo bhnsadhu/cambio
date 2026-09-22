@@ -217,7 +217,7 @@ function JoinForm({ code, onJoined }: { code: string; onJoined: (s: { playerId: 
         {error ? <p className="t-sub text-accent-ink">{error}</p> : null}
         <Button type="submit" variant="primary" size="lg" disabled={!accountReady || busy || !name.trim()}>{busy ? "Taking a seat" : "Take a seat"}</Button>
       </form>
-      {accountReady && !profile ? <p className="t-sub mt-5 text-ink-2">Have an account? <Link href={loginHref(`/g/${code}`)} className="text-ink underline underline-offset-4">Log in before joining</Link></p> : null}
+      {accountReady && !profile ? <p className="t-sub mt-5 text-ink-2">Have an account? <Link href={loginHref(`/g/${code}`)} onClick={() => storeName(name.trim())} className="text-ink underline underline-offset-4">Log in before joining</Link></p> : null}
     </div>
   );
 }

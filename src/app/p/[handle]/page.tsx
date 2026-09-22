@@ -51,7 +51,7 @@ export default function PlayerPage({ params }: { params: Promise<{ handle: strin
     <main className="mx-auto min-h-screen w-full max-w-[620px] px-8 pb-20">
       <header className="flex h-14 items-center justify-between">
         <Link href="/" aria-label="Cambio home"><Wordmark /></Link>
-        {social.profile ? <AccountLink from={`/p/${handle}`} /> : <Link href="/" className="t-sub text-ink-2 hover:text-ink">Back to play</Link>}
+        {social.profile ? <AccountLink from={state?.relation === "self" ? "record" : `/p/${handle}`} /> : <Link href="/" className="t-sub text-ink-2 hover:text-ink">Back to play</Link>}
       </header>
 
       {error ? (

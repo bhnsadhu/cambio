@@ -13,6 +13,7 @@ let cache: StoredProfile | null | undefined;
 let ready = false;
 let generation = 0;
 let pending: Promise<Profile | null> | null = null;
+let accountNotice: string | null = null;
 const listeners = new Set<() => void>();
 function emit() { for (const listener of listeners) listener(); }
 function subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; }
@@ -44,6 +45,8 @@ export function saveStoredProfile(value: StoredProfile | null, forGeneration?: n
 }
 export function useStoredProfile() { return useSyncExternalStore(subscribe, read, () => null); }
 export function useAccountReady() { return useSyncExternalStore(subscribe, () => ready, () => false); }
+export function useAccountNotice() { return useSyncExternalStore(subscribe, () => accountNotice, () => null); }
+export function dismissAccountNotice() { accountNotice = null; emit(); }
 
 export async function callProfile<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = profileToken();
@@ -62,6 +65,7 @@ export async function callProfile<T>(path: string, init: RequestInit = {}): Prom
 interface AccountResponse { profile: Profile; username: string; warning?: string | null }
 function rememberAccount(res: AccountResponse, gen: number) {
   if (gen !== generation) return;
+  accountNotice = null;
   if (read()?.profile.id !== res.profile.id) clearAllSessions();
   saveStoredProfile({ token: `account:${res.profile.id}`, profile: res.profile, username: res.username }, gen);
   storeName(res.profile.displayName);
@@ -84,12 +88,14 @@ export async function signOut() {
   ++generation;
   // Only clear the UI once the server has revoked the cookie session.
   await callProfile("/api/account/logout", { method: "POST" });
+  accountNotice = "You are signed out. Your stats and friends are saved.";
   saveStoredProfile(null);
   storeName("");
 }
 export async function deleteAccount(currentPassword: string, confirmation: string) {
   ++generation;
   await callProfile("/api/account", { method: "DELETE", body: JSON.stringify({ currentPassword, confirmation }) });
+  accountNotice = "Your account was deleted.";
   saveStoredProfile(null);
   storeName("");
 }

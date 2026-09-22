@@ -20,7 +20,7 @@ export function ProfileCard({ profile, compact = false }: { profile: Profile; co
       <header className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="t-caption text-accent">{standing.tier.name}</p>
-          <h2 className="t-title2 mt-1 truncate">{profile.displayName}</h2>
+          <h1 className="t-title2 mt-1 truncate">{profile.displayName}</h1>
           <p className="t-footnote mt-0.5 text-ink-3">@{profile.handle}</p>
         </div>
         <Chip tone="neutral">{standingLine(profile)}</Chip>

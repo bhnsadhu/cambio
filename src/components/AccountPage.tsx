@@ -24,7 +24,8 @@ export function AccountPage({ back }: { back: string }) {
     return () => window.clearInterval(timer);
   }, [stored?.username]);
   const exit = () => { exited.current = true; router.replace("/"); };
-  const destination = back === "/me" ? "/" : back;
+  // Returning to your own record follows a username change made here.
+  const destination = back === "record" ? stored ? `/p/${stored.profile.handle}` : "/" : back === "/me" ? "/" : back;
   return (
     <main className="mx-auto min-h-screen w-full max-w-[1080px] px-5 pb-16 sm:px-8">
       <header className="flex h-16 items-center justify-between gap-3">
