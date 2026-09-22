@@ -34,14 +34,19 @@ export interface BotPlan {
 /** Average value of an unknown card in a 54-card Cambio deck. */
 const UNKNOWN_VALUE = 5.5;
 
-/** How long each difficulty takes over a decision, against the house pace. */
+/**
+ * How long each difficulty takes over a decision, against the house pace.
+ * The pace itself (the windows below) is set for a human to actually watch:
+ * a beat before a bot moves, and a beat between one bot's move and the next,
+ * rather than the table flashing through a whole turn at once.
+ */
 const PACE: Record<BotDifficulty, number> = { easy: 1.35, medium: 1, hard: 0.7 };
 
-/** How fast a stick comes, by difficulty. Hard beats a human to it. */
+/** How fast a stick comes, by difficulty. Hard still beats a human to it, but not unreadably. */
 const STICK_MS: Record<BotDifficulty, [number, number]> = {
-  easy: [2400, 4200],
-  medium: [1300, 2600],
-  hard: [650, 1300],
+  easy: [3200, 5200],
+  medium: [2000, 3400],
+  hard: [1200, 2100],
 };
 
 export type Jitter = (intent: string) => number; // [0,1)
@@ -114,6 +119,12 @@ export function planBots(state: GameState, now: number, jitter: Jitter): BotPlan
     const from = state.players.find((p) => p.id === g.from);
     if (from && !from.isBot && g.since !== undefined) due = due === null ? g.since + TURN_TIMEOUT_MS : Math.min(due, g.since + TURN_TIMEOUT_MS);
   }
+  // A card still on the table matching the pile holds the final round open
+  // for a beat; if nobody (human or bot) claims it, someone still has to
+  // close the window out once it lapses.
+  if (state.phase === "final" && state.stickWindowUntil !== null) {
+    due = due === null ? state.stickWindowUntil : Math.min(due, state.stickWindowUntil);
+  }
   if (due !== null) {
     plans.push({ playerId: reporter.id, action: { type: "timeout" }, delayMs: Math.max(0, due - now), intent: `timeout:${due}` });
   }
@@ -128,7 +139,7 @@ export function planBots(state: GameState, now: number, jitter: Jitter): BotPlan
       const cardId = pickGive(state, brain);
       if (cardId) {
         const intent = `${bot.id}:give:${give.to}:${state.turnsTaken}`;
-        plans.push({ playerId: bot.id, action: { type: "give", cardId }, delayMs: ms(1500, 2200, jitter(intent), pace), intent });
+        plans.push({ playerId: bot.id, action: { type: "give", cardId }, delayMs: ms(2200, 3200, jitter(intent), pace), intent });
       }
       continue;
     }
@@ -138,7 +149,7 @@ export function planBots(state: GameState, now: number, jitter: Jitter): BotPlan
     if (pp && pp.playerId === bot.id) {
       const action = resolvePower(state, brain);
       const intent = `${bot.id}:power:${pp.kind}:${pp.looked ? "decide" : "look"}:${state.turnsTaken}`;
-      plans.push({ playerId: bot.id, action, delayMs: ms(1900, 2800, jitter(intent), pace), intent });
+      plans.push({ playerId: bot.id, action, delayMs: ms(2600, 3800, jitter(intent), pace), intent });
       continue;
     }
 
@@ -158,15 +169,15 @@ export function planBots(state: GameState, now: number, jitter: Jitter): BotPlan
       if (t.stage === "draw") {
         if (shouldCallCambio(state, brain)) {
           const intent = `${bot.id}:cambio:${state.turnsTaken}`;
-          plans.push({ playerId: bot.id, action: { type: "callCambio" }, delayMs: ms(2100, 3000, jitter(intent), pace), intent });
+          plans.push({ playerId: bot.id, action: { type: "callCambio" }, delayMs: ms(2800, 4000, jitter(intent), pace), intent });
         } else {
           const intent = `${bot.id}:draw:${state.turnsTaken}`;
-          plans.push({ playerId: bot.id, action: { type: "draw" }, delayMs: ms(1600, 2500, jitter(intent), pace), intent });
+          plans.push({ playerId: bot.id, action: { type: "draw" }, delayMs: ms(2200, 3400, jitter(intent), pace), intent });
         }
       } else if (t.stage === "decide" && t.drawnCardId) {
         const action = decideDrawn(state, brain, state.cards[t.drawnCardId]);
         const intent = `${bot.id}:decide:${t.drawnCardId}`;
-        plans.push({ playerId: bot.id, action, delayMs: ms(2000, 3100, jitter(intent), pace), intent });
+        plans.push({ playerId: bot.id, action, delayMs: ms(2800, 4200, jitter(intent), pace), intent });
       }
     }
   }
