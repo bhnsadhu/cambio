@@ -18,7 +18,7 @@ Open the link, enter a display name, and press **Open a table**, then **Start ro
 | **Persistent accounts** | Wins, rank, best hand and streak across every table, with friends, invites and a light for whoever is playing right now. |
 | **Friends and global leaderboards** | Compare lifetime points with accepted friends or all players. Equal points share a rank, and your position stays visible even outside the current page. Guests can browse the global leaderboard. |
 | **Serverless architecture** | Runs on serverless functions and one Postgres database, with no dedicated game server. |
-| **Game and account tests** | Includes seeded bot versus bot tables played to the score, checking that every move is legal, no card is created or lost, and each difficulty beats the one below it. |
+| **90 tests, plus a browser suite** | Seeded bot versus bot tables played to the score, checking that every move is legal, no card is created or lost, and each difficulty beats the one below it. A Playwright suite covers the whole account lifecycle against an isolated database. |
 
 ---
 
@@ -260,6 +260,10 @@ supabase/migrations/0002_social.sql
 supabase/migrations/0003_presence_invites.sql
 supabase/migrations/0004_accounts.sql
 supabase/migrations/0005_usernames.sql
+supabase/migrations/0006_table_join_requests.sql
+supabase/migrations/0007_social_resends.sql
+supabase/migrations/0008_room_do_not_disturb.sql
+supabase/migrations/0009_leaderboard.sql
 ```
 
 Then store a server secret:
