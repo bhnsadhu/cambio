@@ -26,12 +26,14 @@ export interface PanelProps {
   inTheSpotlight: boolean;
   /** another player is holding a drawn card */
   holding: boolean;
+  /** during the ready check: null outside it, otherwise whether this seat is in */
+  ready: boolean | null;
   positions: Positions;
 }
 
-export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCard, cueFor, selectedCardId, onCard, revealed, hidden, spotlit, inTheSpotlight, holding, positions }: PanelProps) {
-  const ring = inTheSpotlight ? "ring-accent" : isCaller ? "ring-accent" : isTurn ? "ring-turn" : "hairline";
-  const surface = isTurn || inTheSpotlight ? "bg-surface-2" : "bg-surface";
+export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCard, cueFor, selectedCardId, onCard, revealed, hidden, spotlit, inTheSpotlight, holding, ready, positions }: PanelProps) {
+  const ring = inTheSpotlight ? "ring-accent" : isCaller ? "ring-accent" : ready === true ? "ring-accent" : isTurn ? "ring-turn" : "hairline";
+  const surface = isTurn || inTheSpotlight || ready === true ? "bg-surface-2" : "bg-surface";
   const stageText = isTurn
     ? turnStage === "draw" ? "to draw" : turnStage === "decide" ? "deciding" : turnStage === "power" ? "using a power" : ""
     : "";
@@ -45,7 +47,7 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            {isTurn ? <Pip /> : null}
+            {isTurn || ready === true ? <Pip /> : null}
             <h3 className="t-headline truncate">
               <span><PlayerName name={player.name} isBot={player.isBot} /></span>
             </h3>
@@ -55,6 +57,9 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
             {isMe ? " · " : ""}
             {player.isBot ? `House bot · ${player.difficulty ?? "medium"}` : player.isHost ? "Host" : "Player"}
             {stageText ? <span className="text-ink-2"> · {stageText}</span> : null}
+            {ready === null ? null : (
+              <span className={ready ? "text-accent" : "text-ink-2"}> · {ready ? "ready" : "not ready"}</span>
+            )}
           </p>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">

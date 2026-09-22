@@ -45,7 +45,8 @@ export function diffFlights(prev: PlayerView, next: PlayerView, me: string | nul
   const v = N.version;
   const specs: FlightSpec[] = [];
 
-  const dealt = N.phase === "peek" && (P.phase !== "peek" || N.round !== P.round);
+  // Cards land as the ready check opens, not as the peek does.
+  const dealt = N.phase === "ready" && (P.phase !== "ready" || N.round !== P.round);
   if (dealt) {
     let k = 0;
     for (let i = 0; i < 4; i++) {

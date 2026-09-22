@@ -16,19 +16,29 @@ describe("lobby", () => {
     const ready = act(t.state, t.hostId, { type: "start" }, ctx);
     expect(ready.players.map((p) => p.name)).toEqual(["Host", "P2", "Cameron", "Camila"]);
     expect(ready.players.filter((p) => p.isBot).map((p) => p.seat)).toEqual([2, 3]);
-    // Seats are set, but nothing is dealt until every seat says ready. The
-    // bots are in the moment the check opens.
+    // Starting deals: four cards each, face down, and *then* the table is
+    // asked whether it is ready. The bots are in the moment the cards land.
     expect(ready.phase).toBe("ready");
-    expect(ready.deck).toHaveLength(0);
+    expect(ready.deck.length).toBe(54 - 16);
+    for (const p of ready.players) expect(cardCount(p)).toBe(4);
     expect(ready.readyIds).toEqual(ready.players.filter((p) => p.isBot).map((p) => p.id));
+    // Nothing is shown to anyone yet: the peek has not opened.
+    expect(ready.openingPeekUntil).toBeNull();
+    expect(ready.reveals).toHaveLength(0);
     const half = act(ready, t.hostId, { type: "ready" }, ctx);
     expect(half.phase).toBe("ready");
+    expect(half.reveals).toHaveLength(0);
     // a second click from the same seat changes nothing
     expect(applyAction(half, { actionId: "r2", playerId: t.hostId, action: { type: "ready" } }, ctx).changed).toBe(false);
     const s = act(half, t.ids[1], { type: "ready" }, ctx);
+    // The last seat in opens the five second peek, for everyone at once.
     expect(s.phase).toBe("peek");
-    expect(s.deck.length).toBe(54 - 16);
-    for (const p of s.players) expect(cardCount(p)).toBe(4);
+    expect(s.openingPeekUntil).toBe(s.dealingUntil! + OPENING_PEEK_MS);
+    for (const human of [t.hostId, t.ids[1]]) {
+      const rev = s.reveals.find((r) => r.toPlayerId === human)!;
+      expect(rev.kind).toBe("opening");
+      expect(rev.cardIds).toEqual([player(s, human).hand[2], player(s, human).hand[3]]);
+    }
   });
 
   it("rejects a fifth human and bot names", () => {
@@ -645,9 +655,13 @@ describe("cambio and round end", () => {
     expect(s.phase).toBe("scoring");
     s = act(s, ids[3], { type: "playAgain" }, ctx);
     expect(s.round).toBe(2);
-    expect(s.phase).toBe("peek");
+    // Every round deals first and asks after: the next one opens on its own
+    // ready check, with the cards already down.
+    expect(s.phase).toBe("ready");
     expect(s.players.map((p) => p.id)).toEqual(ids);
     for (const p of s.players) expect(cardCount(p)).toBe(4);
+    s = readyAll(s, ids, ctx);
+    expect(s.phase).toBe("peek");
     ctx.tick(DEAL_MS + OPENING_PEEK_MS);
     s = act(s, hostId, { type: "advance" }, ctx);
     expect(s.turn?.playerId).toBe(ids[2]);
@@ -671,8 +685,11 @@ describe("cambio and round end", () => {
     s = act(s, hostId, { type: "playAgain" }, ctx);
     expect(s.phase).toBe("scoring"); // still waiting on the other human
     s = act(s, ids[1], { type: "playAgain" }, ctx);
-    expect(s.phase).toBe("peek");
+    // Dealt and waiting on the people again; the bots are already in.
+    expect(s.phase).toBe("ready");
     expect(s.round).toBe(2);
+    expect(s.readyIds.sort()).toEqual(bots.sort());
+    expect(readyAll(s, [hostId, ids[1]], ctx).phase).toBe("peek");
   });
 
   it("one player leaving takes the rest back to the lobby with the seats closed up", () => {
@@ -1009,10 +1026,11 @@ describe("ready check", () => {
     const ctx = makeCtx(41);
     const t = table(ctx, 2);
     let s = act(t.state, t.hostId, { type: "start" }, ctx);
-    expect(s.readyDeadline).toBe(ctx.now + READY_TIMEOUT_MS);
+    // The clock starts once the deal has landed, not while it is in the air.
+    expect(s.readyDeadline).toBe(ctx.now + DEAL_MS + READY_TIMEOUT_MS);
     s = act(s, t.hostId, { type: "ready" }, ctx);
-    // the other human is still reading the rules: nothing is dealt yet
-    ctx.tick(READY_TIMEOUT_MS - 1);
+    // the other human is still reading the rules: nobody has peeked yet
+    ctx.tick(DEAL_MS + READY_TIMEOUT_MS - 1);
     expect(applyAction(s, { actionId: "rt0", playerId: t.hostId, action: { type: "timeout" } }, ctx).changed).toBe(false);
     expect(s.phase).toBe("ready");
     ctx.tick(2);
@@ -1032,20 +1050,37 @@ describe("ready check", () => {
     expect(bots.map((p) => p.id).every((id) => s.readyIds.includes(id))).toBe(true);
     const plans = planBots(s, ctx.now, () => 0.5);
     expect(plans.map((p) => p.action.type)).toEqual(["timeout"]);
-    expect(plans[0].delayMs).toBe(READY_TIMEOUT_MS);
+    expect(plans[0].delayMs).toBe(DEAL_MS + READY_TIMEOUT_MS);
   });
 
-  it("nothing is dealt and no card exists until the last seat is in", () => {
+  it("the cards are dealt face down and shown to nobody until the last seat is in", () => {
     const ctx = makeCtx(43);
     const t = table(ctx, 3);
     const s = act(t.state, t.hostId, { type: "start" }, ctx);
-    expect(Object.keys(s.cards)).toHaveLength(0);
-    expect(s.players.every((p) => cardCount(p) === 0)).toBe(true);
+    // Dealt, but seen by no one: no reveals, no bot memory, no peek clock.
+    expect(Object.keys(s.cards)).toHaveLength(54);
+    expect(s.players.every((p) => cardCount(p) === 4)).toBe(true);
     expect(s.reveals).toHaveLength(0);
+    expect(s.botKnown).toEqual({});
+    expect(s.openingPeekUntil).toBeNull();
+    // A private view of a dealt-but-unready table shows a seat nothing.
+    expect(projectFor(s, 1, t.hostId, ctx.now).private!.reveals).toHaveLength(0);
+    // And the round has not begun: there is no turn to take.
+    expect(s.turn).toBeNull();
     expect(() => act(s, t.hostId, { type: "draw" }, ctx)).toThrow(/ready check/);
-    const dealtState = readyAll(s, t.ids, ctx);
-    expect(dealtState.phase).toBe("peek");
-    expect(Object.keys(dealtState.cards)).toHaveLength(54);
+
+    const peeking = readyAll(s, t.ids, ctx);
+    expect(peeking.phase).toBe("peek");
+    // Only now does anyone see anything, and only their own bottom two.
+    expect(projectFor(peeking, 2, t.hostId, ctx.now).private!.reveals).toHaveLength(1);
+    const bot = peeking.players.find((p) => p.isBot)!;
+    expect(peeking.botKnown[bot.id]).toEqual([bot.hand[2], bot.hand[3]]);
+    // The round itself only starts once the five seconds are up.
+    expect(peeking.turn).toBeNull();
+    ctx.tick(OPENING_PEEK_MS + DEAL_MS);
+    const playing = act(peeking, t.hostId, { type: "advance" }, ctx);
+    expect(playing.phase).toBe("playing");
+    expect(playing.turn).not.toBeNull();
   });
 
   it("a seat leaving the ready check stands the table back down", () => {

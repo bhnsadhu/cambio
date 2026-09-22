@@ -11,7 +11,6 @@ import { useStoredName } from "@/lib/client/useStoredName";
 import { PositionsProvider } from "@/lib/client/positions";
 import { setPref, usePrefs } from "@/lib/client/prefs";
 import { Lobby } from "./Lobby";
-import { ReadyCheck } from "./ReadyCheck";
 import { FriendsPanel, Notifications } from "./Friends";
 import { ProfileBadge } from "./Profile";
 import { Table } from "./Table";
@@ -100,20 +99,10 @@ function GameShell({ code }: { code: string }) {
       />
       </WithFriends>
     );
-  } else if (view.public.phase === "ready") {
-    body = (
-      <WithFriends social={social} code={code}>
-      <ReadyCheck
-        view={view.public}
-        me={game.me}
-        busy={game.busy}
-        skew={game.skew}
-        onReady={() => void game.send({ type: "ready" })}
-        onDifficulty={(seat, difficulty) => void game.send({ type: "setBotDifficulty", seat, difficulty })}
-      />
-      </WithFriends>
-    );
   } else {
+    // The ready check happens at the dealt table, not on a screen of its own:
+    // your four cards are already in front of you, face down, while the table
+    // waits on the last seat to say it is in.
     body = <Table game={game} flights={flights} onLeave={() => void leave()} />;
   }
 

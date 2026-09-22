@@ -281,29 +281,7 @@ function doStart(state: GameState, actor: Player, ctx: EngineCtx) {
   // A table that came back to the lobby between rounds keeps counting up.
   state.round = state.results.length + 1;
   state.leadSeat = 0;
-  openReadyCheck(state, ctx);
-}
-
-/**
- * The host closing the lobby does not deal: it sets the seats and asks every
- * one of them whether they are in. Nothing is shuffled until the last seat
- * has answered, so nobody is dealt a hand while they are still reading the
- * rules. Bots answer the instant they are asked.
- */
-function openReadyCheck(state: GameState, ctx: EngineCtx) {
-  state.phase = "ready";
-  state.readyIds = state.players.filter((p) => p.isBot).map((p) => p.id);
-  state.readyDeadline = ctx.now + READY_TIMEOUT_MS;
-  state.dealingUntil = null;
-  state.openingPeekUntil = null;
-  state.reveals = [];
-  state.replayVotes = [];
-  const waiting = state.players.filter((p) => !state.readyIds.includes(p.id));
-  addLog(state, ctx, waiting.length
-    ? `Seats are set. Ready check: waiting on ${joinNames(waiting.map((p) => p.name))}.`
-    : `Seats are set.`,
-    { kind: "table", tone: "accent", weight: "loud" });
-  settleReady(state, ctx);
+  dealRound(state, ctx);
 }
 
 /**
@@ -323,12 +301,33 @@ function doReady(state: GameState, actor: Player, ctx: EngineCtx): boolean {
   return true;
 }
 
-/** Deals the moment the last seat has answered the check. */
+/**
+ * The peek only opens once the last seat has answered the check, so nobody
+ * burns their five seconds while someone else is still looking away.
+ */
 function settleReady(state: GameState, ctx: EngineCtx) {
   if (state.players.some((p) => !state.readyIds.includes(p.id))) return;
   state.readyDeadline = null;
   addLog(state, ctx, `Everyone is ready.`, { kind: "table", tone: "accent", weight: "normal" });
-  dealRound(state, ctx);
+  startPeek(state, ctx);
+}
+
+/**
+ * Five seconds on your own bottom two, and the same five seconds for
+ * everyone: the window opens for the whole table at once, once the last seat
+ * has said it is ready and the deal has finished landing.
+ */
+function startPeek(state: GameState, ctx: EngineCtx) {
+  state.phase = "peek";
+  // A table that readies while cards are still in the air waits for them.
+  const from = Math.max(ctx.now, state.dealingUntil ?? ctx.now);
+  state.openingPeekUntil = from + OPENING_PEEK_MS;
+  for (const p of state.players) {
+    const bottom = [p.hand[2]!, p.hand[3]!];
+    if (p.isBot) remember(state, p.id, bottom);
+    else addReveal(state, ctx, p.id, "opening", bottom, state.openingPeekUntil);
+  }
+  addLog(state, ctx, `Everyone looks at their bottom two cards.`, { kind: "deal", tone: "accent", weight: "loud" });
 }
 
 /**
@@ -478,18 +477,22 @@ function dealRound(state: GameState, ctx: EngineCtx) {
     p.hand = [null, null, null, null];
     for (let i = 0; i < 4; i++) p.hand[i] = state.deck.pop()!;
   }
-  state.phase = "peek";
-  // Shuffle, deal, *then* look: the peek clock only starts once the last card
-  // has landed, so nobody is memorising a hand that is still being dealt.
+  // Deal first, then ask. Four cards land face down in front of everyone and
+  // nothing is shown until the whole table has said it is ready; the peek
+  // window opens from there (see `startPeek`).
+  state.phase = "ready";
   state.dealingUntil = ctx.now + DEAL_MS;
-  state.openingPeekUntil = state.dealingUntil + OPENING_PEEK_MS;
+  state.openingPeekUntil = null;
+  state.readyIds = state.players.filter((p) => p.isBot).map((p) => p.id);
+  state.readyDeadline = state.dealingUntil + READY_TIMEOUT_MS;
   state.replayVotes = [];
-  for (const p of state.players) {
-    const bottom = [p.hand[2]!, p.hand[3]!];
-    if (p.isBot) remember(state, p.id, bottom);
-    else addReveal(state, ctx, p.id, "opening", bottom, state.openingPeekUntil);
-  }
-  addLog(state, ctx, `Round ${state.round}. The deck is shuffled and dealt.`, { kind: "deal", tone: "accent", weight: "loud" });
+  const waiting = state.players.filter((p) => !state.readyIds.includes(p.id));
+  addLog(state, ctx, waiting.length
+    ? `Round ${state.round}. The deck is shuffled and dealt. Waiting on ${joinNames(waiting.map((p) => p.name))} to be ready.`
+    : `Round ${state.round}. The deck is shuffled and dealt.`,
+    { kind: "deal", tone: "accent", weight: "loud" });
+  // A table of nothing but bots is ready the moment the cards are down.
+  settleReady(state, ctx);
 }
 
 function doAdvance(state: GameState, ctx: EngineCtx): boolean {
@@ -903,7 +906,7 @@ function doTimeout(state: GameState, ctx: EngineCtx): boolean {
 /* ------------------------------------------------------------------ */
 
 /** The phases where a pause means anything: a clock or a turn is running. */
-const PAUSABLE: GameState["phase"][] = ["peek", "playing", "final"];
+const PAUSABLE: GameState["phase"][] = ["ready", "peek", "playing", "final"];
 
 /**
  * Pausing is unanimous, in both directions. A request opens a vote; play
@@ -961,6 +964,7 @@ function settlePause(state: GameState, ctx: EngineCtx) {
   for (const g of state.pendingGives) if (g.since !== undefined) g.since += held;
   if (state.dealingUntil !== null) state.dealingUntil += held;
   if (state.openingPeekUntil !== null) state.openingPeekUntil += held;
+  if (state.readyDeadline !== null) state.readyDeadline += held;
   if (state.stickWindowUntil !== null) state.stickWindowUntil += held;
   for (const r of state.reveals) r.until += held;
   state.paused = false;

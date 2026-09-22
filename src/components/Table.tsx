@@ -38,14 +38,16 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
 
   // Shuffle, deal, then look. Nothing is revealed until the last card is down,
   // so the deal never reads as a fresh hand arriving after the peek.
-  const dealTick = useClock(120, pub.phase === "peek" && !pub.paused);
+  const settling = pub.phase === "ready" || pub.phase === "peek";
+  const dealTick = useClock(120, settling && !pub.paused);
   const dealing =
-    pub.phase === "peek" &&
+    settling &&
     pub.dealingUntil !== null &&
     (pub.paused ? (pub.pausedAt ?? 0) : dealTick + game.skew) < pub.dealingUntil;
 
   const mine = pub.players.find((p) => p.id === me) ?? null;
   const turnPlayer = pub.turn ? pub.players.find((p) => p.id === pub.turn!.playerId) ?? null : null;
+
   const myTurn = !!mine && pub.turn?.playerId === mine.id;
   const owner = (cardId: string) => pub.players.find((p) => p.hand.includes(cardId)) ?? null;
 
@@ -219,7 +221,24 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
     return ids;
   }, [announcement]);
 
-  const status = armed && pub.discardTop
+  // The ready check runs at the dealt table: cards are down, face down, and
+  // the round waits on the last seat to say it is in.
+  const readyCheck = pub.phase === "ready";
+  const imReady = !!mine && pub.readyIds.includes(mine.id);
+  const waitingOn = pub.players.filter((p) => !pub.readyIds.includes(p.id));
+
+  const status = readyCheck
+    ? {
+        title: imReady
+          ? (waitingOn.length
+              ? <>Waiting on {waitingOn.map((p) => p.name).join(", ")}.</>
+              : <>Everyone is ready.</>)
+          : "Cards are down. Ready when you are.",
+        detail: imReady
+          ? "The peek opens for the whole table at once, the moment the last seat is in."
+          : "Your four cards are dealt, face down. Say you are ready, and once everyone has, you all get five seconds to memorise your bottom two.",
+      }
+    : armed && pub.discardTop
     ? {
         title: <>Sticking. Pick the card you believe is a {pub.discardTop.rank === "JOKER" ? "joker" : pub.discardTop.rank}.</>,
         detail: <>Any hand at the table. Miss and you draw a penalty; cancel to go back to your turn.</>,
@@ -249,6 +268,7 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
               spotlit={spotlit}
               inTheSpotlight={spotlitPlayers.has(p.id)}
               holding={pub.turn?.playerId === p.id && pub.turn.stage === "decide" && p.id !== me}
+              ready={readyCheck ? pub.readyIds.includes(p.id) : null}
               positions={positions}
             />
           ))}
@@ -299,6 +319,21 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
           </div>
           <div className="flex items-center gap-4">
             {pub.turnDeadline !== null ? <TurnTimer deadline={pub.turnDeadline} skew={game.skew} mine={myTurn} frozenAt={pub.paused ? pub.pausedAt : null} /> : null}
+            {readyCheck && mine ? (
+              <>
+                <span className="t-sub text-ink-3">
+                  {pub.readyIds.length} of {pub.players.length} ready
+                </span>
+                <Button
+                  variant={imReady ? "secondary" : "primary"}
+                  size="lg"
+                  disabled={game.busy || imReady}
+                  onClick={() => void game.send({ type: "ready" })}
+                >
+                  {imReady ? "You are ready" : "I'm ready"}
+                </Button>
+              </>
+            ) : null}
             {/* Sticking is always on the table. While the turn already owns
                 the click, it is armed first so one click cannot mean two
                 things. */}
