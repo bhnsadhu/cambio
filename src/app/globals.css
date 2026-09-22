@@ -103,6 +103,10 @@ html { color-scheme: dark; }
   --tile-r: calc(var(--tile-w) * 0.16);
 }
 
+@media (max-width: 767px) {
+  :root { --tile-w: clamp(44px, 14vw, 64px); }
+}
+
 body {
   background: var(--color-bg);
   color: var(--color-ink);

@@ -41,28 +41,28 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
 
   return (
     <section
-      className={`relative flex min-w-0 flex-col gap-4 rounded-panel px-4 pt-4 pb-5 transition-[box-shadow,background-color] duration-300 ease-out ${surface} ${ring}`}
+      className={`relative flex min-w-0 flex-col gap-3 rounded-panel px-3 pt-3 pb-4 transition-[box-shadow,background-color] duration-300 ease-out xl:gap-4 xl:px-4 xl:pt-4 xl:pb-5 ${surface} ${ring}`}
       aria-label={`${player.name}'s hand`}
     >
-      <header className="flex items-start justify-between gap-3">
+      <header className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             {isTurn || ready === true ? <Pip /> : null}
-            <h3 className="t-headline truncate">
+            <h3 className="t-headline min-w-0 break-words text-[15px]! sm:text-[17px]!">
               <span><PlayerName name={player.name} isBot={player.isBot} /></span>
             </h3>
           </div>
-          <p className="t-footnote mt-0.5 truncate text-ink-3">
+          <p className="t-footnote mt-0.5 text-ink-3">
             {isMe ? <span className="font-medium text-ink">You</span> : null}
             {isMe ? " · " : ""}
-            {player.isBot ? `House bot · ${DIFFICULTY_LABEL[player.difficulty ?? "medium"]}` : player.isHost ? "Host" : "Player"}
+            {player.isBot ? `Bot · ${DIFFICULTY_LABEL[player.difficulty ?? "medium"]}` : player.isHost ? "Host" : "Player"}
             {stageText ? <span className="text-ink-2"> · {stageText}</span> : null}
             {ready === null ? null : (
               <span className={ready ? "text-accent" : "text-ink-2"}> · {ready ? "Ready" : "Not ready"}</span>
             )}
           </p>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-1">
+        <div className="flex shrink-0 flex-wrap items-end gap-1">
           {holding ? (
             <span
               ref={positions.register(heldKey)}
@@ -79,7 +79,7 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
         </div>
       </header>
 
-      <div className="grid grid-cols-2 gap-3 justify-items-center">
+      <div className="grid grid-cols-2 gap-2 justify-items-center xl:gap-3">
         {player.hand.map((cardId, i) => {
           const key = `slot:${player.id}:${i}`;
           // A card still in the air keeps its tile face down, so the reveal

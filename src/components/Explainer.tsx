@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useModalFocus } from "@/lib/client/useModalFocus";
 import { CardBack, FaceCard } from "./cards";
 import { Button } from "./ui";
 
@@ -10,13 +11,13 @@ import { Button } from "./ui";
  */
 const STEPS = [
   {
-    title: "Your cards stay face down.",
-    body: "Four each. You will not see them again after the start, so memory is the whole game.",
+    title: "Lowest hand wins.",
+    body: "Everyone gets four cards, face down. Remember what you have seen and try to finish with the lowest total.",
     art: <Art1 />,
   },
   {
     title: "Look once. Then remember.",
-    body: "At the start you get five seconds with your bottom two cards. After that, every card on the table is face down.",
+    body: "At the start you get five seconds with your bottom two cards. After that, your hand stays face down unless a power lets you peek.",
     art: <Art2 />,
   },
   {
@@ -26,12 +27,13 @@ const STEPS = [
   },
   {
     title: "Stick any time.",
-    body: "When a card lands on the pile, click any card you believe matches it, in anyone's hand. Right, and it leaves the game. Wrong, and you draw a penalty.",
+    body: "When a card lands on the pile, select any card you believe matches it, in anyone's hand. Right, and it leaves the game. Wrong, and you draw a penalty. When your hand looks low, call Cambio at the start of your turn. Everyone else gets one last turn.",
     art: <Art4 />,
   },
 ];
 
 export function Explainer({ onDone, onRules }: { onDone: () => void; onRules?: () => void }) {
+  const dialogRef = useModalFocus();
   const [i, setI] = useState(0);
   const step = STEPS[i];
   const last = i === STEPS.length - 1;
@@ -39,28 +41,28 @@ export function Explainer({ onDone, onRules }: { onDone: () => void; onRules?: (
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onDone();
-      if (e.key === "ArrowRight" || e.key === "Enter") setI((x) => (x === STEPS.length - 1 ? x : x + 1));
-      if (e.key === "ArrowLeft") setI((x) => Math.max(0, x - 1));
+      if (e.key === "ArrowRight") { e.preventDefault(); setI((x) => (x === STEPS.length - 1 ? x : x + 1)); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); setI((x) => Math.max(0, x - 1)); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onDone]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6 animate-fade" role="dialog" aria-modal aria-label="How Cambio works">
-      <div className="w-full max-w-[560px] animate-rise overflow-hidden rounded-panel bg-surface shadow-float hairline">
-        <div className="flex h-[220px] items-center justify-center bg-bg" key={i}>
+    <div ref={dialogRef} tabIndex={-1} className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 outline-none animate-fade" role="dialog" aria-modal aria-label="How Cambio works">
+      <div className="max-h-[calc(100dvh-32px)] w-full max-w-[560px] animate-rise overflow-y-auto rounded-panel bg-surface shadow-float hairline">
+        <div className="flex h-[180px] items-center justify-center bg-bg sm:h-[220px]" key={i}>
           <div className="animate-pop">{step.art}</div>
         </div>
-        <div className="min-h-[236px] px-8 pt-6 pb-7">
+        <div className="min-h-[236px] px-5 pt-6 pb-7 sm:px-8">
           <p className="t-caption text-ink-3">{i + 1} of {STEPS.length}</p>
           <h2 className="t-title2 mt-2" key={`t${i}`}>{step.title}</h2>
           <p className="t-body mt-2 text-ink-2" key={`b${i}`}>{step.body}</p>
           {onRules ? <button type="button" onClick={onRules} className="t-sub mt-3 font-medium text-ink-2 hover:text-ink">Read full rules</button> : null}
-          <div className="mt-7 flex items-center justify-between">
+          <div className="mt-7 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-1.5" aria-hidden>
               {STEPS.map((_, k) => (
-                <button key={k} type="button" onClick={() => setI(k)} className={`h-1.5 rounded-full transition-all duration-200 ease-out ${k === i ? "w-5 bg-ink" : "w-1.5 bg-line-strong hover:bg-ink-3"}`} />
+                <span key={k} className={`h-1.5 rounded-full transition-all duration-200 ease-out ${k === i ? "w-5 bg-ink" : "w-1.5 bg-line-strong"}`} />
               ))}
             </div>
             <div className="flex items-center gap-2">

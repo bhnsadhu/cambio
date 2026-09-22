@@ -1,6 +1,7 @@
 "use client";
 
 import type { PlayerPublic, PublicView } from "@/lib/game/types";
+import { useModalFocus } from "@/lib/client/useModalFocus";
 import { Button, Chip, Pip, PlayerName } from "./ui";
 
 /**
@@ -46,7 +47,7 @@ function Roster({ view }: { view: PublicView }) {
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-2.5">
+    <div className="flex flex-wrap items-start gap-2.5">
       <span className="t-caption mt-1.5 w-[86px] shrink-0 text-ink-3">{label}</span>
       <div className="flex flex-wrap gap-1.5">{children}</div>
     </div>
@@ -90,9 +91,9 @@ export function PauseBanner({ view, me, busy, onVote }: Omit<PauseProps, "onRequ
   const name = by ? <PlayerName name={by.name} isBot={by.isBot} /> : "Someone";
   const mine = vote.byId === me;
   return (
-    <div className="flex w-full justify-center px-6">
-      <div className="flex max-w-[760px] animate-rise items-center gap-6 rounded-panel bg-surface-2 px-5 py-4 shadow-float">
-        <div className="min-w-[196px] max-w-[240px]">
+    <div className="flex w-full justify-center sm:px-6">
+      <div className="flex max-w-[760px] animate-rise flex-wrap items-center gap-4 rounded-panel bg-surface-2 px-5 py-4 shadow-float sm:gap-6">
+        <div className="min-w-0 max-w-[240px]">
           <p className="t-caption text-ink-3">{vote.kind === "pause" ? "Pause requested" : "Resume requested"}</p>
           <p className="t-callout mt-1 text-ink-2">
             {mine ? <>You asked to {vote.kind} the table.</> : <>{name} asked to {vote.kind} the table.</>}{" "}
@@ -111,6 +112,7 @@ export function PauseBanner({ view, me, busy, onVote }: Omit<PauseProps, "onRequ
 
 /** The table is dark. Nothing underneath is playable, so this takes the screen. */
 export function PauseOverlay({ view, me, busy, onRequest, onVote }: PauseProps) {
+  const dialogRef = useModalFocus(view.paused);
   if (!view.paused) return null;
   const by = view.players.find((p) => p.id === view.pausedBy);
   const vote = view.pauseVote;
@@ -120,8 +122,8 @@ export function PauseOverlay({ view, me, busy, onRequest, onVote }: PauseProps) 
     : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-6 animate-fade">
-      <div className="w-full max-w-[560px] animate-rise rounded-panel bg-surface p-8 shadow-float hairline">
+    <div ref={dialogRef} tabIndex={-1} className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 outline-none animate-fade" role="dialog" aria-modal aria-label="Table paused">
+      <div className="max-h-[calc(100dvh-32px)] w-full max-w-[560px] animate-rise overflow-y-auto rounded-panel bg-surface p-5 shadow-float hairline sm:p-8">
         <p className="t-caption text-ink-3">Table paused</p>
         <h2 className="t-title mt-1.5">The game is on hold.</h2>
         <p className="t-callout mt-1.5 text-ink-2">
@@ -143,7 +145,7 @@ export function PauseOverlay({ view, me, busy, onRequest, onVote }: PauseProps) 
             <div className="flex justify-end"><Answer view={view} me={me} busy={busy} onVote={onVote} size="md" /></div>
           </div>
         ) : (
-          <div className="mt-7 flex items-center justify-between gap-6">
+          <div className="mt-7 flex flex-wrap items-center justify-between gap-4">
             <p className="t-sub max-w-[280px] text-ink-3">
               {seated ? "Anyone can ask to resume. Everyone has to agree, and the house bots agree straight away." : "Watching. The table decides when to carry on."}
             </p>

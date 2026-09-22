@@ -248,9 +248,9 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
   const drawn = view.private?.drawnCard ?? null;
 
   return (
-    <div className="grid h-[calc(100vh-56px)] grid-cols-[minmax(0,1fr)_240px] gap-5 pb-6">
-      <div className="flex min-h-0 flex-col gap-5">
-        <div className="grid grid-cols-[repeat(4,minmax(0,1fr))_auto] gap-4">
+    <div className="grid gap-5 pb-6 xl:h-[calc(100dvh-80px)] xl:min-h-[650px] xl:grid-cols-[minmax(0,1fr)_240px]">
+      <div className="flex min-h-0 min-w-0 flex-col gap-5">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-[repeat(4,minmax(0,1fr))_auto] xl:gap-4">
           {pub.players.map((p) => (
             <PlayerPanel
               key={p.id}
@@ -285,7 +285,7 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
 
         {/* The middle of the table: timed reveals and an open pause request
             live here, between the hands and the actions. */}
-        <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-3">
+        <div className="relative flex min-h-20 flex-1 flex-col items-center justify-center gap-3 xl:min-h-0">
           <BigMoment announcement={announcement} players={pub.players} me={me} />
           <PauseBanner view={pub} me={me} busy={game.busy} onVote={(agree) => void game.send({ type: "pauseVote", agree })} />
           <Announcer announcement={announcement} players={pub.players} me={me} />
@@ -301,8 +301,8 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
         </div>
 
         {/* Action bar */}
-        <div className="flex min-h-[92px] items-center justify-between gap-6 rounded-panel bg-surface px-5 py-4 hairline">
-          <div className="flex items-center gap-5">
+        <section aria-label="Round actions" className="flex min-h-[92px] flex-col items-start justify-between gap-4 rounded-panel bg-surface px-4 py-4 hairline sm:px-5 xl:flex-row xl:items-center xl:gap-6">
+          <div className="flex min-w-0 items-center gap-4 xl:gap-5">
             {showDrawnSlot ? (
               <div ref={positions.register("drawn")} className="h-[var(--tile-h)] w-[var(--tile-w)] shrink-0">
                 {drawn && !hidden.has("drawn") ? (
@@ -312,12 +312,12 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
                 )}
               </div>
             ) : null}
-            <div>
+            <div className="min-w-0 break-words">
               <p className="t-headline">{status.title}</p>
               {status.detail ? <p className="t-callout mt-0.5 text-ink-2">{status.detail}</p> : null}
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex max-w-full flex-wrap items-center gap-3 xl:justify-end xl:gap-4">
             {pub.turnDeadline !== null ? <TurnTimer deadline={pub.turnDeadline} skew={game.skew} mine={myTurn} frozenAt={pub.paused ? pub.pausedAt : null} /> : null}
             {readyCheck && mine ? (
               <>
@@ -355,7 +355,7 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
             {!armed && mine && mode.kind === "decide" && selected ? (
               <>
                 <Button variant="ghost" disabled={game.busy} onClick={() => setSelected(null)}>Cancel</Button>
-                <Button variant="accent" size="lg" disabled={game.busy} onClick={() => void fire({ type: "swap", cardId: selected })}>
+                <Button variant="accent" size="lg" className="max-w-full h-auto! min-h-12 whitespace-normal! py-2" disabled={game.busy} onClick={() => void fire({ type: "swap", cardId: selected })}>
                   Push it onto {owner(selected)?.name ?? "them"}
                 </Button>
               </>
@@ -375,7 +375,7 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
               </>
             ) : null}
           </div>
-        </div>
+        </section>
       </div>
 
       <EventFeed log={pub.log} players={pub.players} me={me} onTrace={setTraced} />

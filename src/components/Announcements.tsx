@@ -89,7 +89,9 @@ export function useAnnouncements(log: LogEntry[], enabled: boolean): Announcemen
   } else if (head.seen === null) {
     setHead({ ...IDLE, seen: latest });
   } else if (latest > head.seen) {
-    const fresh = log.filter((e) => e.seq > head.seen! && (e.weight ?? "quiet") !== "quiet");
+    // Pause already has a live banner and overlay. Replaying its old log
+    // messages after a quick resume would incorrectly say play is paused.
+    const fresh = log.filter((e) => e.seq > head.seen! && e.kind !== "pause" && (e.weight ?? "quiet") !== "quiet");
     const queued: Playhead = { ...head, seen: latest, queue: [...head.queue, ...fresh] };
     setHead(queued.current ? queued : advance(queued));
   }
@@ -146,7 +148,7 @@ export function Announcer({ announcement, players, me }: { announcement: Announc
   return (
     <div
       key={entry.seq}
-      className="animate-rise flex max-w-[680px] items-center gap-4 rounded-panel bg-surface-2 px-5 py-3 shadow-float"
+      className="animate-rise flex w-full max-w-[680px] flex-wrap items-center gap-3 rounded-panel bg-surface-2 px-5 py-3 shadow-float sm:gap-4"
       role="status"
     >
       <span className={`t-caption shrink-0 ${tone}`}>{KICKER[entry.kind]}</span>
@@ -155,7 +157,7 @@ export function Announcer({ announcement, players, me }: { announcement: Announc
         <Sentence entry={entry} players={players} />
       </p>
       {touched.length ? (
-        <span className="ml-auto flex shrink-0 items-center gap-1.5">
+        <span className="ml-auto flex max-w-full flex-wrap items-center gap-1.5">
           {touched.map((p) => (
             <span key={p.id} className="inline-flex h-[22px] items-center rounded-full bg-accent-soft px-2 text-[11.5px] font-medium text-accent-ink">
               {p.id === me ? "You" : <PlayerName name={p.name} isBot={p.isBot} />}
@@ -180,8 +182,8 @@ export function BigMoment({ announcement, players, me }: { announcement: Announc
   const mine = !!me && entry.actorId === me;
   const tone = entry.tone === "bad" ? "text-red" : "text-accent";
   return (
-    <div className="pointer-events-none absolute left-1/2 top-1/2 z-30 w-max max-w-[min(620px,90%)] -translate-x-1/2 -translate-y-1/2" aria-live="polite">
-      <div key={entry.seq} className="animate-pop rounded-panel bg-surface-2/95 px-9 py-7 text-center shadow-float backdrop-blur-sm hairline-strong">
+    <div className="pointer-events-none w-full max-w-[620px] xl:absolute xl:left-1/2 xl:top-1/2 xl:z-30 xl:w-max xl:max-w-[min(620px,90%)] xl:-translate-x-1/2 xl:-translate-y-1/2" aria-live="polite">
+      <div key={entry.seq} className="animate-pop rounded-panel bg-surface-2/95 px-5 py-4 text-center shadow-float backdrop-blur-sm hairline-strong sm:px-9 sm:py-7">
         <p className={`t-caption ${tone}`}>{KICKER[entry.kind]}</p>
         <p className="t-title2 mt-2.5 text-ink">
           {actor && entry.text.startsWith(actor.name) ? (

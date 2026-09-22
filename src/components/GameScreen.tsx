@@ -64,7 +64,8 @@ function GameShell({ code }: { code: string }) {
   const leave = useCallback(async () => {
     const phase = game.view?.public.phase;
     if (game.session && (phase === "lobby" || phase === "scoring")) {
-      await game.send({ type: "leaveTable" });
+      const result = await game.send({ type: "leaveTable" });
+      if (!result) return;
     }
     game.setSession(null);
     router.push("/");
@@ -89,6 +90,15 @@ function GameShell({ code }: { code: string }) {
   let body: React.ReactNode;
   if (game.status === "notfound") {
     body = <Empty title="No table with that code." body="Check the code with whoever sent it, or open a table of your own." />;
+  } else if (game.status === "error" && !view) {
+    body = <section className="mx-auto max-w-[420px] pt-16">
+      <h1 className="t-title">Could not reach the table.</h1>
+      <p className="t-body mt-2 text-ink-2">Check your connection and try again.{game.session ? " Your seat is still saved in this browser." : ""}</p>
+      <div className="mt-5 flex flex-wrap items-center gap-4">
+        <Button onClick={() => void game.refresh()}>Try again</Button>
+        <Link href="/" className="t-sub text-ink-2 hover:text-ink">Back to play</Link>
+      </div>
+    </section>;
   } else if (!view) {
     body = <TableSkeleton />;
   } else if (!seated && view.public.phase === "lobby") {
@@ -139,7 +149,7 @@ function GameShell({ code }: { code: string }) {
               leaving ? (
                 <span className="flex items-center gap-1.5">
                   <span className="t-sub text-ink-2">Leave this table?</span>
-                  <Button variant="secondary" size="sm" onClick={() => void leave()}>Leave</Button>
+                  <Button variant="secondary" size="sm" disabled={game.busy} onClick={() => void leave()}>Leave</Button>
                   <Button variant="ghost" size="sm" onClick={() => setLeaving(false)}>Stay</Button>
                 </span>
               ) : (
@@ -175,9 +185,9 @@ function GameShell({ code }: { code: string }) {
 function WithFriends({ social, code, seated, children }: { social: ReturnType<typeof useSocial>; code: string; seated: string[]; children: React.ReactNode }) {
   if (!social.profile) return children;
   return (
-    <div className="mx-auto grid w-full max-w-[1280px] grid-cols-[minmax(0,1fr)_320px] gap-8">
+    <div className="mx-auto grid w-full max-w-[1280px] gap-6 pb-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-8">
       {children}
-      <div className="pt-12">
+      <div className="min-w-0 lg:pt-12">
         <FriendsPanel social={social} inviteCode={code} seated={seated} />
       </div>
     </div>
@@ -252,22 +262,22 @@ function Empty({ title, body }: { title: string; body: string }) {
 /** The table's shape while the first state arrives, so nothing jumps. */
 function TableSkeleton() {
   return (
-    <div className="grid h-[calc(100vh-56px)] grid-cols-[minmax(0,1fr)_240px] gap-5 pb-6" aria-busy aria-label="Finding the table">
+    <div className="grid gap-5 pb-6 xl:h-[calc(100dvh-80px)] xl:grid-cols-[minmax(0,1fr)_240px]" aria-busy aria-label="Finding the table">
       <div className="flex min-h-0 flex-col gap-5">
-        <div className="grid grid-cols-[repeat(4,minmax(0,1fr))_auto] gap-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-[repeat(4,minmax(0,1fr))_auto] xl:gap-4">
           {[0, 1, 2, 3].map((k) => (
-            <div key={k} className="flex flex-col gap-4 rounded-panel bg-surface px-4 pt-4 pb-5 hairline">
+            <div key={k} className="flex min-w-0 flex-col gap-4 rounded-panel bg-surface px-3 pt-4 pb-5 hairline xl:px-4">
               <div className="space-y-2">
                 <div className="skeleton h-4 w-24 rounded-md" />
                 <div className="skeleton h-3 w-14 rounded-md" />
               </div>
-              <div className="grid grid-cols-2 gap-3 justify-items-center">
+              <div className="grid grid-cols-2 gap-2 justify-items-center xl:gap-3">
                 {[0, 1, 2, 3].map((i) => <div key={i} className="skeleton h-[var(--tile-h)] w-[var(--tile-w)] rounded-[var(--tile-r)]" />)}
               </div>
               <div className="skeleton h-3 w-12 rounded-md" />
             </div>
           ))}
-          <div className="flex flex-col gap-4 rounded-panel bg-surface px-4 pt-4 pb-5 hairline">
+          <div className="col-span-2 flex flex-col gap-4 rounded-panel bg-surface px-4 pt-4 pb-5 hairline md:col-span-4 xl:col-span-1">
             <div className="skeleton h-4 w-14 rounded-md" />
             <div className="flex gap-4">
               <div className="skeleton h-[var(--tile-h)] w-[var(--tile-w)] rounded-[var(--tile-r)]" />
@@ -278,7 +288,7 @@ function TableSkeleton() {
         <div className="mt-auto flex min-h-[92px] items-center rounded-panel bg-surface px-6 hairline">
           <div className="space-y-2">
             <div className="skeleton h-4 w-40 rounded-md" />
-            <div className="skeleton h-3 w-64 rounded-md" />
+            <div className="skeleton h-3 w-48 max-w-full rounded-md sm:w-64" />
           </div>
         </div>
       </div>
@@ -293,7 +303,7 @@ function TableSkeleton() {
 function Toasts({ toasts }: { toasts: { id: number; text: string; tone: string }[] }) {
   if (!toasts.length) return null;
   return (
-    <div className="pointer-events-none fixed right-8 top-16 z-50 flex flex-col gap-2">
+    <div className="pointer-events-none fixed inset-x-5 top-16 z-50 flex flex-col gap-2 sm:left-auto sm:right-8 sm:max-w-[440px]" role="status">
       {toasts.map((t) => (
         <div key={t.id} className={`animate-rise rounded-full px-4 py-2 text-[13px] font-medium shadow-float ${t.tone === "bad" ? "bg-surface-2 text-ink hairline-strong" : "bg-ink text-bg"}`}>
           {t.text}

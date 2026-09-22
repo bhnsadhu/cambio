@@ -22,7 +22,7 @@ export function Piles({
   positions: Positions;
 }) {
   return (
-    <section className="flex min-w-0 flex-col gap-4 rounded-panel bg-surface px-4 pt-4 pb-5 hairline" aria-label="Deck and discard pile">
+    <section className="col-span-2 flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-panel bg-surface px-4 pt-4 pb-5 hairline md:col-span-4 xl:col-span-1 xl:flex-col xl:items-start xl:justify-start xl:gap-4" aria-label="Deck and discard pile">
       <header>
         <h3 className="t-headline">Table</h3>
         <p className="t-footnote mt-0.5 text-ink-3">Deck and pile</p>

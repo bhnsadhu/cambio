@@ -155,5 +155,5 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 }
 
 export const inputClass =
-  "h-11 w-full rounded-[12px] bg-surface-2 px-3.5 text-[15px] text-ink outline-none placeholder:text-ink-3 " +
+  "h-11 w-full min-w-0 rounded-[12px] bg-surface-2 px-3.5 text-[15px] text-ink outline-none placeholder:text-ink-3 " +
   "focus:hairline-strong transition-shadow duration-150";

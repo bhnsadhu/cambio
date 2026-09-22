@@ -10,7 +10,7 @@ import { getServerSessionSnapshot, getSessionSnapshot, setSessionValue, subscrib
 export interface Toast { id: number; text: string; tone: "neutral" | "good" | "bad" }
 
 export interface GameHook {
-  status: "loading" | "ready" | "notfound";
+  status: "loading" | "ready" | "notfound" | "error";
   view: PlayerView | null;
   me: string | null;
   session: Session | null;
@@ -92,7 +92,9 @@ export function useGame(code: string): GameHook {
       else if (token && !res.me) setSession(null);
       setStatus("ready");
     } catch (e) {
+      if (gen !== profileGeneration() || (sessionRef.current?.token ?? null) !== token) return;
       if (e instanceof RequestError && e.status === 404) setStatus("notfound");
+      else if (!viewRef.current) setStatus("error");
     }
   }, [code, acceptFull, setSession]);
 

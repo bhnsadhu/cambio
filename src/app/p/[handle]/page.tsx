@@ -48,7 +48,7 @@ export default function PlayerPage({ params }: { params: Promise<{ handle: strin
   const friend = state ? social.social.friends.find((f) => f.id === state.profile.id) ?? null : null;
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-[620px] px-8 pb-20">
+    <main className="mx-auto min-h-screen w-full max-w-[620px] px-5 pb-20 sm:px-8">
       <header className="flex min-h-14 flex-wrap items-center justify-between gap-3 py-3">
         <Link href="/" aria-label="Cambio home"><Wordmark /></Link>
         <nav aria-label="Main navigation" className="flex flex-wrap items-center gap-4">
@@ -78,7 +78,7 @@ export default function PlayerPage({ params }: { params: Promise<{ handle: strin
               <AskToJoin friend={friend} social={social} />
             </div>
           ) : null}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {!social.profile ? (
               <Link href={loginHref(`/p/${handle}`)}><Button variant="primary">Log in to add friends</Button></Link>
             ) : state.relation === "self" ? (

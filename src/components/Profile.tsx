@@ -17,7 +17,7 @@ export function ProfileCard({ profile, compact = false }: { profile: Profile; co
   const avg = averageScore(profile);
   return (
     <section className="rounded-panel bg-surface p-6 hairline" aria-label={`${profile.displayName}'s record`}>
-      <header className="flex items-start justify-between gap-4">
+      <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="t-caption text-accent">{standing.tier.name}</p>
           <h1 className="t-title2 mt-1 truncate">{profile.displayName}</h1>

@@ -1,10 +1,10 @@
 # Cambio
 
-A real time multiplayer web app for the card game Cambio, also known as Cabo. It seats four players, and three house bots fill any seat that is empty. Share a five letter code and play in the browser. Play as a guest, or create an account to keep your record. No installs.
+A real time multiplayer web app for the card game Cambio, also known as Cabo. It seats four players, and three house bots fill any seat that is empty. Share a five character code and play in the browser. Play as a guest, or create an account to keep your record. No installs.
 
 **Play it live: [cambio.bhanusadhu.com](https://cambio.bhanusadhu.com)**
 
-Open the link, create a table, and press **Start round**. Any seat still empty goes to Cameron, Camila or Cami, at easy, medium or hard. Nothing is dealt until every seat says it is ready.
+Open the link, enter a display name, and press **Open a table**, then **Start round**. Any seat still empty goes to Cameron, Camila or Cami, at easy, medium or hard. Cards are dealt face down, and the opening peek waits until everyone is ready.
 
 ---
 

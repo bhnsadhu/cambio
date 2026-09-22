@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useModalFocus } from "@/lib/client/useModalFocus";
 import type { PublicView } from "@/lib/game/types";
 import { FaceCard } from "./cards";
 import { Button, Chip, Pip, PlayerName } from "./ui";
@@ -27,6 +28,7 @@ export function Scoreboard({
   onPlayAgain: () => void;
   onLeave: () => void;
 }) {
+  const dialogRef = useModalFocus();
   const result = view.results[view.results.length - 1];
   if (!result) return null;
 
@@ -53,9 +55,9 @@ export function Scoreboard({
       : <><PlayerName name={winners[0].name} isBot={winners[0].isBot} /> takes the round</>;
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/75 p-6 animate-fade">
-      <div className="w-full max-w-[860px] animate-rise rounded-panel bg-surface p-8 shadow-float hairline">
-        <header className="flex items-start justify-between gap-6">
+    <div ref={dialogRef} tabIndex={-1} className="fixed inset-0 z-40 flex items-center justify-center bg-black/75 p-4 outline-none animate-fade" role="dialog" aria-modal aria-label="Round results">
+      <div className="max-h-[calc(100dvh-32px)] w-full max-w-[860px] animate-rise overflow-y-auto rounded-panel bg-surface p-5 shadow-float hairline sm:p-8">
+        <header className="flex flex-col items-start justify-between gap-5 lg:flex-row lg:gap-6">
           <div>
             <p className="t-caption text-ink-3">Round {result.round} of this table</p>
             <h2 className="t-title mt-1.5">{headline}</h2>
@@ -64,7 +66,7 @@ export function Scoreboard({
               Lowest hand wins. Ties share the win.
             </p>
           </div>
-          <div className="flex shrink-0 flex-col items-end gap-2.5">
+          <div className="flex shrink-0 flex-col items-start gap-2.5 lg:items-end">
             {seated ? (
               ready ? (
                 <>
@@ -81,7 +83,7 @@ export function Scoreboard({
               <p className="t-sub max-w-[190px] text-right text-ink-3">Watching. The table decides whether to play on.</p>
             )}
             {waiting.length ? (
-              <p className="t-footnote max-w-[230px] text-right text-ink-3">
+              <p className="t-footnote max-w-[350px] text-ink-3 lg:max-w-[230px] lg:text-right">
                 {view.players.length - waiting.length} of {view.players.length} in. Waiting on{" "}
                 {waiting.map((p, i) => (
                   <span key={p.id}>
@@ -97,7 +99,24 @@ export function Scoreboard({
           </div>
         </header>
 
-        <table className="mt-7 w-full border-separate border-spacing-0">
+        <ol className="mt-6 space-y-3 lg:hidden" aria-label="Final hands and scores">
+          {rows.map(({ player, score, cards, rank }, index) => {
+            const won = result.winnerIds.includes(player.id);
+            return <li key={player.id} className={`rounded-card p-4 ${player.id === me ? "bg-accent-soft" : "bg-surface-2"}`} aria-label={`${player.name}'s result`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="t-sub break-words font-semibold"><span className="mr-2 text-ink-3">{rank}.</span><PlayerName name={player.name} isBot={player.isBot} /></p>
+                  <div className="mt-1 flex flex-wrap gap-1.5">{player.id === me ? <Chip>You</Chip> : null}{won ? <Chip tone="accent">Winner</Chip> : null}</div>
+                </div>
+                <div className="shrink-0 text-right"><p className="t-caption text-ink-3">Hand total</p><p className={`t-money text-[26px] ${won ? "text-accent" : ""}`}><CountUp value={score} delay={240 + index * 220} /></p></div>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">{cards.length ? cards.map((card) => <FaceCard key={card.id} card={card} size="sm" />) : <span className="t-sub text-ink-3">No cards</span>}</div>
+              <p className="t-footnote mt-3 text-ink-2">Rounds won: {roundsWon.get(player.id) ?? 0} of {view.results.length}</p>
+            </li>;
+          })}
+        </ol>
+
+        <table className="mt-7 hidden w-full border-separate border-spacing-0 lg:table">
           <thead>
             <tr className="t-caption text-left text-ink-3">
               <th className="w-10 pb-2.5 font-medium">#</th>

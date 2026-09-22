@@ -36,8 +36,8 @@ export function RevealBanner({
   const ownerOf = (cardId: string) => view.public.players.find((p) => p.hand.includes(cardId));
 
   return (
-    <div className="flex justify-center px-6">
-      <div className="flex max-w-[720px] flex-col gap-3">
+    <div className="flex w-full justify-center sm:px-6">
+      <div className="flex w-full max-w-[720px] flex-col gap-3">
         {reveals.map((r) => {
           const total = r.kind === "opening" ? OPENING_PEEK_MS : PEEK_REVEAL_MS;
           const left = Math.max(0, r.until - now);
@@ -51,8 +51,8 @@ export function RevealBanner({
           const kingPending = isKing && view.public.pendingPower?.playerId === view.private?.playerId && view.public.pendingPower?.lookedDone;
           return (
             <div key={r.id} className="animate-rise rounded-panel bg-surface-2 px-5 py-4 text-ink shadow-float">
-              <div className="flex items-center gap-5">
-                <div className="min-w-[170px]">
+              <div className="flex flex-wrap items-center justify-center gap-4 sm:justify-start sm:gap-5">
+                <div className="min-w-0 flex-1 basis-[170px]">
                   <p className="t-caption text-ink-3">{title}</p>
                   <p className="t-callout mt-1 text-ink-2">
                     {isKing ? "Swap them, or leave them." : (
