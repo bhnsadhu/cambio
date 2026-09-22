@@ -194,6 +194,18 @@ export function cleanName(raw: string): string {
   return name;
 }
 
+/**
+ * Replace a player's name where it stands as a name, never where it happens to
+ * sit inside a longer word. Names are as short as one character, so a plain
+ * substring swap turns "Almost" into "Deleted playermost" for a player called
+ * Al. Anything that is not a letter or a digit still counts as a boundary, so
+ * possessives and punctuation around the name are left alone.
+ */
+function scrubName(text: string, name: string, replacement: string): string {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return text.replace(new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, "gu"), replacement);
+}
+
 /* ------------------------------------------------------------------ */
 /* Reducer                                                             */
 /* ------------------------------------------------------------------ */
@@ -210,7 +222,7 @@ export function applyAction(input: GameState, env: ActionEnvelope | IdentityEnve
     for (const player of players) {
       if (a.displayName === null) {
         // Scrub this player's name from retained narration as well as seats.
-        state.log = state.log.map((entry) => ({ ...entry, text: entry.text.split(player.name).join("Deleted player") }));
+        state.log = state.log.map((entry) => ({ ...entry, text: scrubName(entry.text, player.name, "Deleted player") }));
         player.name = "Deleted player";
         player.profileId = null;
         delete player.token;

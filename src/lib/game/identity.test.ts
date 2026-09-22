@@ -26,4 +26,14 @@ describe("Account identity maintenance", () => {
     expect(next.log.every((entry) => !entry.text.includes("Host"))).toBe(true);
     expect(next.players[0].hand).toEqual(state.players[0].hand);
   });
+  it("scrubs the deleted name as a name, not as a substring of other words", () => {
+    const ctx = makeCtx();
+    const { state } = started(ctx);
+    // Short names are legal, and this one sits inside words the log already uses.
+    state.players[0].profileId = "account";
+    state.players[0].name = "Al";
+    state.log = [{ ...state.log[0], text: "Al called Cambio. Almost all of Alice's hand is down." }];
+    const next = applyAction(state, { actionId: "delete", playerId: null, action: { type: "syncIdentity", profileId: "account", displayName: null } }, ctx).state;
+    expect(next.log[0].text).toBe("Deleted player called Cambio. Almost all of Alice's hand is down.");
+  });
 });
