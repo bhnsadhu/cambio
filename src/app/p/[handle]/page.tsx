@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
+import { Notifications } from "@/components/Friends";
 import { ProfileCard } from "@/components/Profile";
 import { Button, Wordmark } from "@/components/ui";
 import { callProfile } from "@/lib/client/profile";
-import { useSocial } from "@/lib/client/social";
+import { usePresence, useSocial } from "@/lib/client/social";
 import type { Profile } from "@/lib/social/types";
 
 type Relation = "self" | "friends" | "incoming" | "outgoing" | "none";
@@ -14,6 +15,7 @@ type Relation = "self" | "friends" | "incoming" | "outgoing" | "none";
 export default function PlayerPage({ params }: { params: Promise<{ handle: string }> }) {
   const { handle } = use(params);
   const social = useSocial();
+  usePresence(null);
   const [state, setState] = useState<{ profile: Profile; relation: Relation; playedTogether: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -86,6 +88,7 @@ export default function PlayerPage({ params }: { params: Promise<{ handle: strin
           </div>
         </div>
       )}
+      <Notifications social={social} />
     </main>
   );
 }

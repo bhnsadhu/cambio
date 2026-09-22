@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import type { SocialHook } from "@/lib/client/social";
+import { saveSession } from "@/lib/client/session";
 import type { Friend } from "@/lib/social/types";
-import { Button, DotOff, Pip, inputClass } from "./ui";
+import { Button, Pip, PresenceDot, inputClass, presenceOf } from "./ui";
 
 /**
  * Friends, the requests either way, and what each of them is doing right now.
@@ -128,46 +129,61 @@ export function FriendsPanel({ social, inviteCode = null }: { social: SocialHook
 }
 
 function FriendRow({ friend, social, inviteCode }: { friend: Friend; social: SocialHook; inviteCode: string | null }) {
-  const [invited, setInvited] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const live = friend.playing;
   const here = !!live && !!inviteCode && live.code === inviteCode;
   const canJoin = !!live && !here && live.openSeats > 0;
+  const asked = social.social.sent.some((s) => s.toId === friend.id && s.code === inviteCode);
+  // You can only ask someone who is free to be asked: not already at this
+  // table, not sitting at another one.
+  const invitable = !!inviteCode && !live;
+
+  const invite = async () => {
+    if (!inviteCode) return;
+    setBusy(true);
+    setNote(null);
+    const outcome = await social.invite(friend.id, inviteCode);
+    setNote(outcome.ok ? `Asked ${friend.displayName}.` : outcome.message);
+    setBusy(false);
+  };
+
   return (
-    <li className="flex items-center justify-between gap-3 rounded-[16px] bg-surface-2 px-3.5 py-2.5">
-      <div className="min-w-0">
-        <p className="t-sub truncate font-medium">
-          <Link href={`/p/${friend.handle}`} className="hover:text-accent">{friend.displayName}</Link>
-        </p>
-        <p className="t-footnote flex items-center gap-1.5 text-ink-3">
-          {live ? <Pip /> : <DotOff />}
-          {live
-            ? here
-              ? <>At this table with you</>
-              : canJoin
-                ? <>At table {live.code} · seat open</>
-                : <>At table {live.code} · {live.phase === "lobby" ? "filling up" : "mid round"}</>
-            : friend.playedTogether > 0
-              ? <>{friend.yourWins}&ndash;{friend.theirWins} across {friend.playedTogether} {friend.playedTogether === 1 ? "round" : "rounds"}</>
-              : <>@{friend.handle}</>}
-        </p>
+    <li className="rounded-[16px] bg-surface-2 px-3.5 py-2.5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="t-sub truncate font-medium">
+            <Link href={`/p/${friend.handle}`} className="hover:text-accent">{friend.displayName}</Link>
+          </p>
+          <p className="t-footnote flex items-center gap-1.5 text-ink-3">
+            <PresenceDot state={presenceOf(friend)} />
+            {live
+              ? here
+                ? <>At this table with you</>
+                : canJoin
+                  ? <>At table {live.code} · seat open</>
+                  : <>At table {live.code} · {live.phase === "lobby" ? "filling up" : "mid round"}</>
+              : friend.online
+                ? <>Online</>
+                : friend.playedTogether > 0
+                  ? <>{friend.yourWins}&ndash;{friend.theirWins} across {friend.playedTogether} {friend.playedTogether === 1 ? "round" : "rounds"}</>
+                  : <>@{friend.handle}</>}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          {canJoin ? (
+            <Link href={`/g/${live!.code}`}><Button size="sm" variant="accent">Join</Button></Link>
+          ) : live && !here ? (
+            <Link href={`/g/${live.code}`}><Button size="sm" variant="ghost">Watch</Button></Link>
+          ) : null}
+          {invitable ? (
+            <Button size="sm" variant={asked ? "ghost" : "secondary"} disabled={busy || asked} onClick={invite}>
+              {asked ? "Asked" : busy ? "Asking" : "Invite"}
+            </Button>
+          ) : null}
+        </div>
       </div>
-      <div className="flex shrink-0 items-center gap-1.5">
-        {canJoin ? (
-          <Link href={`/g/${live!.code}`}><Button size="sm" variant="accent">Join</Button></Link>
-        ) : live && !here ? (
-          <Link href={`/g/${live.code}`}><Button size="sm" variant="ghost">Watch</Button></Link>
-        ) : null}
-        {inviteCode && !live ? (
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={invited}
-            onClick={async () => { await social.invite(friend.id, inviteCode); setInvited(true); }}
-          >
-            {invited ? "Invited" : "Invite"}
-          </Button>
-        ) : null}
-      </div>
+      {note ? <p className="t-footnote mt-1.5 text-ink-2">{note}</p> : null}
     </li>
   );
 }
@@ -180,12 +196,32 @@ function FriendRow({ friend, social, inviteCode }: { friend: Friend; social: Soc
 export function Notifications({ social, atCode = null }: { social: SocialHook; atCode?: string | null }) {
   const router = useRouter();
   const [dismissed, setDismissed] = useState<string[]>([]);
+  const [trouble, setTrouble] = useState<Record<string, string>>({});
+  const [answering, setAnswering] = useState<string | null>(null);
   // Nothing to say about the table you are already looking at.
   const invites = social.social.invites.filter((i) => !dismissed.includes(i.id) && i.code !== atCode);
   const live = social.social.friends.filter(
     (f) => f.playing && f.playing.code !== atCode && !dismissed.includes(`live:${f.playing.code}:${f.id}`),
   );
   if (!invites.length && !live.length) return null;
+
+  /**
+   * Accepting takes the seat on the server and comes back with it, so the
+   * friend who said yes arrives already sitting down rather than at a join
+   * form where the seat may be gone. A refusal says which of the ways it
+   * could go wrong actually did.
+   */
+  const accept = async (inviteId: string) => {
+    setAnswering(inviteId);
+    const answer = await social.answerInvite(inviteId, true);
+    setAnswering(null);
+    if (!answer.ok) {
+      setTrouble((t) => ({ ...t, [inviteId]: answer.message }));
+      return;
+    }
+    if (answer.seat) saveSession(answer.code, answer.seat);
+    router.push(`/g/${answer.code}`);
+  };
 
   return (
     <div className="fixed bottom-6 right-6 z-40 flex w-[290px] flex-col gap-2">
@@ -195,18 +231,19 @@ export function Notifications({ social, atCode = null }: { social: SocialHook; a
             <span className="font-semibold">{invite.from.displayName}</span> asked you to table{" "}
             <span className="tnum font-semibold tracking-[0.06em]">{invite.code}</span>.
           </p>
+          {trouble[invite.id] ? <p className="t-footnote mt-1.5 text-accent-ink">{trouble[invite.id]}</p> : null}
           <div className="mt-2.5 flex gap-1.5">
+            <Button size="sm" variant="accent" disabled={answering === invite.id} onClick={() => void accept(invite.id)}>
+              {answering === invite.id ? "Taking a seat" : "Join"}
+            </Button>
             <Button
               size="sm"
-              variant="accent"
-              onClick={async () => {
-                const code = await social.answerInvite(invite.id, true);
-                if (code) router.push(`/g/${code}`);
-              }}
+              variant="ghost"
+              disabled={answering === invite.id}
+              onClick={() => { setDismissed((d) => [...d, invite.id]); void social.answerInvite(invite.id, false); }}
             >
-              Join
+              No thanks
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => void social.answerInvite(invite.id, false)}>No thanks</Button>
           </div>
         </div>
       ))}
@@ -215,7 +252,7 @@ export function Notifications({ social, atCode = null }: { social: SocialHook; a
         <div key={f.id} className="animate-rise rounded-[18px] bg-surface-2 p-3.5 shadow-float hairline">
           <p className="t-sub inline-flex items-center gap-2">
             <Pip />
-            <span><span className="font-semibold">{f.displayName}</span> is playing table <span className="tnum font-semibold tracking-[0.06em]">{f.playing!.code}</span>.</span>
+            <span><span className="font-semibold">{f.displayName}</span> is at table <span className="tnum font-semibold tracking-[0.06em]">{f.playing!.code}</span>.</span>
           </p>
           <div className="mt-2.5 flex items-center gap-1.5">
             <Link href={`/g/${f.playing!.code}`}>

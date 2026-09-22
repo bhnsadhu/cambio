@@ -11,8 +11,10 @@ import { SEATS } from "@/lib/game/engine";
  */
 export async function POST(req: Request) {
   try {
-    const body = (await req.json().catch(() => ({}))) as { code?: string | null };
-    const me = await profileByToken(profileTokenFrom(req));
+    const body = (await req.json().catch(() => ({}))) as { code?: string | null; token?: string };
+    // A `sendBeacon` on the way out cannot set headers, so the token may
+    // arrive in the body instead.
+    const me = await profileByToken(profileTokenFrom(req) ?? body.token ?? null);
     if (!me) return ok({ ok: true });
     const code = body.code ? normaliseCode(body.code) : null;
     if (!code) {

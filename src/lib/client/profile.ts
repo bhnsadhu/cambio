@@ -20,6 +20,17 @@ export interface StoredProfile {
 
 let cache: StoredProfile | null | undefined;
 const listeners = new Set<() => void>();
+/**
+ * Bumped every time the stored profile is cleared. A read that was already
+ * in flight when someone signed out carries the generation it started under,
+ * and its write is dropped rather than resurrecting the profile that was
+ * just thrown away.
+ */
+let generation = 0;
+
+export function profileGeneration(): number {
+  return generation;
+}
 
 function read(): StoredProfile | null {
   if (cache !== undefined) return cache;
@@ -40,7 +51,9 @@ export function profileToken(): string | null {
   return read()?.token ?? null;
 }
 
-export function saveStoredProfile(value: StoredProfile | null) {
+export function saveStoredProfile(value: StoredProfile | null, forGeneration?: number) {
+  if (forGeneration !== undefined && forGeneration !== generation) return;
+  if (value === null) generation += 1;
   cache = value;
   try {
     if (value) localStorage.setItem(KEY, JSON.stringify(value));
@@ -74,6 +87,20 @@ export async function callProfile<T>(path: string, init: RequestInit = {}): Prom
   const body = (await res.json().catch(() => ({}))) as { error?: { message: string } } & T;
   if (!res.ok || body.error) throw new Error(body.error?.message ?? `Request failed (${res.status})`);
   return body;
+}
+
+/**
+ * Sign out on this device. The token is the whole account, so the lights are
+ * put out first — a friend watching should not keep seeing a profile whose
+ * key has already been thrown away — and only then is it cleared.
+ */
+export async function signOut(): Promise<void> {
+  try {
+    await callProfile("/api/presence", { method: "POST", body: JSON.stringify({ code: null }) });
+  } catch {
+    /* the heartbeat lapses by itself soon enough */
+  }
+  saveStoredProfile(null);
 }
 
 export async function createProfile(name: string): Promise<Profile> {

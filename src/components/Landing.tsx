@@ -6,7 +6,7 @@ import { useState, type FormEvent } from "react";
 import { api, RequestError } from "@/lib/client/api";
 import { createProfile } from "@/lib/client/profile";
 import { saveSession, storeName } from "@/lib/client/session";
-import { useSocial } from "@/lib/client/social";
+import { usePresence, useSocial } from "@/lib/client/social";
 import { useStoredName } from "@/lib/client/useStoredName";
 import { CardBack, FaceCard } from "./cards";
 import { FriendsPanel, Notifications } from "./Friends";
@@ -16,6 +16,8 @@ import { Button, Field, inputClass, PlayerName, Wordmark } from "./ui";
 export function Landing() {
   const router = useRouter();
   const social = useSocial();
+  // Online and free to be asked to a table.
+  usePresence(null);
   const [name, setName] = useStoredName();
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState<"create" | "join" | null>(null);

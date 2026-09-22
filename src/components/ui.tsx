@@ -49,6 +49,28 @@ export function DotOff({ className = "" }: { className?: string }) {
   return <span aria-hidden className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-ink-3 ${className}`} />;
 }
 
+export type Presence = "playing" | "online" | "offline";
+
+/**
+ * What the dot beside a name actually means, in three states rather than two:
+ *   playing  mint and breathing — they are at a table right now
+ *   online   mint and still — the app is open, they are free to be asked
+ *   offline  gray — nothing has been heard from them
+ */
+export function PresenceDot({ state, className = "" }: { state: Presence; className?: string }) {
+  if (state === "playing") return <Pip className={className} />;
+  if (state === "online") {
+    return <span aria-hidden className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-accent ${className}`} />;
+  }
+  return <DotOff className={className} />;
+}
+
+/** The same three states in words, for the line under a name. */
+export function presenceOf(friend: { online: boolean; playing: unknown }): Presence {
+  if (friend.playing) return "playing";
+  return friend.online ? "online" : "offline";
+}
+
 export function Wordmark({ className = "" }: { className?: string }) {
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>

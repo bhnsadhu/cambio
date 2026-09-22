@@ -1,10 +1,17 @@
-import { createInvite, profileByToken } from "@/lib/server/social";
+import { createInvite, presenceOf, profileByToken, socialFor } from "@/lib/server/social";
 import { loadByCode } from "@/lib/server/store";
 import { normaliseCode } from "@/lib/server/ids";
 import { fail, ok, requireProfileToken } from "@/lib/server/http";
-import { GameError } from "@/lib/game/engine";
+import { GameError, SEATS } from "@/lib/game/engine";
+import type { InviteOutcome } from "@/lib/social/types";
 
-/** Ask a friend to a table you are sitting at. */
+/**
+ * Ask a friend to the table you are sitting at.
+ *
+ * Every reason an invite would be pointless is checked here rather than left
+ * for the other side to discover: the table has to still exist, still be open
+ * and still have a seat, and the friend has to be free to take it.
+ */
 export async function POST(req: Request) {
   try {
     const body = (await req.json().catch(() => ({}))) as { profileId?: string; code?: string };
@@ -12,13 +19,38 @@ export async function POST(req: Request) {
     if (!me) throw new GameError("NOT_FOUND", "That profile no longer exists.");
     const code = normaliseCode(body.code ?? "");
     if (!body.profileId || !code) throw new GameError("INVALID_TARGET", "Pick a friend and a table.");
+
+    const refuse = (reason: Extract<InviteOutcome, { ok: false }>["reason"], message: string) =>
+      ok({ outcome: { ok: false, reason, message } satisfies InviteOutcome });
+
+    // You can only hand out a table you are actually sitting at.
     const row = await loadByCode(code);
-    if (!row) throw new GameError("NOT_FOUND", "That table is gone.");
-    // Only someone at the table can hand out its code.
+    if (!row) return refuse("table-gone", "That table is gone.");
     if (!row.state.players.some((p) => p.profileId === me.id)) {
-      throw new GameError("INVALID_TARGET", "You are not seated at that table.");
+      return refuse("not-seated", "You are not seated at that table.");
     }
-    return ok({ id: await createInvite(me.id, body.profileId, code) });
+    // And only to someone you have actually added.
+    const social = await socialFor(me.id);
+    const friend = social.friends.find((f) => f.id === body.profileId);
+    if (!friend) return refuse("not-friends", "You can only invite friends.");
+
+    if (row.state.players.some((p) => p.profileId === friend.id)) {
+      return refuse("here", `${friend.displayName} is already at this table.`);
+    }
+    if (row.state.phase !== "lobby") {
+      return refuse("table-started", "This round has already started. Seats open up again between rounds.");
+    }
+    const humans = row.state.players.filter((p) => !p.isBot).length;
+    if (humans >= SEATS) return refuse("table-full", "Every seat at this table is taken.");
+
+    // Somebody already sitting somewhere else is not free to be asked.
+    const where = await presenceOf(friend.id);
+    if (where.code && where.code !== code) {
+      return refuse("busy", `${friend.displayName} is already in a game.`);
+    }
+
+    await createInvite(me.id, friend.id, code);
+    return ok({ outcome: { ok: true } satisfies InviteOutcome });
   } catch (e) {
     return fail(e);
   }

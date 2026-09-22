@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Profile, Social } from "@/lib/social/types";
-import { callProfile, saveStoredProfile, storedProfile, useStoredProfile } from "./profile";
+import type { InviteAnswer, InviteOutcome, Profile, Social } from "@/lib/social/types";
+import { callProfile, profileGeneration, saveStoredProfile, storedProfile, useStoredProfile } from "./profile";
 
 /**
  * Friends, requests, invites and who is playing right now.
@@ -12,9 +12,11 @@ import { callProfile, saveStoredProfile, storedProfile, useStoredProfile } from 
  * owns the realtime connection.
  */
 
-const POLL_MS = 15_000;
+const POLL_MS = 10_000;
+/** Three of these inside the 75 seconds the server calls a row stale. */
+const PRESENCE_BEAT_MS = 25_000;
 
-export const EMPTY_SOCIAL: Social = { friends: [], incoming: [], outgoing: [], invites: [], opponents: [] };
+export const EMPTY_SOCIAL: Social = { friends: [], incoming: [], outgoing: [], invites: [], sent: [], opponents: [] };
 
 export interface SocialHook {
   profile: Profile | null;
@@ -25,8 +27,8 @@ export interface SocialHook {
   addFriend: (handle: string) => Promise<string>;
   respond: (profileId: string, accept: boolean) => Promise<void>;
   remove: (profileId: string) => Promise<void>;
-  invite: (profileId: string, code: string) => Promise<void>;
-  answerInvite: (inviteId: string, accept: boolean) => Promise<string | null>;
+  invite: (profileId: string, code: string) => Promise<InviteOutcome>;
+  answerInvite: (inviteId: string, accept: boolean) => Promise<InviteAnswer>;
 }
 
 /** What the last read returned, tagged with the profile it was read for. */
@@ -49,12 +51,15 @@ export function useSocial(): SocialHook {
   const refresh = useCallback(async () => {
     const held = storedProfile();
     if (!held) return;
+    const gen = profileGeneration();
     try {
       const res = await callProfile<{ profile: Profile | null; social: Social | null }>("/api/social");
-      if (!alive.current) return;
+      if (!alive.current || gen !== profileGeneration()) return;
       setFetched({ token: held.token, profile: res.profile, social: res.social ?? EMPTY_SOCIAL });
-      // The record moves while you play; keep the cached copy in step.
-      if (res.profile) saveStoredProfile({ token: held.token, profile: res.profile });
+      // The record moves while you play; keep the cached copy in step. The
+      // generation keeps a read that outlived a sign-out from bringing the
+      // profile back.
+      if (res.profile) saveStoredProfile({ token: held.token, profile: res.profile }, gen);
       setError(null);
     } catch (e) {
       if (alive.current) setError(e instanceof Error ? e.message : "Could not reach the friends list.");
@@ -93,17 +98,30 @@ export function useSocial(): SocialHook {
     await refresh();
   }, [refresh]);
 
-  const invite = useCallback(async (profileId: string, code: string) => {
-    await callProfile("/api/social/invites", { method: "POST", body: JSON.stringify({ profileId, code }) });
-  }, []);
+  const invite = useCallback(async (profileId: string, code: string): Promise<InviteOutcome> => {
+    try {
+      const res = await callProfile<{ outcome: InviteOutcome }>("/api/social/invites", {
+        method: "POST",
+        body: JSON.stringify({ profileId, code }),
+      });
+      await refresh();
+      return res.outcome;
+    } catch (e) {
+      return { ok: false, reason: "table-gone", message: e instanceof Error ? e.message : "Could not send that invite." };
+    }
+  }, [refresh]);
 
-  const answerInvite = useCallback(async (inviteId: string, accept: boolean) => {
-    const res = await callProfile<{ code: string | null }>("/api/social/invites/respond", {
-      method: "POST",
-      body: JSON.stringify({ inviteId, accept }),
-    });
-    await refresh();
-    return res.code;
+  const answerInvite = useCallback(async (inviteId: string, accept: boolean): Promise<InviteAnswer> => {
+    try {
+      const res = await callProfile<{ answer: InviteAnswer }>("/api/social/invites/respond", {
+        method: "POST",
+        body: JSON.stringify({ inviteId, accept }),
+      });
+      await refresh();
+      return res.answer;
+    } catch (e) {
+      return { ok: false, reason: "gone", message: e instanceof Error ? e.message : "Could not answer that invite." };
+    }
   }, [refresh]);
 
   return useMemo(
@@ -116,22 +134,50 @@ export function useSocial(): SocialHook {
  * Tells the server which table this browser is sitting at, so friends can see
  * the game and join an open seat. Clears itself when the page goes away.
  */
+/**
+ * Tells the server where this browser is, so friends can see it: a table code
+ * while seated at one, null while just about. Called from every page, so
+ * "online" means the app is open rather than "happens to be mid game".
+ *
+ * Keyed on the token rather than the stored object: the profile object is
+ * replaced on every poll, and depending on it tore this effect down and set
+ * it up again every few seconds — each teardown blanking the row for as long
+ * as it took the next beat to land, which is what made a friend flicker
+ * between online and offline.
+ */
 export function usePresence(code: string | null) {
-  const stored = useStoredProfile();
+  const token = useStoredProfile()?.token ?? null;
   useEffect(() => {
-    if (!stored) return;
+    if (!token) return;
     let stopped = false;
     const beat = () => {
       if (stopped) return;
       void callProfile("/api/presence", { method: "POST", body: JSON.stringify({ code }) }).catch(() => {});
     };
     beat();
-    const id = setInterval(beat, 45_000);
+    const id = setInterval(beat, PRESENCE_BEAT_MS);
+    // A closed tab should go dark at once rather than linger until the row
+    // goes stale; `sendBeacon` is the one send that survives an unload. This
+    // is `pagehide` rather than `visibilitychange`, because switching tabs is
+    // not leaving — the beat carries on in the background.
+    const onLeave = () => {
+      try {
+        navigator.sendBeacon?.("/api/presence", new Blob(
+          [JSON.stringify({ code: null, token })],
+          { type: "application/json" },
+        ));
+      } catch { /* best effort */ }
+    };
+    // Coming back to a backgrounded tab checks in at once rather than waiting
+    // out the rest of a throttled interval.
+    const onVisible = () => { if (document.visibilityState === "visible") beat(); };
+    window.addEventListener("pagehide", onLeave);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       stopped = true;
       clearInterval(id);
-      // Leaving the table clears the light straight away.
-      void callProfile("/api/presence", { method: "POST", body: JSON.stringify({ code: null }) }).catch(() => {});
+      window.removeEventListener("pagehide", onLeave);
+      document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [stored, code]);
+  }, [token, code]);
 }

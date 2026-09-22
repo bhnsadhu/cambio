@@ -50,7 +50,11 @@ export interface Friend {
   roundsWon: number;
   roundsPlayed: number;
   since: string | null;
-  /** null unless their client has checked in within the last two minutes */
+  /** their client has checked in recently: the app is open somewhere */
+  online: boolean;
+  /** when they were last seen, for a friend who is not online now */
+  lastSeenAt: string | null;
+  /** online *and* sitting at a table; null when they are just about */
   playing: LiveGame | null;
   /** rounds the two of you have played at the same table */
   playedTogether: number;
@@ -82,11 +86,32 @@ export interface Opponent {
   lastPlayedAt: string;
 }
 
+/** An invite this profile has sent and not had answered yet. */
+export interface SentInvite {
+  id: string;
+  code: string;
+  at: string;
+  toId: string;
+}
+
 /** Everything one client needs about its own corner of the game, in one read. */
 export interface Social {
   friends: Friend[];
   incoming: PendingFriend[];
   outgoing: PendingFriend[];
+  /** invites waiting on an answer from you */
   invites: Invite[];
+  /** invites you have sent and are waiting on */
+  sent: SentInvite[];
   opponents: Opponent[];
 }
+
+/** How an attempt to invite someone to a table turned out. */
+export type InviteOutcome =
+  | { ok: true }
+  | { ok: false; reason: "not-friends" | "table-gone" | "table-started" | "table-full" | "not-seated" | "busy" | "here"; message: string };
+
+/** How answering an invite turned out. */
+export type InviteAnswer =
+  | { ok: true; code: string; seat: { playerId: string; token: string; name: string } | null }
+  | { ok: false; reason: "gone" | "started" | "full" | "busy" | "expired"; message: string };

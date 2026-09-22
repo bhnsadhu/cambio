@@ -5,15 +5,18 @@ import { useState } from "react";
 import { FriendsPanel, Notifications } from "@/components/Friends";
 import { ProfileCard, SaveProfile } from "@/components/Profile";
 import { Button, Wordmark } from "@/components/ui";
-import { useSocial } from "@/lib/client/social";
-import { createProfile, renameProfile, saveStoredProfile } from "@/lib/client/profile";
+import { usePresence, useSocial } from "@/lib/client/social";
+import { createProfile, renameProfile, signOut } from "@/lib/client/profile";
 import { getStoredName } from "@/lib/client/session";
 
 /** Your record, your friends, and the handle other people add you by. */
 export default function MePage() {
   const social = useSocial();
   const [renaming, setRenaming] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const profile = social.profile;
+  // Online, but not at a table.
+  usePresence(null);
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-[1000px] px-8 pb-20">
@@ -48,16 +51,27 @@ export default function MePage() {
                       onSaved={async (name) => { await renameProfile(name); await social.refresh(); setRenaming(false); }}
                     />
                   </div>
+                ) : leaving ? (
+                  <div className="flex flex-col gap-2">
+                    <p className="t-sub text-ink-2">
+                      Sign out of <span className="font-medium text-ink">@{profile.handle}</span> on this device? This
+                      browser holds the only key to it — without it the record cannot be reached again.
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={async () => { await signOut(); setLeaving(false); await social.refresh(); }}
+                      >
+                        Sign out
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setLeaving(false)}>Stay signed in</Button>
+                    </div>
+                  </div>
                 ) : (
                   <>
                     <Button variant="secondary" size="sm" onClick={() => setRenaming(true)}>Change name</Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => { if (confirm("Forget this profile on this device? Without its key it cannot be recovered.")) { saveStoredProfile(null); void social.refresh(); } }}
-                    >
-                      Forget on this device
-                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setLeaving(true)}>Sign out</Button>
                   </>
                 )}
               </div>

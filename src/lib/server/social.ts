@@ -159,12 +159,14 @@ interface RawSocial {
   friends: {
     id: string; handle: string; display_name: string; points: number;
     rounds_won: number; rounds_played: number; since: string | null;
+    online: boolean; last_seen_at: string | null;
     playing: { code: string; phase: string; open_seats: number } | null;
     played_together: number; your_wins: number; their_wins: number;
   }[];
   incoming: { id: string; handle: string; display_name: string; at: string }[];
   outgoing: { id: string; handle: string; display_name: string; at: string }[];
   invites: { id: string; code: string; at: string; from: { id: string; handle: string; display_name: string } }[];
+  sent: { id: string; code: string; at: string; to_id: string }[];
   opponents: { id: string; handle: string; display_name: string; rounds: number; wins: number; last_played_at: string }[];
 }
 
@@ -180,6 +182,8 @@ export async function socialFor(id: string): Promise<Social> {
     roundsWon: f.rounds_won,
     roundsPlayed: f.rounds_played,
     since: f.since,
+    online: !!f.online,
+    lastSeenAt: f.last_seen_at,
     playing: f.playing ? { code: f.playing.code, phase: f.playing.phase, openSeats: f.playing.open_seats } : null,
     playedTogether: f.played_together,
     yourWins: f.your_wins,
@@ -204,7 +208,43 @@ export async function socialFor(id: string): Promise<Social> {
     incoming: (raw.incoming ?? []).map(pending),
     outgoing: (raw.outgoing ?? []).map(pending),
     invites,
+    sent: (raw.sent ?? []).map((s) => ({ id: s.id, code: s.code, at: s.at, toId: s.to_id })),
     opponents,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Guards around an invite                                             */
+/* ------------------------------------------------------------------ */
+
+export interface Presence {
+  /** the table they are sitting at, or null when they are just about */
+  code: string | null;
+  online: boolean;
+}
+
+export async function presenceOf(id: string): Promise<Presence> {
+  const raw = await rpc<{ code: string | null; online: boolean }>("presence_of", { p_id: id });
+  return { code: raw?.code ?? null, online: !!raw?.online };
+}
+
+export interface PeekedInvite {
+  id: string;
+  code: string;
+  status: "pending" | "accepted" | "declined";
+  from: { id: string; handle: string; displayName: string };
+}
+
+export async function peekInvite(me: string, inviteId: string): Promise<PeekedInvite | null> {
+  const raw = await rpc<{ id: string; code: string; status: PeekedInvite["status"]; from: { id: string; handle: string; display_name: string } } | null>(
+    "invite_peek", { p_me: me, p_id: inviteId },
+  );
+  if (!raw) return null;
+  return {
+    id: raw.id,
+    code: raw.code,
+    status: raw.status,
+    from: { id: raw.from.id, handle: raw.from.handle, displayName: raw.from.display_name },
   };
 }
 
