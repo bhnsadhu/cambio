@@ -110,9 +110,9 @@ function Art3() {
     <div className="flex items-center gap-3 sm:gap-5">
       <CardBack size="md" className="opacity-60" />
       <span className="t-sub text-ink-3">Place</span>
-      <div className="flex max-w-[124px] flex-col items-center gap-2">
+      <div className="relative flex w-[124px] shrink-0 justify-center">
         <FaceCard size="md" card={{ id: "x3", rank: "8", suit: "D" }} className="shadow-lift" />
-        <span className="rounded-full bg-ink px-2 py-1 text-center text-[11px] leading-4 font-medium text-bg">Peek at one of yours</span>
+        <span className="absolute top-full mt-2 w-full rounded-full bg-ink px-2 py-1 text-center text-[11px] leading-4 font-medium text-bg">Peek at one of yours</span>
       </div>
     </div>
   );
@@ -122,7 +122,7 @@ function Art4() {
   return (
     <div className="flex items-center gap-4 sm:gap-6">
       <div className="relative">
-        <CardBack size="md" className="-translate-y-1.5 shadow-lift" />
+        <CardBack size="md" className="shadow-lift" />
         <span className="absolute inset-x-0 -bottom-1 rounded-b-[8px] bg-bg/95 py-0.5 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-ink">Stick</span>
       </div>
       <span className="t-sub text-ink-3">Matches</span>
