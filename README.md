@@ -132,7 +132,7 @@ Creating an account after joining as a guest attaches the account to that existi
 
 Friends at another table can receive and accept invitations, including during a round or with Do not disturb enabled. Accepting opens the invited table without cancelling the previous round. The destination must still have an open seat in its lobby; invitations to someone already seated there remain unavailable.
 
-The friends list puts people at your table first, other online friends next, and offline friends last. Table seating takes precedence over delayed presence. Player cards in the lobby and during play show each account's tier and whether you are friends, with Add friend, Request sent, or Accept friend controls as appropriate. Guest seats and house bots have no account tier or friend request controls.
+The friends list puts people at your table first, other online friends next, and offline friends last. Each group sorts from highest badge rank to lowest, using points to order friends within the same tier. Table seating takes precedence over delayed presence. Player cards in the lobby and during play show each account's tier and whether you are friends, with Add friend, Request sent, or Accept friend controls as appropriate. Guest seats and house bots have no account tier or friend request controls.
 
 | Piece | What it does |
 | --- | --- |

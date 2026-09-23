@@ -16,21 +16,23 @@ function playing(together: boolean): LiveGame {
 }
 
 describe("friends list order", () => {
-  it("puts seated friends first even when their presence has expired", () => {
+  it("ranks friends within each presence group while keeping seated friends first", () => {
     const friends = [
-      friend("offline"),
-      friend("other-table", { online: true, playing: playing(false) }),
-      friend("here-offline"),
-      friend("online", { online: true }),
-      friend("here-online", { online: true, playing: playing(true) }),
+      friend("offline-low"),
+      friend("other-table", { online: true, points: 180, playing: playing(false) }),
+      friend("here-offline", { points: 60 }),
+      friend("online", { online: true, points: 400 }),
+      friend("here-online", { online: true, points: 800, playing: playing(true) }),
+      friend("online-same-tier", { online: true, points: 450 }),
+      friend("offline-high", { points: 3000 }),
     ];
 
     const rows = orderFriends(friends, ["here-offline", "here-online"]);
     expect(rows.map(({ friend }) => friend.id)).toEqual([
-      "here-offline", "here-online", "other-table", "online", "offline",
+      "here-online", "here-offline", "online-same-tier", "online", "other-table", "offline-high", "offline-low",
     ]);
-    expect(rows.filter(({ here }) => here).map(({ friend }) => friend.id)).toEqual(["here-offline", "here-online"]);
-    expect(friends.map(({ id }) => id)).toEqual(["offline", "other-table", "here-offline", "online", "here-online"]);
+    expect(rows.filter(({ here }) => here).map(({ friend }) => friend.id)).toEqual(["here-online", "here-offline"]);
+    expect(friends.map(({ id }) => id)).toEqual(["offline-low", "other-table", "here-offline", "online", "here-online", "online-same-tier", "offline-high"]);
   });
 
   it("uses current seats instead of a stale shared-table presence flag", () => {
