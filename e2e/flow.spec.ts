@@ -12,7 +12,7 @@ test("login resumes a table and settings lead back to the same seat", async ({ p
   const host = await browser.newContext({ baseURL: origin });
   const seat = await (await post(host, "/api/games", { name: "Table Host" })).json();
   await page.goto(`/g/${seat.code}`);
-  await page.getByRole("link", { name: "Log in before joining" }).click();
+  await page.getByRole("link", { name: "Log in to use your saved profile" }).click();
   await expect(page).toHaveURL(new RegExp(`/login\\?next=%2Fg%2F${seat.code}$`));
   await expect(page.getByRole("link", { name: "Back to the table" })).toHaveAttribute("href", `/g/${seat.code}`);
   const login = page.getByRole("form", { name: "Log in", exact: true });
@@ -93,7 +93,7 @@ test("table setup asks once and carries the chosen table through signup", async 
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: "test-results/play-guest-mobile.png", fullPage: true });
-  await page.getByRole("link", { name: "Create an account to save your stats" }).click();
+  await page.getByRole("link", { name: "Create an account to keep your profile and stats" }).click();
   const signup = page.getByRole("form", { name: "Create account", exact: true });
   await expect(signup.getByLabel("Display name", { exact: true })).toHaveValue("Casey Lane");
   await signup.getByLabel("Username", { exact: true }).fill(username());
@@ -137,8 +137,7 @@ test("guest play stays available and the walkthrough is only automatic once", as
   await page.getByRole("button", { name: "Skip", exact: true }).click();
   await expect(page.getByRole("button", { name: "Start round", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: /Log in|Create account/ })).toHaveCount(0);
-  await expect(page.getByRole("switch", { name: "Do not disturb" })).toHaveCount(0);
-  await expect(page.getByText(/Do not disturb|DND/)).toHaveCount(0);
+  await expect(page.getByRole("switch", { name: "Do not disturb" })).toHaveCount(1);
   await page.reload();
   await expect(page.getByRole("button", { name: "Start round", exact: true })).toBeVisible();
   await expect(page.getByRole("dialog", { name: "How Cambio works" })).toHaveCount(0);

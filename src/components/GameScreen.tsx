@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { useAccountReady, useStoredProfile } from "@/lib/client/profile";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { dismissAccountNotice, useAccountNotice, useAccountReady, useStoredProfile } from "@/lib/client/profile";
 import { loginHref } from "@/lib/account/navigation";
+import { avatarIndex } from "@/lib/avatars";
+import { guestIdentity, storeGuestIdentity, useGuestIdentity } from "@/lib/client/guest";
 import { useGame } from "@/lib/client/useGame";
 import { api, RequestError } from "@/lib/client/api";
 import { useSocial } from "@/lib/client/social";
@@ -22,7 +24,8 @@ import { PauseButton, PauseOverlay } from "./Pause";
 import { RoomSettings } from "./RoomSettings";
 import { TablePlayers } from "./TablePlayers";
 import { TableSocialProvider } from "./PlayerSocial";
-import { Button, buttonClass, Chip, DotOff, Field, inputClass, Pip, Wordmark } from "./ui";
+import { GuestPlayerButton, GuestPlayerDialog, GuestSetup } from "./GuestPlayer";
+import { Button, buttonClass, Chip, DotOff, Pip, Wordmark } from "./ui";
 
 /**
  * Card flights are tracked here rather than inside the table so that the
@@ -41,12 +44,15 @@ export function GameScreen({ code }: { code: string }) {
 function GameShell({ code }: { code: string }) {
   const game = useGame(code);
   const social = useSocial();
+  const accountNotice = useAccountNotice();
   const router = useRouter();
   const view = game.view;
   // Friends can see the table you are sitting at, and whether it has a seat
   // left. Watching a table is not sitting at one, so it lights nothing up.
   const [watching, setWatching] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [guestEditorFor, setGuestEditorFor] = useState<string | null>(null);
+  const guestButtonRef = useRef<HTMLButtonElement>(null);
   const leave = useCallback(async () => {
     const phase = game.view?.public.phase;
     if (game.session) {
@@ -59,6 +65,20 @@ function GameShell({ code }: { code: string }) {
   }, [code, game, router]);
 
   const seated = !!game.session;
+  const myPlayer = view?.public.players.find((player) => player.id === game.me);
+  const myGuest = !social.profile && myPlayer && !myPlayer.profileId && !myPlayer.isBot && game.session?.playerId === myPlayer.id ? myPlayer : null;
+  const guestId = myGuest?.id;
+  const guestName = myGuest?.name;
+  const guestAvatar = myGuest?.avatarId;
+  useEffect(() => {
+    if (!guestId || guestName === undefined) return;
+    // A reopened tab still owns its saved seat, even after its temporary
+    // appearance expired. Carry the actual seat through every signup route.
+    const avatarId = avatarIndex(guestName, guestAvatar);
+    const saved = guestIdentity();
+    if (saved?.name !== guestName || saved.avatarId !== avatarId) storeGuestIdentity({ name: guestName, avatarId });
+  }, [guestId, guestName, guestAvatar]);
+  const guestPlayerControl = myGuest ? <GuestPlayerButton player={myGuest} busy={game.busy} buttonRef={guestButtonRef} onOpen={() => setGuestEditorFor(myGuest.id)} /> : null;
   // Who is actually in a chair here, by profile: the table's own word on it,
   // which beats a heartbeat that may have lapsed.
   const seatedProfiles = (view?.public.players ?? [])
@@ -128,9 +148,10 @@ function GameShell({ code }: { code: string }) {
           </div>
           <nav aria-label="Table controls" className="flex max-w-full flex-wrap items-center gap-1 sm:gap-2">
             {social.profile ? <AccountLink from={`/g/${code}`} /> : null}
+            {!view?.public.paused ? guestPlayerControl : null}
             {view && !view.public.paused && game.me === view.public.hostId ? <TablePlayers view={view.public} busy={game.busy}
               onKick={async (playerId) => !!await game.send({ type: "kickPlayer", playerId })} /> : null}
-            {social.profile && seated && view ? <RoomSettings view={view.public} me={game.me} busy={game.busy}
+            {seated && view ? <RoomSettings view={view.public} me={game.me} busy={game.busy}
               onChange={(enabled) => { void game.send({ type: "setDoNotDisturb", enabled }).then(() => social.refresh()); }} /> : null}
             {view ? <PauseButton view={view.public} {...pause} /> : null}
             <HowToPlayButton introduce={seated && !!view && !!game.me} />
@@ -150,16 +171,36 @@ function GameShell({ code }: { code: string }) {
           </nav>
         </header>
 
+        {accountNotice ? <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-panel bg-accent-soft p-4">
+          <p role="status" className="t-sub min-w-0 flex-1 basis-40 text-accent">{accountNotice}</p>
+          <Button type="button" variant="ghost" size="sm" className="shrink-0" aria-label="Dismiss message" onClick={dismissAccountNotice}>Dismiss</Button>
+        </div> : null}
+
         {body}
 
         <FlightLayer specs={flights.specs} onLanded={flights.onLanded} />
         {view && !game.removed && (seated || watching) ? <PauseOverlay view={view.public} {...pause}
-          onLeave={() => setLeaving(true)} onKick={async (playerId) => !!await game.send({ type: "kickPlayer", playerId })} /> : null}
+          playerControl={guestPlayerControl} onLeave={() => setLeaving(true)} onKick={async (playerId) => !!await game.send({ type: "kickPlayer", playerId })} /> : null}
         {leaving && game.session ? <LeaveTableDialog
           phase={view?.public.phase ?? "lobby"}
           busy={game.busy}
           onCancel={() => setLeaving(false)}
           onLeave={() => void leave()}
+        /> : null}
+        {myGuest && view && guestEditorFor === myGuest.id ? <GuestPlayerDialog
+          key={myGuest.id}
+          initial={{ name: myGuest.name, avatarId: avatarIndex(myGuest.name, myGuest.avatarId) }}
+          view={view.public}
+          playerId={myGuest.id}
+          next={`/g/${code}`}
+          returnFocusRef={guestButtonRef}
+          onClose={() => setGuestEditorFor(null)}
+          onApply={async (value) => {
+            const result = await game.send({ type: "setGuestIdentity", name: value.name, avatarId: value.avatarId! });
+            if (!result) throw new Error("Could not update your guest player. Try again.");
+            storeGuestIdentity(value);
+            if (game.session) game.setSession({ ...game.session, name: value.name });
+          }}
         /> : null}
         <Toasts toasts={game.toasts} />
         <Notifications social={social} atCode={code} acceptsJoinRequests={!seated || !view?.public.doNotDisturb} />
@@ -210,7 +251,9 @@ function WithFriends({ social, code, seated, children }: { social: ReturnType<ty
 }
 
 function JoinForm({ code, onJoined }: { code: string; onJoined: (s: { playerId: string; token: string; name: string }) => void }) {
-  const [name, setName] = useStoredName();
+  const [name, setName] = useStoredName("Guest");
+  const guest = useGuestIdentity();
+  const guestAvatarId = avatarIndex(name || "Guest", guest?.avatarId);
   const profile = useStoredProfile();
   const accountReady = useAccountReady();
   const [error, setError] = useState<string | null>(null);
@@ -220,8 +263,8 @@ function JoinForm({ code, onJoined }: { code: string; onJoined: (s: { playerId: 
     setBusy(true);
     setError(null);
     try {
-      const seat = await api.join(code, name);
-      storeName(name.trim());
+      const seat = await api.join(code, name, guestAvatarId);
+      if (profile) storeName(name.trim()); else storeGuestIdentity({ name: name.trim(), avatarId: guestAvatarId });
       const s = { playerId: seat.playerId, token: seat.token, name: name.trim() };
       saveSession(code, s);
       onJoined(s);
@@ -238,13 +281,11 @@ function JoinForm({ code, onJoined }: { code: string; onJoined: (s: { playerId: 
       <form onSubmit={submit} className="mt-6 flex flex-col gap-4" aria-label="Join table">
         {!accountReady ? <p role="status" className="t-sub text-ink-2">Checking your account</p>
           : profile ? <p className="t-body text-ink-2">Playing as <strong className="text-ink">{name}</strong></p>
-            : <Field label="Display name">
-              <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name at the table" maxLength={18} required autoFocus />
-            </Field>}
+            : <GuestSetup name={name} onNameChange={setName} disabled={busy} next={`/g/${code}`} />}
         {error ? <p role="alert" className="t-sub text-red">{error}</p> : null}
         <Button type="submit" variant="primary" size="lg" disabled={!accountReady || busy || !name.trim()}>{busy ? "Taking a seat" : "Take a seat"}</Button>
       </form>
-      {accountReady && !profile ? <p className="t-sub mt-5 text-ink-2">Have an account? <Link href={loginHref(`/g/${code}`)} onClick={() => storeName(name.trim())} className="font-medium text-ink hover:text-ink-2">Log in before joining</Link></p> : null}
+      {accountReady && !profile ? <p className="t-sub mt-5 text-ink-2">Your guest player is temporary. <Link href={loginHref(`/g/${code}`)} onClick={() => storeGuestIdentity({ name: name.trim(), avatarId: guestAvatarId })} className="font-medium text-ink hover:text-ink-2">Log in to use your saved profile</Link></p> : null}
     </div>
   );
 }

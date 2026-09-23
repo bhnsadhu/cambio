@@ -1,8 +1,9 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { PlayerPublic, PublicView } from "@/lib/game/types";
 import { useModalFocus } from "@/lib/client/useModalFocus";
-import { Button, Chip, Pip, PlayerName } from "./ui";
+import { Button, Pip, PlayerName } from "./ui";
 import { TablePlayers } from "./TablePlayers";
 
 /**
@@ -34,12 +35,12 @@ function Roster({ view }: { view: PublicView }) {
     <div className="flex flex-col gap-1.5">
       <Row label="Agreed">
         {agreed.map((p) => (
-          <Chip key={p.id} tone="accent"><PlayerName name={p.name} isBot={p.isBot} /></Chip>
+          <span key={p.id} className="inline-flex min-h-[22px] max-w-full items-center rounded-full bg-accent-soft px-2 py-0.5 text-[11.5px] font-medium text-accent-ink"><span className="min-w-0 [overflow-wrap:anywhere]"><PlayerName name={p.name} isBot={p.isBot} /></span></span>
         ))}
       </Row>
       <Row label="Waiting on">
         {waiting.map((p) => (
-          <Chip key={p.id} tone="muted"><Pip /><PlayerName name={p.name} isBot={p.isBot} /></Chip>
+          <span key={p.id} className="inline-flex min-h-[22px] max-w-full items-center gap-1.5 rounded-full px-2 py-0.5 text-[11.5px] font-medium text-ink-3 hairline"><Pip /><span className="min-w-0 [overflow-wrap:anywhere]"><PlayerName name={p.name} isBot={p.isBot} /></span></span>
         ))}
       </Row>
     </div>
@@ -48,9 +49,9 @@ function Roster({ view }: { view: PublicView }) {
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-wrap items-start gap-2.5">
-      <span className="t-caption mt-1.5 w-[86px] shrink-0 text-ink-3">{label}</span>
-      <div className="flex flex-wrap gap-1.5">{children}</div>
+    <div className="grid min-w-0 grid-cols-[86px_minmax(0,1fr)] items-start gap-2.5">
+      <span className="t-caption pt-1 text-ink-3">{label}</span>
+      <div className="flex min-w-0 flex-wrap gap-1.5">{children}</div>
     </div>
   );
 }
@@ -112,7 +113,7 @@ export function PauseBanner({ view, me, busy, onVote }: Omit<PauseProps, "onRequ
 }
 
 /** The table is dark. Nothing underneath is playable, so this takes the screen. */
-export function PauseOverlay({ view, me, busy, onRequest, onVote, onKick, onLeave }: PauseProps & { onKick: (playerId: string) => Promise<boolean>; onLeave: () => void }) {
+export function PauseOverlay({ view, me, busy, onRequest, onVote, onKick, onLeave, playerControl }: PauseProps & { onKick: (playerId: string) => Promise<boolean>; onLeave: () => void; playerControl?: ReactNode }) {
   const dialogRef = useModalFocus(view.paused);
   if (!view.paused) return null;
   const by = view.players.find((p) => p.id === view.pausedBy);
@@ -155,8 +156,11 @@ export function PauseOverlay({ view, me, busy, onRequest, onVote, onKick, onLeav
             ) : null}
           </div>
         )}
-        {seated ? <div className="mt-5 flex items-center justify-between border-t border-line pt-4">
-          {me === view.hostId ? <TablePlayers view={view} busy={busy} onKick={onKick} /> : <span />}
+        {seated ? <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            {me === view.hostId ? <TablePlayers view={view} busy={busy} onKick={onKick} /> : null}
+            {playerControl}
+          </div>
           <Button variant="ghost" size="sm" disabled={busy} onClick={onLeave}>Leave table</Button>
         </div> : null}
       </div>

@@ -37,7 +37,7 @@ for (const mode of ["guest", "account"] as const) {
     for (const width of [320, 390, 768, 1280, 1440]) await fits(page, width);
     await fits(page, 390);
     await page.screenshot({ path: `test-results/lobby-${mode}-mobile.png`, fullPage: true });
-    if (mode === "guest") await expect(page.getByRole("switch", { name: "Do not disturb" })).toHaveCount(0);
+    await expect(page.getByRole("switch", { name: "Do not disturb" })).toHaveCount(1);
     await page.evaluate(() => { navigator.clipboard.writeText = () => Promise.reject(new Error("Clipboard unavailable")); });
     await page.getByRole("button", { name: "Copy link" }).click();
     await expect(page.getByText("Copying is unavailable. Share the code above instead.")).toBeVisible();
@@ -52,7 +52,7 @@ for (const mode of ["guest", "account"] as const) {
     for (const width of [320, 390, 768, 1280, 1440]) await fits(page, width);
     await page.screenshot({ path: `test-results/table-${mode}-desktop.png`, fullPage: true });
     await fits(page, 390);
-    if (mode === "account") {
+    {
       const toggle = page.getByRole("switch", { name: "Do not disturb" });
       expect(await toggle.evaluate((element) => element.closest('nav[aria-label="Table controls"]') !== null)).toBe(true);
       await toggle.click(); await expect(toggle).toBeChecked();
@@ -126,7 +126,7 @@ for (const mode of ["guest", "account"] as const) {
       await expect(results).toHaveCount(0);
       await expect(actions.getByRole("button", { name: "I'm ready", exact: true })).toBeVisible();
       await expect.poll(async () => (await state(context, code)).round).toBe(2);
-      await expect(page.getByRole("switch", { name: "Do not disturb" })).toHaveCount(0);
+      await expect(page.getByRole("switch", { name: "Do not disturb" })).toHaveCount(1);
     }
     expect(errors).toEqual([]);
   });

@@ -3,6 +3,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import type { Profile } from "@/lib/social/types";
 import { clearAllSessions, savedSeats, storeName } from "./session";
+import { clearGuestIdentity, guestIdentity } from "./guest";
 import { advanceSessionRevision, SESSION_REVISION_KEY, sessionRevision, waitForSessionChange, withSessionChange } from "./accountSession";
 
 const KEY = "cambio:profile";
@@ -72,13 +73,15 @@ async function fetchProfile<T>(path: string, init: RequestInit, gen: string): Pr
 interface AccountResponse { profile: Profile; username: string; warning?: string | null }
 function rememberAccount(res: AccountResponse, gen: string) {
   if (gen !== profileGeneration()) return;
-  accountNotice = null;
   const previous = read();
+  // Background account refreshes omit warnings; keep an undismissed notice.
+  if (res.warning !== undefined || previous?.profile.id !== res.profile.id) accountNotice = res.warning ?? null;
   // Signup upgrades guest seats in place. Only switching from another saved
   // identity should discard their credentials and the recent-table shortcut.
   if (previous && previous.profile.id !== res.profile.id) clearAllSessions();
   saveStoredProfile({ token: `account:${res.profile.id}`, profile: res.profile, username: res.username }, gen);
   storeName(res.profile.displayName);
+  clearGuestIdentity();
 }
 function changeAccount<T>(work: (gen: string) => Promise<T>): Promise<T> {
   return withSessionChange(async () => {
@@ -91,8 +94,9 @@ function changeAccount<T>(work: (gen: string) => Promise<T>): Promise<T> {
 
 export function authenticate(mode: "login" | "register", values: { username: string; password: string; displayName?: string }) {
   return changeAccount(async (gen) => {
+    const avatarId = !read() ? guestIdentity()?.avatarId : null;
     const res = await fetchProfile<AccountResponse>(mode === "login" ? "/api/account/login" : "/api/account", {
-      method: "POST", body: JSON.stringify(mode === "register" ? { ...values, guestSeats: savedSeats() } : values),
+      method: "POST", body: JSON.stringify(mode === "register" ? { ...values, ...(avatarId !== null && avatarId !== undefined ? { avatarId } : {}), guestSeats: savedSeats() } : values),
     }, gen);
     rememberAccount(res, gen);
     return res;

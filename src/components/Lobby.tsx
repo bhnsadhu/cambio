@@ -53,7 +53,7 @@ export function Lobby({
           </div>
           {copyError ? <p role="status" className="t-sub mt-2 text-ink-2">Copying is unavailable. Share the code above instead.</p> : null}
           <p className="t-body mt-4 max-w-[440px] text-ink-2">
-            Share the code to invite someone. {hasAccount ? (view.doNotDisturb ? "Do not disturb is on, so friends need an invitation. " : "Friends can also ask to join and wait for you to accept. ") : ""}Seats still open when the round starts go to the house bots.
+            Share the code to invite someone. {view.doNotDisturb ? "Join requests are off. Invitations and table codes still work. " : hasAccount ? "Friends can also ask to join and wait for you to accept. " : ""}Seats still open when the round starts go to the house bots.
           </p>
         </div>
         <div className="flex min-w-0 flex-col items-start gap-2 xl:max-w-[260px] xl:items-end">

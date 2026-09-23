@@ -4,15 +4,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { loginHref } from "@/lib/account/navigation";
+import { avatarIndex } from "@/lib/avatars";
 import { api, RequestError } from "@/lib/client/api";
 import { dismissAccountNotice, useAccountNotice, useAccountReady } from "@/lib/client/profile";
 import { saveSession, storeName } from "@/lib/client/session";
 import { useSocial } from "@/lib/client/social";
 import { useStoredName } from "@/lib/client/useStoredName";
+import { storeGuestIdentity, useGuestIdentity } from "@/lib/client/guest";
 import { CardBack, FaceCard } from "./cards";
 import { FriendsPanel, Notifications } from "./Friends";
 import { AppHeader } from "./AppHeader";
 import { RecentTable } from "./RecentTable";
+import { GuestSetup } from "./GuestPlayer";
 import { Button, Field, inputClass, PlayerName } from "./ui";
 
 export function Landing() {
@@ -20,21 +23,23 @@ export function Landing() {
   const social = useSocial();
   const accountReady = useAccountReady();
   const notice = useAccountNotice();
-  const [name, setName] = useStoredName();
+  const [name, setName] = useStoredName("Guest");
+  const guest = useGuestIdentity();
+  const guestAvatarId = avatarIndex(name || "Guest", guest?.avatarId);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState<"create" | "join" | null>(null);
   const [error, setError] = useState<{ mode: "create" | "join"; message: string } | null>(null);
   const profile = social.profile;
   const next = code.length === 5 ? `/g/${code}` : "/";
-  const rememberGuest = () => storeName(name.trim());
+  const rememberGuest = () => { if (!profile) storeGuestIdentity({ name: name.trim(), avatarId: guestAvatarId }); };
 
   const submit = async (event: FormEvent, mode: "create" | "join") => {
     event.preventDefault();
     if (busy) return;
     setBusy(mode); setError(null);
     try {
-      const seat = mode === "create" ? await api.create(name) : await api.join(code, name);
-      storeName(name.trim());
+      const seat = mode === "create" ? await api.create(name, guestAvatarId) : await api.join(code, name, guestAvatarId);
+      if (profile) storeName(name.trim()); else rememberGuest();
       saveSession(seat.code, { playerId: seat.playerId, token: seat.token, name: name.trim() });
       router.push(`/g/${seat.code}`);
     } catch (error) {
@@ -48,7 +53,7 @@ export function Landing() {
     <section className={profile ? "grid min-w-0 gap-5 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2" : "flex min-w-0 flex-col gap-4"} aria-label="Play Cambio">
       {!accountReady ? <p role="status" className="t-sub text-ink-2">Checking your account</p>
         : profile ? null
-          : <Field label="Display name"><input className={inputClass} value={name} onChange={(event) => setName(event.target.value)} placeholder="Your name at the table" maxLength={18} autoComplete="nickname" required disabled={!!busy} /></Field>}
+          : <GuestSetup name={name} onNameChange={setName} disabled={!!busy} next={next} />}
       <form onSubmit={(event) => void submit(event, "create")} className="flex min-w-0 flex-col gap-4 rounded-panel bg-surface p-5 hairline sm:p-6" aria-label="New table">
         <div>
           <h2 className="t-headline">New table</h2>
@@ -73,7 +78,7 @@ export function Landing() {
           {busy === "join" ? "Joining" : "Join table"}
         </Button>
       </form>
-      {accountReady && !profile ? <p className="t-sub text-ink-2">Playing as a guest. <Link href={loginHref(next, "register")} onClick={rememberGuest} className="font-medium text-ink hover:text-ink-2">Create an account to save your stats</Link></p> : null}
+      {accountReady && !profile ? <p className="t-sub text-ink-2">No account needed to play. <Link href={loginHref(next, "register")} onClick={rememberGuest} className="font-medium text-ink hover:text-ink-2">Create an account to keep your profile and stats</Link></p> : null}
     </section>
   );
 
