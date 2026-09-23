@@ -267,6 +267,7 @@ supabase/migrations/0007_social_resends.sql
 supabase/migrations/0008_room_do_not_disturb.sql
 supabase/migrations/0009_leaderboard.sql
 supabase/migrations/0010_browser_presence.sql
+supabase/migrations/0011_profile_avatars.sql
 ```
 
 Then store a server secret:
