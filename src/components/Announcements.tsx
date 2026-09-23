@@ -95,7 +95,9 @@ export function useAnnouncements(log: LogEntry[], enabled: boolean, liveFromMoun
   } else if (latest > head.seen) {
     // Pause already has a live banner and overlay. Replaying its old log
     // messages after a quick resume would incorrectly say play is paused.
-    const fresh = log.filter((e) => e.seq > head.seen! && e.kind !== "pause" && (e.weight ?? "quiet") !== "quiet");
+    // Keep the first, loud shuffle/deal notice. The later opening-peek notice
+    // is already covered by the live reveal banner and should not repeat it.
+    const fresh = log.filter((e) => e.seq > head.seen! && e.kind !== "pause" && !(e.kind === "deal" && e.weight === "normal") && (e.weight ?? "quiet") !== "quiet");
     const queued: Playhead = { ...head, seen: latest, queue: [...head.queue, ...fresh] };
     setHead(queued.current ? queued : advance(queued));
   }
