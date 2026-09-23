@@ -14,8 +14,8 @@ import { CardBack, FaceCard } from "./cards";
 import { Explainer } from "./Explainer";
 import { FriendsPanel, Notifications } from "./Friends";
 import { HowToPlay } from "./HowToPlay";
-import { AccountLink } from "./Profile";
-import { Button, Field, inputClass, PlayerName, Wordmark } from "./ui";
+import { AppHeader } from "./AppHeader";
+import { Button, Field, inputClass, PlayerName } from "./ui";
 
 export function Landing() {
   const router = useRouter();
@@ -51,22 +51,22 @@ export function Landing() {
   };
 
   const play = (
-    <section className="flex min-w-0 flex-col gap-4" aria-label="Play Cambio">
+    <section className={profile ? "grid min-w-0 gap-5 sm:grid-cols-2" : "flex min-w-0 flex-col gap-4"} aria-label="Play Cambio">
       {!accountReady ? <p role="status" className="t-sub text-ink-2">Checking your account</p>
         : profile ? null
           : <Field label="Display name"><input className={inputClass} value={name} onChange={(event) => setName(event.target.value)} placeholder="Your name at the table" maxLength={18} autoComplete="nickname" required disabled={!!busy} /></Field>}
-      <form onSubmit={(event) => void submit(event, "create")} className="flex flex-col gap-4 rounded-panel bg-surface p-5 hairline sm:p-6" aria-label="New table">
+      <form onSubmit={(event) => void submit(event, "create")} className="flex min-w-0 flex-col gap-4 rounded-panel bg-surface p-5 hairline sm:p-6" aria-label="New table">
         <div>
           <h2 className="t-headline">New table</h2>
           <p className="t-sub mt-2 text-ink-2">Host a game with friends, or try a round with the house bots.</p>
         </div>
         {profile ? <p className="t-sub break-words text-ink-2">Playing as <strong className="text-ink">{name}</strong></p> : null}
         {error?.mode === "create" ? <p role="alert" className="t-sub text-red">{error.message}</p> : null}
-        <Button type="submit" variant="primary" size="lg" disabled={!accountReady || !!busy || !name.trim()}>
+        <Button type="submit" variant="primary" className="mt-auto sm:self-start" disabled={!accountReady || !!busy || !name.trim()}>
           {busy === "create" ? "Opening" : "Open a table"}
         </Button>
       </form>
-      <form onSubmit={(event) => void submit(event, "join")} className="flex flex-col gap-4 rounded-panel bg-surface p-5 hairline sm:p-6" aria-label="Join with code">
+      <form onSubmit={(event) => void submit(event, "join")} className="flex min-w-0 flex-col gap-4 rounded-panel bg-surface p-5 hairline sm:p-6" aria-label="Join with code">
         <div>
           <h2 className="t-headline">Join with code</h2>
           <p className="t-sub mt-2 text-ink-2">Enter the five character code your friend shared.</p>
@@ -75,7 +75,7 @@ export function Landing() {
           <input className={`${inputClass} tnum tracking-[0.14em]`} value={code} onChange={(event) => { setCode(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5)); setError(null); }} placeholder="ABCDE" minLength={5} maxLength={5} autoCapitalize="characters" spellCheck={false} autoComplete="off" required disabled={!!busy} />
         </Field>
         {error?.mode === "join" ? <p role="alert" className="t-sub text-red">{error.message}</p> : null}
-        <Button type="submit" variant="secondary" size="lg" disabled={!accountReady || !!busy || !name.trim() || code.length !== 5}>
+        <Button type="submit" variant="secondary" className="mt-auto sm:self-start" disabled={!accountReady || !!busy || !name.trim() || code.length !== 5}>
           {busy === "join" ? "Joining" : "Join table"}
         </Button>
       </form>
@@ -84,28 +84,18 @@ export function Landing() {
   );
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-[1080px] px-5 pb-16 sm:px-8">
-      <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 py-3">
-        <Wordmark />
-        <nav className="flex max-w-full flex-wrap items-center gap-3 sm:gap-4" aria-label="Main navigation">
-          <Link href="/leaderboard" className="t-sub text-ink-2 hover:text-ink">Leaderboard</Link>
-          {accountReady ? profile ? <>
-            <Link href={`/p/${profile.handle}`} className="t-sub text-ink-2 hover:text-ink">Your record</Link>
-            <AccountLink />
-          </> : <Link href={loginHref(next)} onClick={rememberGuest} className="t-sub text-ink-2 hover:text-ink">Log in</Link> : null}
-        </nav>
-      </header>
+    <main className="site-shell">
+      <AppHeader active="tables" loginNext={next} onLogin={rememberGuest} trailing={<Button variant="ghost" size="sm" onClick={openHelp}>How to play</Button>} />
       {notice ? <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-panel bg-accent-soft p-4">
         <p role="status" className="t-sub min-w-0 flex-1 basis-40 text-accent">{notice}</p>
         <Button type="button" variant="ghost" size="sm" className="shrink-0" aria-label="Dismiss message" onClick={dismissAccountNotice}>Dismiss</Button>
       </div> : null}
       {profile ? <>
-        <header className="pt-10 pb-7"><h1 className="t-title">Ready for a round?</h1></header>
-        <div className="grid items-start gap-6 md:grid-cols-2">
+        <header className="pt-10 pb-7"><h1 className="t-title">Ready for a round?</h1><p className="t-body mt-2 text-ink-2">Open a table, share the code, and invite your friends.</p></header>
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:gap-8">
           {play}
           <FriendsPanel social={social} />
         </div>
-        <Button className="mt-5" variant="ghost" onClick={openHelp}>How to play</Button>
       </> : <section className="grid items-start gap-10 pt-10 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:pt-16">
         <div>
           {/* One clean row: same baseline, same size, no tilt, even spacing. */}
@@ -120,7 +110,6 @@ export function Landing() {
             Remember your cards. Finish with the lowest hand. Play with friends, or let the house bots{" "}
             <PlayerName name="Cameron" isBot />, <PlayerName name="Camila" isBot /> and <PlayerName name="Cami" isBot /> take the empty seats.
           </p>
-          <Button className="mt-5" variant="secondary" onClick={openHelp}>How to play</Button>
         </div>
         {play}
       </section>}
