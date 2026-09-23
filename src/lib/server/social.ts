@@ -115,6 +115,11 @@ export async function setPresence(id: string, tabId: string, sequence: number, o
   await rpc<null>("presence_tab_set", { p_id: id, p_tab_id: tabId, p_sequence: sequence, p_online: online, p_session_hash: sessionHash, p_code: code, p_phase: phase, p_open_seats: openSeats });
 }
 
+/** An opaque realtime invalidation key, never a profile id or join code. */
+export async function socialChannel(id: string): Promise<string | null> {
+  return rpc<string | null>("social_channel", { p_id: id });
+}
+
 /* ------------------------------------------------------------------ */
 /* One read for a whole client                                         */
 /* ------------------------------------------------------------------ */

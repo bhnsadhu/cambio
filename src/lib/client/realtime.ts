@@ -15,6 +15,16 @@ function supabase(): SupabaseClient {
 
 export type ConnectionStatus = "connecting" | "live" | "offline";
 
+/** Refresh authenticated social data when its opaque signal changes. */
+export function subscribeSocial(channelId: string, onChange: () => void, onStatus: (status: ConnectionStatus) => void): () => void {
+  const channel = supabase().channel(`social:${channelId}`, { config: { postgres_changes_options: { wait: true } } })
+    .on("postgres_changes", { event: "UPDATE", schema: "public", table: "social_signals", filter: `channel_id=eq.${channelId}` }, onChange)
+    .subscribe((status) => {
+      onStatus(status === "SUBSCRIBED" ? "live" : status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED" ? "offline" : "connecting");
+    });
+  return () => { void supabase().removeChannel(channel); };
+}
+
 /**
  * Subscribe to the public projection of one game. Every committed action
  * updates `game_views`, and Postgres Changes streams the new row to every

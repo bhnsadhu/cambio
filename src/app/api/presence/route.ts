@@ -13,11 +13,15 @@ import { SEATS } from "@/lib/game/engine";
  */
 export async function POST(req: Request) {
   try {
-    const body = (await req.json().catch(() => ({}))) as { code?: string | null; token?: string; tabId?: string; sequence?: number; online?: boolean };
+    const body = (await req.json().catch(() => ({}))) as { code?: string | null; token?: string; profileId?: string; tabId?: string; sequence?: number; online?: boolean };
     // A `sendBeacon` on the way out cannot set headers, so the token may
     // arrive in the body instead.
     const me = await profileByToken(profileTokenFrom(req) ?? body.token ?? null);
     if (!me) return ok({ ok: true });
+    // A queued heartbeat/beacon from the previous account can arrive after
+    // the cookie has switched. It must never update the new account's tabs.
+    if ((body.profileId && body.profileId !== me.id)
+      || (body.token?.startsWith("account:") && body.token !== `account:${me.id}`)) return ok({ ok: true });
     if (typeof body.tabId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.tabId) || !Number.isSafeInteger(body.sequence) || body.sequence! < 1 || typeof body.online !== "boolean") {
       return ok({ error: { message: "Invalid presence update." } }, { status: 400 });
     }
