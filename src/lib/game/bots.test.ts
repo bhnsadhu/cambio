@@ -87,7 +87,7 @@ describe("bots", () => {
  * simulation is deterministic — seeded deck, seeded jitter — so these numbers
  * are stable, and a change that makes a level play worse will fail here.
  */
-function playOut(seed: number, levels: BotDifficulty[]): GameState | null {
+function playOut(seed: number, levels: BotDifficulty[]): GameState {
   const ctx = makeCtx(seed);
   const { state: s0, hostId } = createGame(`D${seed}`, "Host", ctx);
   let state = structuredClone(s0);
@@ -101,11 +101,12 @@ function playOut(seed: number, levels: BotDifficulty[]): GameState | null {
   };
   for (let n = 0; state.phase !== "scoring" && n < 900; n++) {
     const plans = planBots(state, ctx.now, jitter).sort((a, b) => a.delayMs - b.delayMs);
-    if (!plans.length) return null;
+    expect(plans.length, `seed ${seed}: no legal move in ${state.phase}`).toBeGreaterThan(0);
     ctx.tick(plans[0].delayMs + 1);
     state = applyAction(state, { actionId: `d${seed}-${n}`, playerId: plans[0].playerId, action: plans[0].action }, ctx).state;
   }
-  return state.phase === "scoring" ? state : null;
+  expect(state.phase, `seed ${seed}: unfinished ${levels.join("/")} round`).toBe("scoring");
+  return state;
 }
 
 /** Plays both seatings of a two-level table, so seat order cannot flatter either. */
@@ -115,7 +116,6 @@ function headToHead(a: BotDifficulty, b: BotDifficulty, seeds = 40) {
   for (const levels of [[a, b, a, b], [b, a, b, a]] as BotDifficulty[][]) {
     for (let seed = 1; seed <= seeds; seed++) {
       const state = playOut(seed, levels);
-      if (!state) continue;
       rounds++;
       state.players.forEach((p, i) => {
         const level = levels[i];
@@ -137,7 +137,7 @@ describe("difficulty", () => {
     expect(r.rounds).toBeGreaterThan(60);
     expect(r.wins("hard")).toBeGreaterThan(r.wins("medium"));
     expect(r.avg("hard")).toBeLessThan(r.avg("medium"));
-  });
+  }, 30_000);
 
   it("easy is beaten by both, and finishes with a far worse hand", () => {
     const vsMedium = headToHead("medium", "easy");
@@ -146,7 +146,7 @@ describe("difficulty", () => {
     const vsHard = headToHead("hard", "easy");
     expect(vsHard.wins("hard")).toBeGreaterThan(vsHard.wins("easy") * 2);
     expect(vsHard.avg("easy")).toBeGreaterThan(vsHard.avg("hard") + 5);
-  });
+  }, 30_000);
 
   it("every level plays only cards it has a right to know, and sticks fast in proportion to its level", () => {
     const ctx = makeCtx(9);

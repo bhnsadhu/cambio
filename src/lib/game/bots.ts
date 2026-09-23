@@ -20,6 +20,8 @@
  */
 
 import { cardValue, powerOf } from "./cards";
+import { assessCambio, expectedCard, unseenValues } from "./bot-beliefs";
+export { assessCambio } from "./bot-beliefs";
 import { canStick, cardCount, TURN_TIMEOUT_MS } from "./engine";
 import type { Action, BotDifficulty, Card, GameState, Player } from "./types";
 
@@ -32,7 +34,7 @@ export interface BotPlan {
 }
 
 /** Average value of an unknown card in a 54-card Cambio deck. */
-const UNKNOWN_VALUE = 5.5;
+
 
 /**
  * How long each difficulty takes over a decision, against the house pace.
@@ -60,16 +62,19 @@ interface Brain {
   diff: BotDifficulty;
   /** the value this bot puts on a card it has not seen */
   unknown: number;
+  pool: number[];
   roll: (tag: string) => number;
 }
 
 function brainFor(state: GameState, bot: Player, jitter: Jitter): Brain {
   const diff = bot.difficulty ?? "medium";
+  const pool = unseenValues(state, bot);
   return {
     bot,
     diff,
+    pool,
     // Only a hard bot bothers counting the pile; the others use the deck average.
-    unknown: diff === "hard" ? unseenAverage(state, bot) : UNKNOWN_VALUE,
+    unknown: pool.reduce((sum, value) => sum + value, 0) / pool.length,
     roll: (tag: string) => jitter(`${bot.id}:roll:${tag}`),
   };
 }
@@ -143,7 +148,17 @@ export function planBots(state: GameState, now: number, jitter: Jitter): BotPlan
       continue;
     }
 
-    // 2. A pending power to resolve.
+    // Sticking remains available while a power is waiting. It does not consume
+    // the power, and the next plan resolves it against the remaining cards.
+    if (canStick(state, bot.id)) {
+      const target = pickStick(state, brain);
+      if (target) {
+        const top = state.discard.at(-1);
+        const intent = `${bot.id}:stick:${top}:${target}`;
+        const [lo, hi] = STICK_MS[brain.diff];
+        plans.push({ playerId: bot.id, action: { type: "stick", cardId: target }, delayMs: ms(lo, hi, jitter(intent), 1), intent });
+      }
+    }
     const pp = state.pendingPower;
     if (pp && pp.playerId === bot.id) {
       const action = resolvePower(state, brain);
@@ -152,21 +167,11 @@ export function planBots(state: GameState, now: number, jitter: Jitter): BotPlan
       continue;
     }
 
-    // 3. Sticks: react to the top of the discard from knowledge.
-    if (canStick(state, bot.id)) {
-      const target = pickStick(state, brain);
-      if (target) {
-        const intent = `${bot.id}:stick:${target}`;
-        const [lo, hi] = STICK_MS[brain.diff];
-        plans.push({ playerId: bot.id, action: { type: "stick", cardId: target }, delayMs: ms(lo, hi, jitter(intent), 1), intent });
-      }
-    }
-
     // 4. Own turn.
     const t = state.turn;
     if (t && t.playerId === bot.id) {
       if (t.stage === "draw") {
-        if (shouldCallCambio(state, brain)) {
+        if (assessCambio(state, bot.id).call) {
           const intent = `${bot.id}:cambio:${state.turnsTaken}`;
           plans.push({ playerId: bot.id, action: { type: "callCambio" }, delayMs: ms(2800, 4000, jitter(intent), pace), intent });
         } else {
@@ -213,15 +218,6 @@ function firstUnknown(slots: Slot[]): Slot | null {
   return slots.find((s) => s.value === null) ?? null;
 }
 
-function estimateHand(slots: Slot[], unknownValue: number): { total: number; unknown: number } {
-  let total = 0;
-  let unknown = 0;
-  for (const s of slots) {
-    if (s.value === null) { total += unknownValue; unknown += 1; } else total += s.value;
-  }
-  return { total, unknown };
-}
-
 function opponentsOf(state: GameState, bot: Player): Player[] {
   return state.players.filter((p) => p.id !== bot.id && cardCount(p) > 0);
 }
@@ -232,7 +228,7 @@ function leaderOf(state: GameState, brain: Brain): Player | null {
   if (!opponents.length) return null;
   return opponents
     .slice()
-    .sort((a, b) => cardCount(a) - cardCount(b) || estimateOther(state, brain, a) - estimateOther(state, brain, b))[0];
+    .sort((a, b) => estimateOther(state, brain, a) - estimateOther(state, brain, b) || cardCount(a) - cardCount(b))[0];
 }
 
 /** What this bot believes another hand is worth, from the cards it has seen of it. */
@@ -240,84 +236,9 @@ function estimateOther(state: GameState, brain: Brain, other: Player): number {
   let total = 0;
   for (const id of other.hand) {
     if (!id) continue;
-    total += knows(state, brain.bot, id) ? cardValue(state.cards[id]) : brain.unknown;
+    total += expectedCard(state, brain.bot, id, brain.pool);
   }
   return total;
-}
-
-/** Every value in a fresh 54-card deck: A=1, 2..10 face, J/Q=10, K ±, jokers 0. */
-const DECK_VALUES: number[] = (() => {
-  const values: number[] = [];
-  for (const rank of ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q"]) {
-    const v = rank === "A" ? 1 : rank === "J" || rank === "Q" ? 10 : parseInt(rank, 10);
-    for (let i = 0; i < 4; i++) values.push(v);
-  }
-  values.push(-1, -1, 0, 0); // two red kings, two black kings
-  values.push(0, 0);         // two jokers
-  return values;
-})();
-
-/**
- * What a card this bot has never seen is worth, given everything it *has*
- * seen: the cards face up on the pile (public to the whole table) and the
- * cards in its own memory. A hard bot counts; the others take the deck
- * average and leave it at that.
- */
-function unseenAverage(state: GameState, bot: Player): number {
-  const left = new Map<number, number>();
-  for (const v of DECK_VALUES) left.set(v, (left.get(v) ?? 0) + 1);
-  const seen = [...state.discard, ...(state.botKnown[bot.id] ?? [])];
-  let remaining = DECK_VALUES.length;
-  let total = DECK_VALUES.reduce((s, v) => s + v, 0);
-  for (const id of seen) {
-    const card = state.cards[id];
-    if (!card) continue;
-    const v = cardValue(card);
-    const count = left.get(v) ?? 0;
-    if (count <= 0) continue;
-    left.set(v, count - 1);
-    remaining -= 1;
-    total -= v;
-  }
-  return remaining > 0 ? total / remaining : UNKNOWN_VALUE;
-}
-
-/* ------------------------------------------------------------------ */
-/* Decisions                                                           */
-/* ------------------------------------------------------------------ */
-
-function shouldCallCambio(state: GameState, brain: Brain): boolean {
-  if (state.phase !== "playing") return false;
-  if (state.turnsTaken < 4) return false; // let everyone have a turn first
-  const slots = ownSlots(state, brain.bot);
-  const { total, unknown } = estimateHand(slots, brain.unknown);
-  const late = state.turnsTaken >= 16;
-
-  if (brain.diff === "easy") {
-    // Calls on a hunch as much as on a hand, and calls hands it should not.
-    if (unknown === 0 && total <= (late ? 14 : 11)) return true;
-    if (unknown <= 1 && total <= 12) return true;
-    return brain.roll(`cambio:${state.turnsTaken}`) < (late ? 0.12 : 0.05);
-  }
-
-  if (brain.diff === "hard") {
-    // Calling is only worth it on a hand worth showing: a call that ends the
-    // round on a mediocre hand hands the round to whoever was quietly fixing
-    // theirs.
-    if (total > (late ? 11 : 8)) return false;
-    if (unknown >= 3) return false;
-    // And only when this hand looks like it beats every other hand on the
-    // table, allowing for what is still hidden in each of them and for the
-    // last turn everyone else still gets.
-    const others = opponentsOf(state, brain.bot).map((p) => estimateOther(state, brain, p));
-    const best = others.length ? Math.min(...others) : Infinity;
-    if (total + 1.5 + unknown * 1.2 <= best) return true;
-    return unknown === 0 && total <= (late ? 9 : 6);
-  }
-
-  if (unknown === 0) return total <= (late ? 10 : 7);
-  if (unknown === 1) return total <= 6;
-  return slots.length <= 1 && total <= 5.5;
 }
 
 function decideDrawn(state: GameState, brain: Brain, drawn: Card): Action {
@@ -326,6 +247,8 @@ function decideDrawn(state: GameState, brain: Brain, drawn: Card): Action {
   const worst = worstKnown(slots);
   const unknown = firstUnknown(slots);
   const power = powerOf(drawn);
+
+  if (brain.diff === "hard") return hardDrawn(state, brain, drawn);
 
   if (brain.diff === "easy") {
     // Plays the card in front of it: often right, often not, and it does not
@@ -344,7 +267,7 @@ function decideDrawn(state: GameState, brain: Brain, drawn: Card): Action {
 
   if (power === "kingLook") {
     // A black king is worth 0: keeping it usually beats the power.
-    const keepAt = brain.diff === "hard" ? 2 : 3;
+    const keepAt = 3;
     if (worst && worst.value! >= keepAt) return { type: "swap", cardId: worst.cardId };
     if (unknown) return { type: "swap", cardId: unknown.cardId };
     return { type: "place" };
@@ -357,11 +280,11 @@ function decideDrawn(state: GameState, brain: Brain, drawn: Card): Action {
   }
   if (worst && worst.value! > v) return { type: "swap", cardId: worst.cardId };
   // A card worth less than the table's idea of a mystery is worth taking on.
-  const unknownFloor = brain.diff === "hard" ? brain.unknown - 0.5 : 4;
+  const unknownFloor = 4;
   if (unknown && v <= unknownFloor) return { type: "swap", cardId: unknown.cardId };
   // Nothing of their own worth improving: a high card can be pushed into the
   // hand of whoever is closest to winning instead of onto the pile.
-  if (v >= (brain.diff === "hard" ? 8 : 9)) {
+  if (v >= 9) {
     const dump = dumpTarget(state, brain);
     if (dump) return { type: "swap", cardId: dump };
   }
@@ -390,6 +313,8 @@ function resolvePower(state: GameState, brain: Brain): Action {
   const slots = ownSlots(state, bot);
   const opponents = opponentsOf(state, bot);
   const easy = brain.diff === "easy";
+  if (brain.diff === "hard") return hardPower(state, brain);
+  if (easy && !pp.looked && brain.roll(`power-effort:${state.turnsTaken}`) < 0.35) return { type: "skipPower" };
 
   switch (pp.kind) {
     case "peekOwn": {
@@ -415,7 +340,7 @@ function resolvePower(state: GameState, brain: Brain): Action {
     }
     case "blindSwap": {
       const worst = worstKnown(slots);
-      const floor = easy ? 5 : brain.diff === "hard" ? 6 : 7;
+      const floor = easy ? 5 : 7;
       if (!worst || worst.value! < floor) return { type: "skipPower" };
       // Best case: a card we know to be low in someone else's hand.
       let best: { cardId: string; value: number } | null = null;
@@ -443,19 +368,6 @@ function resolvePower(state: GameState, brain: Brain): Action {
         const muddle = easy && brain.roll(`king:${pp.looked.a}`) < 0.3;
         if (aMine && !bMine) return { type: "kingDecide", swap: muddle ? cardValue(a) < cardValue(b) : cardValue(a) > cardValue(b) };
         if (bMine && !aMine) return { type: "kingDecide", swap: muddle ? cardValue(b) < cardValue(a) : cardValue(b) > cardValue(a) };
-        // Neither is mine: a hard bot still uses it, moving the low card away
-        // from whoever is closest to winning.
-        if (brain.diff === "hard" && !aMine && !bMine) {
-          const ownerA = state.players.find((p) => p.hand.includes(pp.looked!.a));
-          const ownerB = state.players.find((p) => p.hand.includes(pp.looked!.b));
-          const leader = leaderOf(state, brain);
-          if (leader && ownerA && ownerB && ownerA.id !== ownerB.id) {
-            const leaderHasA = ownerA.id === leader.id;
-            const leaderCard = leaderHasA ? a : b;
-            const otherCard = leaderHasA ? b : a;
-            return { type: "kingDecide", swap: cardValue(otherCard) > cardValue(leaderCard) };
-          }
-        }
         return { type: "kingDecide", swap: false };
       }
       // Look at my most suspicious card and an opponent's most promising one.
@@ -488,6 +400,107 @@ function resolvePower(state: GameState, brain: Brain): Action {
   }
 }
 
+interface TacticalSlot { id: string; owner: string; value: number; known: boolean }
+
+function tacticalSlots(state: GameState, brain: Brain): TacticalSlot[] {
+  return state.players.flatMap((p) => p.hand.filter((id): id is string => !!id).map((id) => ({
+    id, owner: p.id, value: expectedCard(state, brain.bot, id, brain.pool), known: knows(state, brain.bot, id),
+  })));
+}
+
+/** Value a move against the entire table, not simply the opponent with fewest cards. */
+function tacticalGain(state: GameState, brain: Brain, changes: Map<string, number>): number {
+  const before = state.players.filter((p) => p.id !== brain.bot.id).map((p) => estimateOther(state, brain, p));
+  const after = state.players.filter((p) => p.id !== brain.bot.id).map((p, index) => before[index] + (changes.get(p.id) ?? 0));
+  const bestChange = Math.min(...after) - Math.min(...before);
+  const fieldChange = after.reduce((sum, value, index) => sum + value - before[index], 0);
+  return -(changes.get(brain.bot.id) ?? 0) + 0.85 * bestChange + 0.12 * fieldChange;
+}
+
+function tradeGain(state: GameState, brain: Brain, a: TacticalSlot, b: TacticalSlot): number {
+  return tacticalGain(state, brain, new Map([[a.owner, b.value - a.value], [b.owner, a.value - b.value]]));
+}
+
+function bestTrade(state: GameState, brain: Brain, look: boolean) {
+  const slots = tacticalSlots(state, brain);
+  let best: { a: TacticalSlot; b: TacticalSlot; gain: number } | null = null;
+  for (let i = 0; i < slots.length; i++) for (let j = i + 1; j < slots.length; j++) {
+    const a = slots[i], b = slots[j];
+    if (a.owner === b.owner) continue;
+    const raw = tradeGain(state, brain, a, b);
+    // Looking first adds option value: a bad surprise can be declined. Prefer
+    // information about our unknown cards, then the closest opponent's.
+    const mineUnknown = [a, b].filter((slot) => slot.owner === brain.bot.id && !slot.known).length;
+    const unknown = Number(!a.known) + Number(!b.known);
+    const gain = look ? Math.max(0, raw) + mineUnknown * 1.5 + unknown * 0.5 : raw;
+    if (!best || gain > best.gain) best = { a, b, gain };
+  }
+  return best;
+}
+
+function powerGain(state: GameState, brain: Brain, card: Card): number {
+  switch (powerOf(card)) {
+    case "peekOwn": return ownSlots(state, brain.bot).some((slot) => slot.value === null) ? (state.phase === "final" ? 0.4 : 1.7) : 0;
+    case "peekOther": return tacticalSlots(state, brain).some((slot) => slot.owner !== brain.bot.id && !slot.known) ? (state.phase === "final" ? 0.3 : 1.2) : 0;
+    case "blindSwap": return Math.max(0, bestTrade(state, brain, false)?.gain ?? 0);
+    case "kingLook": return Math.max(0, bestTrade(state, brain, true)?.gain ?? 0);
+    default: return 0;
+  }
+}
+
+function hardDrawn(state: GameState, brain: Brain, drawn: Card): Action {
+  const slots = tacticalSlots(state, brain);
+  const v = cardValue(drawn);
+  const ownMatches = slots.filter((slot) => slot.owner === brain.bot.id && slot.known && state.cards[slot.id].rank === drawn.rank && slot.value >= 0);
+  // Laying a matching rank can shed multiple remembered cards, which a
+  // one-card greedy replacement misses entirely.
+  let best = powerGain(state, brain, drawn) + ownMatches.reduce((sum, slot) => sum + slot.value + 1.4, 0);
+  let action: Action = { type: "place" };
+  for (const slot of slots) {
+    const delta = v - slot.value;
+    let gain = tacticalGain(state, brain, new Map([[slot.owner, delta]]));
+    // Replacing an unknown own card also makes its new face certain.
+    if (slot.owner === brain.bot.id && !slot.known) gain += 0.45;
+    // Avoid buying a tiny estimated improvement with a speculative attack.
+    if (slot.owner !== brain.bot.id && !slot.known) gain -= 0.4;
+    if (gain > best + 0.15) { best = gain; action = { type: "swap", cardId: slot.id }; }
+  }
+  return action;
+}
+
+function hardPower(state: GameState, brain: Brain): Action {
+  const pp = state.pendingPower!;
+  const slots = tacticalSlots(state, brain);
+  switch (pp.kind) {
+    case "peekOwn": {
+      const target = slots.filter((slot) => slot.owner === brain.bot.id && !slot.known).sort((a, b) => b.value - a.value)[0];
+      return target ? { type: "peekOwn", cardId: target.id } : { type: "skipPower" };
+    }
+    case "peekOther": {
+      // Opponents' own keeps are promising swap/stick targets; prioritize the
+      // actual estimated leader rather than blindly following hand size.
+      const target = slots.filter((slot) => slot.owner !== brain.bot.id && !slot.known).sort((a, b) => {
+        const hand = (id: string) => estimateOther(state, brain, state.players.find((p) => p.id === id)!);
+        return hand(a.owner) + a.value * 0.5 - hand(b.owner) - b.value * 0.5;
+      })[0];
+      return target ? { type: "peekOther", cardId: target.id } : { type: "skipPower" };
+    }
+    case "blindSwap": {
+      const trade = bestTrade(state, brain, false);
+      return trade && trade.gain > 0.5 ? { type: "blindSwap", cardIdA: trade.a.id, cardIdB: trade.b.id } : { type: "skipPower" };
+    }
+    case "kingLook": {
+      if (pp.looked) {
+        const a = slots.find((slot) => slot.id === pp.looked!.a);
+        const b = slots.find((slot) => slot.id === pp.looked!.b);
+        return { type: "kingDecide", swap: !!a && !!b && tradeGain(state, brain, a, b) > 0.1 };
+      }
+      const trade = bestTrade(state, brain, true);
+      return trade ? { type: "kingLook", cardIdA: trade.a.id, cardIdB: trade.b.id } : { type: "skipPower" };
+    }
+  }
+}
+
 function pickStick(state: GameState, brain: Brain): string | null {
   const bot = brain.bot;
   const top = state.cards[state.discard[state.discard.length - 1]];
@@ -497,7 +510,7 @@ function pickStick(state: GameState, brain: Brain): string | null {
   if (brain.diff === "easy") {
     // Slow on the draw: a match it has seen often goes by unnoticed, and it
     // only really watches its own hand.
-    if (brain.roll(`see:${top.id}`) < 0.45) return null;
+    if (state.botMissedTop?.[bot.id] === top.id || brain.roll(`see:${top.id}`) < 0.45) return null;
     const own = bot.hand.find(matches);
     if (own) return own;
     if (brain.roll(`reach:${top.id}`) < 0.4) {
@@ -517,10 +530,10 @@ function pickStick(state: GameState, brain: Brain): string | null {
 
   // Own cards first: sticking one costs nothing, sticking someone else's
   // costs a card out of this hand (but lets it choose which).
-  const own = bot.hand.find(matches);
+  const own = bot.hand.find((id) => matches(id) && (brain.diff !== "hard" || cardValue(state.cards[id!]) >= 0 || cardCount(bot) === 1));
   if (own) return own;
   const others = brain.diff === "hard"
-    ? opponentsOf(state, bot).slice().sort((a, b) => cardCount(a) - cardCount(b))
+    ? opponentsOf(state, bot).slice().sort((a, b) => estimateOther(state, brain, a) - estimateOther(state, brain, b))
     : state.players.filter((p) => p.id !== bot.id);
   for (const p of others) {
     const hit = p.hand.find(matches);
@@ -537,8 +550,9 @@ function pickGive(state: GameState, brain: Brain): string | null {
     const pick = slots[Math.floor(brain.roll(`give:${state.turnsTaken}`) * slots.length)];
     if (pick) return pick.cardId;
   }
+  if (brain.diff === "hard") return slots.slice().sort((a, b) => expectedCard(state, brain.bot, b.cardId, brain.pool) - expectedCard(state, brain.bot, a.cardId, brain.pool))[0].cardId;
   const worst = worstKnown(slots);
-  if (worst && worst.value! >= (brain.diff === "hard" ? 3 : 4)) return worst.cardId;
+  if (worst && worst.value! >= 4) return worst.cardId;
   const unknown = firstUnknown(slots);
   if (unknown) return unknown.cardId;
   return worst ? worst.cardId : slots[0].cardId;

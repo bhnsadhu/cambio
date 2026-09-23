@@ -26,7 +26,9 @@ describe("difficulty-specific legitimate memory", () => {
   }
   it("records only the public keep/push behavior and clears it on discard", () => {
     const ctx = makeCtx(19);
-    let { state, hostId } = started(ctx, 1);
+    const t = started(ctx, 1);
+    const hostId = t.hostId;
+    let state = t.state;
     state.turn = { playerId: hostId, stage: "draw", drawnCardId: null, startedAt: ctx.now };
     state = act(state, hostId, { type: "draw" }, ctx);
     const drawn = state.turn!.drawnCardId!;
