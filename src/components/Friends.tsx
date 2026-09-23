@@ -6,6 +6,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import type { SocialHook } from "@/lib/client/social";
 import { saveSession } from "@/lib/client/session";
 import type { Friend } from "@/lib/social/types";
+import { RankBadge } from "./RankBadge";
 import { Button, PresenceDot, inputClass, presenceOf } from "./ui";
 
 /**
@@ -90,7 +91,7 @@ export function FriendsPanel({
             {incoming.map((p) => (
               <li key={p.id} className="flex items-center justify-between gap-3 rounded-[16px] bg-surface-2 px-3.5 py-2.5">
                 <div className="min-w-0">
-                  <p className="t-sub truncate font-medium">{p.displayName}</p>
+                  <p className="t-sub flex min-w-0 items-center gap-1.5 font-medium">{p.displayName}</p>
                   <p className="t-footnote text-ink-3">@{p.handle}</p>
                 </div>
                 <div className="flex shrink-0 gap-1.5">
@@ -128,7 +129,7 @@ export function FriendsPanel({
             {strangers.slice(0, 5).map((o) => (
               <li key={o.id} className="flex items-center justify-between gap-3 rounded-[16px] bg-surface-2 px-3.5 py-2.5">
                 <div className="min-w-0">
-                  <p className="t-sub truncate font-medium">{o.displayName}</p>
+                  <p className="t-sub flex min-w-0 items-center gap-1.5 font-medium">{o.displayName}</p>
                   <p className="t-footnote text-ink-3">{o.rounds} {o.rounds === 1 ? "round" : "rounds"} together</p>
                 </div>
                 <Button size="sm" variant="secondary" onClick={() => void social.addFriend(o.handle)}>Add</Button>
@@ -177,8 +178,8 @@ function FriendRow({ friend, social, inviteCode, atThisTable = false }: { friend
     <li className="rounded-[16px] bg-surface-2 px-3.5 py-2.5">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="t-sub truncate font-medium">
-            <Link href={`/p/${friend.handle}`} className="hover:text-accent">{friend.displayName}</Link>
+          <p className="t-sub flex min-w-0 items-center gap-1.5 font-medium">
+            <Link href={`/p/${friend.handle}`} className="min-w-0 truncate hover:text-accent">{friend.displayName}</Link><RankBadge points={friend.points} size={16} />
           </p>
           <p className="t-footnote flex items-center gap-1.5 text-ink-3">
             <PresenceDot state={here ? "playing" : presenceOf(friend)} />

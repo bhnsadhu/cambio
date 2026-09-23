@@ -7,6 +7,7 @@ import { callProfile, profileGeneration, useAccountReady, useStoredProfile } fro
 import { useSocial } from "@/lib/client/social";
 import type { LeaderboardScope, LeaderboardSnapshot } from "@/lib/social/leaderboard";
 import { ordinal } from "@/lib/social/rank";
+import { RankBadge } from "./RankBadge";
 import { Notifications } from "./Friends";
 import { AccountLink } from "./Profile";
 import { Button, buttonClass, Chip, Wordmark } from "./ui";
@@ -104,7 +105,7 @@ function Standings({ scope }: { scope: LeaderboardScope }) {
               <td className="tnum py-4 pl-1 text-ink-2">{entry.rank}</td>
               <th scope="row" className="py-4 pr-2 font-normal">
                 <Link href={`/p/${entry.handle}`} className="block hover:text-accent">
-                  <span className="t-sub block break-words font-semibold">{entry.displayName}</span>
+                  <span className="t-sub flex items-center gap-2 font-semibold"><span className="min-w-0 break-words">{entry.displayName}</span><RankBadge points={entry.points} size={18} /></span>
                   <span className="t-footnote block break-all text-ink-3">@{entry.handle}</span>
                 </Link>
                 {entry.id === data.me?.id ? <span className="mt-1 inline-block"><Chip tone="accent">You</Chip></span> : null}

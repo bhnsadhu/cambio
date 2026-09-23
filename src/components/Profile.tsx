@@ -4,6 +4,7 @@ import Link from "next/link";
 import { type ReactNode } from "react";
 import { standingFor, standingLine, stickRate, winRate } from "@/lib/social/rank";
 import type { Profile } from "@/lib/social/types";
+import { RankBadge } from "./RankBadge";
 import { buttonClass, Chip } from "./ui";
 
 /**
@@ -18,8 +19,8 @@ export function ProfileCard({ profile, compact = false }: { profile: Profile; co
     <section className="rounded-panel bg-surface p-6 hairline" aria-label={`${profile.displayName}'s record`}>
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="t-caption text-accent">{standing.tier.name}</p>
-          <h1 className="t-title2 mt-1 truncate">{profile.displayName}</h1>
+          <p className="t-caption flex items-center gap-2 text-accent"><RankBadge points={profile.points} decorative />{standing.tier.name}</p>
+          <h1 className="t-title2 mt-1 flex items-center gap-2"><span className="min-w-0 break-words">{profile.displayName}</span><RankBadge points={profile.points} /></h1>
           <p className="t-footnote mt-0.5 text-ink-3">@{profile.handle}</p>
         </div>
         <Chip tone="neutral">{standingLine(profile)}</Chip>
