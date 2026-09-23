@@ -15,10 +15,10 @@ Open the link, enter a display name, and press **Open a table**, then **Start ro
 | **Real time multiplayer** | Every move streams to all four seats over Supabase Realtime. Simultaneous moves are serialized, and the rules decide every late arrival. |
 | **Complete game engine** | Turn logic, power cards, anytime sticking, and every way a round can end, in about 850 lines of pure TypeScript with no I/O. |
 | **Bots that play from memory** | Three house bots fill empty seats and act only on information they have legitimately seen, at three difficulties. |
-| **Persistent accounts** | Wins, rank, best hand and streak across every table, with friends, invites and a light for whoever is playing right now. |
+| **Persistent accounts** | Wins, rank and streak across every table, with friends, invites and a light for whoever is playing right now. |
 | **Friends and global leaderboards** | Compare lifetime points with accepted friends or all players. Equal points share a rank, and your position stays visible even outside the current page. Guests can browse the global leaderboard. |
 | **Serverless architecture** | Runs on serverless functions and one Postgres database, with no dedicated game server. |
-| **90 tests, plus a browser suite** | Seeded bot versus bot tables played to the score, checking that every move is legal, no card is created or lost, and each difficulty beats the one below it. A Playwright suite covers the whole account lifecycle against an isolated database. |
+| **Engine and browser regression suites** | Seeded bot versus bot tables played to the score, checking that every move is legal, no card is created or lost, and each difficulty beats the one below it. A Playwright suite covers the whole account lifecycle against an isolated database. |
 
 ---
 
@@ -93,28 +93,19 @@ Powers activate when a drawn card is placed on the discard pile. Swapping a draw
 
 ### Bot AI
 
-The bots never read the full game state. Each bot keeps its own memory of card IDs it has legitimately seen: its opening peek, cards it drew, and anything it revealed with a peek or a king.
-
-Tracking by ID means knowledge follows a card as it moves between hands. That knowledge is dropped when the card reaches the discard pile.
-
-| Decision | Bot behavior |
-| --- | --- |
-| **Estimate its hand** | Count known values directly and unknown cards at the deck average of 5.5 |
-| **Call Cambio** | Call when the estimated total is low enough, more readily later in the round |
-| **Stick a card** | Stick only cards known to match the pile, preferring its own so it owes nothing |
-| **Choose a peek** | Peek at the opponent closest to going out |
-| **Choose a blind swap** | Trade its worst known card for a known lower card, or an unknown card belonging to the opponent closest to going out |
-| **Keep a black king** | Keep its value of 0 instead of spending the power when it has a bad card to replace |
-
-Each bot seat is set before the deal, and the level changes how it thinks rather than how much it is allowed to see.
+The bots choose from information they could legitimately observe: opening peeks, their own draws, private power reveals, face-up discards, and public card movements. Unknown faces and the future deck order never enter a decision. Hidden-card permutation tests check that contract.
 
 | Level | How it plays |
 | --- | --- |
-| **Easy** | Lets nearly half the sticks it could make go by, dithers over the drawn card, gives away whatever is nearest, muddles a king it has just looked at, and calls Cambio on a hunch. It will even stick a card it has never seen. |
-| **Medium** | The house's basic strategy, and what the bots have always played. |
-| **Hard** | Counts what the pile has swallowed to price the cards it has not seen, weighs its hand against every other hand before calling, aims its peeks and swaps at the seat closest to winning, and sticks about twice as fast as a medium bot. |
+| **Easy** | Remembers only its two most recently seen cards, makes myopic replacements, often skips useful powers, misses obvious sticks, and occasionally guesses incorrectly. It does not repeat a failed guess against the same discard. |
+| **Medium** | Tracks its own revealed cards plus two opponent cards, makes basic value-improving replacements and known-card swaps, and sticks remembered matches accurately. |
+| **Hard** | Retains all legitimate memory, counts seen cards, infers likely quality from public keeps and pushes, compares moves against every opponent, sets up matching sticks, and weighs a power against keeping or attacking with its drawn card. It can trade between opponents to weaken the leader. |
 
-Measured over seeded tables played to the score, hard takes 153 rounds to medium's 115 head to head, and both beat easy better than two to one. The test suite asserts that ordering, so a change that weakens a level fails the build.
+All three levels use the same cautious Cambio rule. A deterministic belief rollout compares the bot's estimated hand against every opponent, including their best improving replacement on one final draw. Calling requires an estimated lead, at least 64% winning belief and 80% belief of winning or finishing within one point. There is no random call, absolute score cutoff, or late-round fallback. Hard's information is better; its permission to call recklessly is not greater. The reducer checks the assessment again on every commit attempt, so a human stick or concurrent update can cancel an obsolete call.
+
+These probabilities are decision estimates, not calibrated promises: unseen cards and opponents' final-turn powers can still overturn a lead. In 192 complete rounds with equal reaction speeds and reversed seatings (seeds 1–24 and an independent 101–124 set), hard earned 69.5 winning shares against medium's 26.5, with mean scores 4.52 versus 7.39. Medium earned 92 shares against easy's 4, with mean scores 5.88 versus 17.86. Tied wins divide the share. Every actual Cambio call passed the belief gate; 92% of hard and medium calls were already winning or within two points of the actual leader when made. Tests fail on an unfinished round, illegal move, lost/duplicated card, or reversed difficulty ordering.
+
+Cameron consistently uses the Quiff avatar; Camila uses Curls; Cami uses Ponytail. Existing saved bot seats receive the same mapping when projected, and human avatar choices remain independent.
 
 Each move waits a randomized, human paced delay. The intent is checked again before it commits, so a bot never sticks a card a human already took.
 
@@ -126,7 +117,7 @@ Accounts use a unique username and password, separate from the display name show
 
 Passwords use salted scrypt hashes. Random session tokens live in HttpOnly cookies with SameSite protection and a 30 day lifetime; only their hashes are stored in the database. Login and sensitive changes have persistent request limits. Clearing browser storage does not delete an account: logging in restores its profile ID, stats, friends, and existing seats.
 
-Presence tracks each open browser tab across the site. Leaving sends an offline update; other open tabs keep the account online. Friends refresh every 10 seconds, and missing heartbeats expire after 75 seconds if a browser crashes or loses its connection. Apply `0010_browser_presence.sql` before deploying the presence update.
+Presence tracks each open browser document across the site. Closing or leaving sends an identity-bound offline beacon; other open tabs keep the account online, and in-site navigation does not briefly disconnect it. Opaque Supabase Realtime signals immediately invalidate friends' authenticated snapshots without publishing private table codes. A blocked stream falls back to polling every two seconds; slow reads are coalesced. A crash or lost connection cannot deliver a departure, so its lease expires after 75 seconds. Account creation alone never marks someone online. Apply migrations through `0013_live_presence.sql` before deploying this client. A live Supabase check confirmed online and offline invalidations in 800ms and 437ms respectively; browser regressions cover multiple tabs, page restoration, account changes, and slow connections.
 
 The account page provides avatar, display name, username, and password changes, plus separate sign out and permanent deletion controls. The avatar editor offers six styles and a separate skin-tone selector: the original default plus five shades. Both choices preview together and save across devices, profiles, friends, standings, and active tables; Cancel restores the saved appearance. Existing avatars keep their original appearance until edited. Password changes revoke other sessions. Deletion requires the current password and an explicit confirmation, removes all account and social records, and anonymizes retained game seats. Game actions check the live account session as well as any saved seat token.
 
