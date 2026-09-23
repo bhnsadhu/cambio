@@ -7,7 +7,7 @@ type Variant = "primary" | "secondary" | "accent" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg";
 
 const BUTTON_BASE =
-  "press inline-flex items-center justify-center gap-2 rounded-full font-medium select-none whitespace-nowrap " +
+  "press inline-flex items-center justify-center gap-2 rounded-xl font-medium select-none whitespace-nowrap " +
   "disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30";
 
 const BUTTON_SIZES: Record<Size, string> = {

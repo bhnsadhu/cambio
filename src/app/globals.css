@@ -122,6 +122,19 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* Website pages share one desktop canvas and a consistent navigation edge. */
+.site-shell { margin-inline: auto; min-height: 100vh; width: 100%; max-width: 1280px; padding: 0 20px 64px; }
+@media (min-width: 640px) {
+  .site-shell { padding-inline: 32px; }
+}
+@media (min-width: 1024px) {
+  :root { --radius-panel: 18px; }
+}
+
+a, button, input, summary { -webkit-tap-highlight-color: transparent; }
+button:not(:disabled), summary { cursor: pointer; }
+a:focus-visible, summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 4px; border-radius: 4px; }
+
 /* Type scale. Headlines in the brand face, everything else in the system font. */
 .t-display { font-family: var(--font-display); font-size: 44px; line-height: 1.04; font-weight: 600; letter-spacing: -0.03em; }
 .t-title { font-family: var(--font-display); font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.025em; }
