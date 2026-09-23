@@ -40,12 +40,12 @@ export function Lobby({
   };
 
   return (
-    <div className="mx-auto flex w-full min-w-0 max-w-[880px] flex-col gap-8 pt-7 pb-8 sm:pt-12">
-      <header className="flex flex-col items-start justify-between gap-6 xl:flex-row xl:items-end">
+    <div className="mx-auto flex w-full min-w-0 max-w-[1120px] flex-col gap-8 pt-7 pb-8 lg:pt-8">
+      <header className="flex flex-col items-start justify-between gap-6 xl:flex-row xl:items-start">
         <div className="min-w-0">
           <p className="t-caption text-ink-3">Join code</p>
           <div className="mt-2 flex flex-wrap items-center gap-4">
-            <span className="t-money text-[44px] leading-none tracking-[0.08em] sm:text-[64px]">{view.code}</span>
+            <span className="t-money text-[44px] leading-none tracking-[0.08em] sm:text-[48px]">{view.code}</span>
             <Button variant="secondary" size="sm" onClick={copy}>{copied ? "Copied" : "Copy link"}</Button>
           </div>
           {copyError ? <p role="status" className="t-sub mt-2 text-ink-2">Copying is unavailable. Share the code above instead.</p> : null}
@@ -77,7 +77,7 @@ export function Lobby({
           {seats.map((p, seat) => {
             const botName = p ? null : BOT_NAMES[botIdx++];
             return (
-              <li key={seat} className={`flex min-h-[136px] min-w-0 flex-col rounded-panel border-[1.5px] px-5 py-4 transition-[box-shadow,background-color] duration-300 xl:px-3 ${p ? "border-transparent bg-surface hairline animate-pop" : "border-dashed border-line-strong"}`}>
+              <li key={seat} className={`flex min-h-[136px] min-w-0 flex-col rounded-panel border-[1.5px] px-5 py-4 transition-[box-shadow,background-color] duration-300 xl:px-4 ${p ? "border-transparent bg-surface hairline animate-pop" : "border-dashed border-line-strong"}`}>
                 <p className="t-caption text-ink-3">Seat {seat + 1}</p>
                 {p ? (
                   <div className="mt-3 min-w-0 flex-1">

@@ -126,13 +126,13 @@ function GameShell({ code }: { code: string }) {
 
   return (
     <>
-      <main className="mx-auto min-h-screen w-full max-w-[1480px] px-5 sm:px-8">
-        <header className="flex min-h-14 flex-wrap items-center justify-between gap-x-5 gap-y-2 py-3">
+      <main className="mx-auto min-h-screen w-full max-w-[1600px] px-5 sm:px-8">
+        <header className="mb-4 flex min-h-20 flex-wrap items-center justify-between gap-x-5 gap-y-2 border-b border-line py-3">
           <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 sm:gap-x-5">
             <Link href="/" aria-label="Cambio home"><Wordmark /></Link>
             {view ? (
-              <div className="t-sub flex flex-wrap items-center gap-x-2 gap-y-1 text-ink-2">
-                <span className="text-ink-3">Code</span>
+              <div className="t-sub flex flex-wrap items-center gap-x-2 gap-y-1 text-ink-2 sm:border-l sm:border-line-strong sm:pl-5">
+                <span className="text-ink-3">Table</span>
                 <span className="tnum font-semibold tracking-[0.08em] text-ink">{view.public.code}</span>
                 {view.public.round > 0 ? <span className="text-ink-3">· Round {view.public.round}</span> : null}
               </div>
@@ -186,7 +186,7 @@ function WithFriends({ social, code, seated, children }: { social: ReturnType<ty
   return (
     <div className="mx-auto grid w-full max-w-[1280px] gap-6 pb-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-8">
       {children}
-      <div className="min-w-0 lg:pt-12">
+      <div className="min-w-0 lg:pt-8">
         <FriendsPanel social={social} inviteCode={code} seated={seated} />
       </div>
     </div>
@@ -261,13 +261,13 @@ function Empty({ title, body }: { title: string; body: string }) {
 /** The table's shape while the first state arrives, so nothing jumps. */
 function TableSkeleton() {
   return (
-    <div className="grid gap-5 pb-6 xl:h-[calc(100dvh-80px)] xl:grid-cols-[minmax(0,1fr)_240px]" aria-busy aria-label="Finding the table">
-      <div className="flex min-h-0 flex-col gap-5">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-[repeat(4,minmax(0,1fr))_auto] xl:gap-4">
+    <div className="grid gap-4 pb-4 lg:h-[calc(100dvh-96px)] lg:grid-cols-[minmax(0,1fr)_240px]" aria-busy aria-label="Finding the table">
+      <div className="flex min-h-0 flex-col gap-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:gap-4">
           {[0, 1, 2, 3].map((k) => (
             <div key={k} className="flex min-w-0 flex-col gap-4 rounded-panel bg-surface px-3 pt-4 pb-5 hairline xl:px-4">
-              <div className="space-y-2">
-                <div className="skeleton h-4 w-24 rounded-md" />
+              <div className="min-h-16 space-y-2">
+                <div className="skeleton h-4 w-24 max-w-full rounded-md" />
                 <div className="skeleton h-3 w-14 rounded-md" />
               </div>
               <div className="grid grid-cols-2 gap-2 justify-items-center xl:gap-3">
@@ -276,13 +276,6 @@ function TableSkeleton() {
               <div className="skeleton h-3 w-12 rounded-md" />
             </div>
           ))}
-          <div className="col-span-2 flex flex-col gap-4 rounded-panel bg-surface px-4 pt-4 pb-5 hairline md:col-span-4 xl:col-span-1">
-            <div className="skeleton h-4 w-14 rounded-md" />
-            <div className="flex gap-4">
-              <div className="skeleton h-[var(--tile-h)] w-[var(--tile-w)] rounded-[var(--tile-r)]" />
-              <div className="skeleton h-[var(--tile-h)] w-[var(--tile-w)] rounded-[var(--tile-r)]" />
-            </div>
-          </div>
         </div>
         <div className="mt-auto flex min-h-[92px] items-center rounded-panel bg-surface px-6 hairline">
           <div className="space-y-2">
@@ -291,9 +284,18 @@ function TableSkeleton() {
           </div>
         </div>
       </div>
-      <div className="rounded-panel bg-surface px-5 pt-4 hairline">
-        <div className="skeleton h-4 w-20 rounded-md" />
-        <p className="t-sub mt-4 inline-flex items-center gap-2 text-ink-3"><Pip />Finding the table</p>
+      <div className="flex min-h-0 flex-col gap-4">
+        <div className="flex flex-col gap-4 rounded-panel bg-surface px-4 pt-4 pb-5 hairline">
+          <div className="skeleton h-4 w-14 rounded-md" />
+          <div className="flex justify-center gap-5">
+            <div className="skeleton h-[var(--tile-h)] w-[var(--tile-w)] rounded-[var(--tile-r)]" />
+            <div className="skeleton h-[var(--tile-h)] w-[var(--tile-w)] rounded-[var(--tile-r)]" />
+          </div>
+        </div>
+        <div className="flex-1 rounded-panel bg-surface px-5 pt-4 pb-5 hairline">
+          <div className="skeleton h-4 w-20 rounded-md" />
+          <p className="t-sub mt-4 inline-flex items-center gap-2 text-ink-3"><Pip />Finding the table</p>
+        </div>
       </div>
     </div>
   );
