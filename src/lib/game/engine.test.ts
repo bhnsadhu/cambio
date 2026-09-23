@@ -982,6 +982,99 @@ describe("cambio and round end", () => {
   });
 });
 
+describe("returning to the table after scoring", () => {
+  function scored(humans = 4, hostLeft = false) {
+    const ctx = makeCtx(82);
+    const t = started(ctx, humans);
+    let state = t.state;
+    if (hostLeft) {
+      state = act(state, t.hostId, { type: "leaveTable" }, ctx);
+      const bot = state.players[0];
+      state = act(state, bot.id, { type: "draw" }, ctx);
+      state = act(state, bot.id, { type: "swap", cardId: bot.hand[0]! }, ctx);
+    }
+    state = act(state, state.hostId, { type: "callCambio" }, ctx);
+    while (state.turn) {
+      const id = state.turn.playerId;
+      state = act(state, id, { type: "draw" }, ctx);
+      state = act(state, id, { type: "swap", cardId: player(state, id).hand[0]! }, ctx);
+    }
+    state = settleFinalTurns(state, ctx);
+    expect(state.phase).toBe("scoring");
+    return { ...t, state, ctx };
+  }
+
+  it("lets a nonhost bring everyone back without losing seats, credentials or results", () => {
+    const t = scored();
+    t.state.players.forEach((p, index) => { p.profileId = `account-${index}`; p.avatarId = index; });
+    let state = act(t.state, t.hostId, { type: "setDoNotDisturb", enabled: true }, t.ctx);
+    state = act(state, t.ids[1], { type: "playAgain" }, t.ctx);
+    const before = structuredClone(state);
+    const returned = act(state, t.ids[1], { type: "returnToLobby" }, t.ctx);
+    expect(state).toEqual(before);
+    expect(returned.players).toEqual(before.players.map((p) => ({ ...p, hand: [null, null, null, null] })));
+    expect(returned).toMatchObject({
+      code: before.code, hostId: before.hostId, phase: "lobby", round: before.round,
+      doNotDisturb: true, results: before.results, botDifficulty: before.botDifficulty,
+      turn: null, turnsTaken: 0, pendingPower: null, pendingGives: [], cambio: null,
+      cards: {}, deck: [], discard: [], reveals: [], botKnown: {}, botHints: {}, botMissedTop: {},
+      readyIds: [], replayVotes: [], readyDeadline: null, dealingUntil: null, openingPeekUntil: null,
+      paused: false, pauseVote: null, pausedAt: null, pausedBy: null, stickWindowUntil: null, tally: {},
+    });
+    for (const id of t.ids) expect(projectFor(returned, 2, id, t.ctx.now).private?.playerId).toBe(id);
+    expect(returned.log.at(-1)?.text).toContain("Everyone stays seated");
+    const next = act(returned, t.hostId, { type: "start" }, t.ctx);
+    expect(next.phase).toBe("ready");
+    expect(next.round).toBe(2);
+    expect(next.players.map((p) => p.id)).toEqual(t.ids);
+    expect(next.players.every((p) => cardCount(p) === 4)).toBe(true);
+    expect(next.results).toEqual(before.results);
+  });
+
+  it("opens bot seats for friends while keeping human positions and the replacement host", () => {
+    const t = scored(3, true);
+    const state = act(t.state, t.state.hostId, { type: "setBotDifficulty", seat: 3, difficulty: "hard" }, t.ctx);
+    const returned = act(state, t.ids[2], { type: "returnToLobby" }, t.ctx);
+    expect(returned.hostId).toBe(t.ids[1]);
+    expect(returned.players.map((p) => ({ id: p.id, seat: p.seat, isHost: p.isHost }))).toEqual([
+      { id: t.ids[1], seat: 1, isHost: true }, { id: t.ids[2], seat: 2, isHost: false },
+    ]);
+    const joined = joinGame(returned, "New friend", t.ctx);
+    expect(player(joined.state, joined.playerId).seat).toBe(0);
+    const next = act(joined.state, returned.hostId, { type: "start" }, t.ctx);
+    expect(next.phase).toBe("ready");
+    expect(next.players).toHaveLength(4);
+    expect(next.players.find((p) => p.seat === 3)).toMatchObject({ isBot: true, difficulty: "hard" });
+    expect(next.results).toEqual(state.results);
+    expect(next.round).toBe(2);
+  });
+
+  it("handles repeated clicks and a pending replay request without starting a round", () => {
+    const t = scored(2);
+    const state = act(t.state, t.hostId, { type: "playAgain" }, t.ctx);
+    const env = { actionId: "back-together", playerId: t.ids[1], action: { type: "returnToLobby" as const } };
+    const returned = applyAction(state, env, t.ctx).state;
+    expect(applyAction(returned, env, t.ctx)).toMatchObject({ state: returned, changed: false });
+    expect(applyAction(returned, { ...env, playerId: t.hostId, actionId: "other-player-back" }, t.ctx).changed).toBe(false);
+    expect(() => act(returned, t.ids[1], { type: "playAgain" }, t.ctx)).toThrow(/Not possible/);
+    const next = act(returned, t.hostId, { type: "start" }, t.ctx);
+    expect(() => act(next, t.ids[1], { type: "returnToLobby" }, t.ctx)).toThrow(/Not possible/);
+    // If unanimous replay won the race, a stale return request cannot cancel the new deal.
+    const replayed = act(state, t.ids[1], { type: "playAgain" }, t.ctx);
+    expect(replayed.phase).toBe("ready");
+    expect(() => act(replayed, t.hostId, { type: "returnToLobby" }, t.ctx)).toThrow(/Not possible/);
+  });
+
+  it("rejects bots, spectators and attempts to cancel an active round", () => {
+    const t = scored(2);
+    expect(() => act(t.state, t.state.players.find((p) => p.isBot)!.id, { type: "returnToLobby" }, t.ctx)).toThrow(/Only players/);
+    expect(() => act(t.state, "spectator", { type: "returnToLobby" }, t.ctx)).toThrow(/not seated/);
+    for (const phase of ["ready", "peek", "playing", "final"] as const) {
+      expect(() => act({ ...t.state, phase }, t.ids[1], { type: "returnToLobby" }, t.ctx)).toThrow(/Not possible/);
+    }
+  });
+});
+
 describe("idempotency", () => {
   it("re-applying the same action id is a no-op", () => {
     const ctx = makeCtx();

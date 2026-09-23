@@ -13,20 +13,21 @@ import { Button, Chip, Pip, PlayerName } from "./ui";
  * builds across replays at the same table.
  *
  * Then the table decides together: another round needs everyone still
- * seated, and anyone who leaves sends the rest back to the lobby with a
- * seat open, rather than ending the evening for all of them.
+ * seated, or anyone can bring the group back to the lobby to take a break.
  */
 export function Scoreboard({
   view,
   me,
   busy,
   onPlayAgain,
+  onBackToTable,
   onLeave,
 }: {
   view: PublicView;
   me: string | null;
   busy: boolean;
   onPlayAgain: () => void;
+  onBackToTable: () => void;
   onLeave: () => void;
 }) {
   const dialogRef = useModalFocus();
@@ -43,7 +44,7 @@ export function Scoreboard({
     .sort((a, b) => a.score - b.score || a.player.seat - b.player.seat)
     .map((row, i, all) => ({ ...row, rank: all.findIndex((x) => x.score === row.score) + 1 }));
 
-  const seated = !!me && view.players.some((p) => p.id === me);
+  const seated = !!me && view.players.some((p) => p.id === me && !p.isBot);
   const ready = !!me && view.replayVotes.includes(me);
   const waiting = view.players.filter((p) => !view.replayVotes.includes(p.id));
   const winners = view.players.filter((p) => result.winnerIds.includes(p.id));
@@ -69,17 +70,18 @@ export function Scoreboard({
           </div>
           <div className="flex max-w-full flex-col items-start gap-2.5 lg:w-[230px] lg:shrink-0 lg:items-end">
             {seated ? (
-              ready ? (
-                <>
+              <>
+                {ready ? (
                   <span className="t-sub inline-flex items-center gap-2 text-accent-ink"><Pip />You are ready for another round</span>
-                  <Button variant="ghost" size="sm" disabled={busy} onClick={onLeave}>Leave instead</Button>
-                </>
-              ) : (
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <Button variant="secondary" size="lg" disabled={busy} onClick={onLeave}>Leave</Button>
+                ) : (
                   <Button variant="primary" size="lg" disabled={busy} onClick={onPlayAgain}>I&apos;m ready</Button>
+                )}
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <Button variant="secondary" size="sm" disabled={busy} onClick={onBackToTable}>Back to table</Button>
+                  <Button variant="ghost" size="sm" disabled={busy} onClick={onLeave}>{ready ? "Leave instead" : "Leave"}</Button>
                 </div>
-              )
+                <p className="t-footnote text-ink-3 lg:text-right">Back to table keeps everyone together without starting another round.</p>
+              </>
             ) : (
               <p className="t-sub max-w-[230px] text-ink-3 lg:text-right">Watching. The table decides whether to play on.</p>
             )}
@@ -92,7 +94,7 @@ export function Scoreboard({
                     {p.id === me ? "you" : <PlayerName name={p.name} isBot={p.isBot} />}
                   </span>
                 ))}
-                . If anyone leaves, the rest go back to the lobby.
+                .
               </p>
             ) : (
               <p className="t-footnote text-ink-3 lg:text-right">Everyone is ready. Dealing.</p>

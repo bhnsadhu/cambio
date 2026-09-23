@@ -399,6 +399,7 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
           me={me}
           busy={game.busy}
           onPlayAgain={() => void game.send({ type: "playAgain" })}
+          onBackToTable={() => void game.send({ type: "returnToLobby" })}
           onLeave={onLeave}
         />
       ) : null}

@@ -305,6 +305,16 @@ export function applyAction(input: GameState, env: ActionEnvelope | IdentityEnve
       if (!doPlayAgain(state, actor, ctx)) return { state: input, changed: false };
       break;
     }
+    case "returnToLobby": {
+      if (actor.isBot) throw new GameError("INVALID_TARGET", "Only players can bring the table back to the lobby.");
+      // Two people may click together; the second request is already fulfilled.
+      if (state.phase === "lobby") return { state: input, changed: false };
+      requirePhase(state, ["scoring"]);
+      resetForLobby(state);
+      addLog(state, ctx, `${actor.name} brought everyone back to the table. Everyone stays seated.`,
+        { kind: "table", actorId: actor.id, weight: "normal" });
+      break;
+    }
     case "leaveTable": doLeaveTable(state, actor, ctx); break;
     case "kickPlayer": {
       if (actor.id !== state.hostId) throw new GameError("NOT_HOST", "Only the host can remove players.");
@@ -501,11 +511,11 @@ function replaceDuringRound(state: GameState, departing: Player, ctx: EngineCtx)
   return bot;
 }
 
-function removeFromTable(state: GameState, actor: Player) {
-  // A seat leaving a set table takes it apart: the bots stand down so the
-  // seats can close up, and `start` seats them again.
-  const wasPlaying = state.phase !== "lobby";
-  state.players = state.players.filter((p) => p.id !== actor.id && (!wasPlaying || !p.isBot));
+/** Clear the finished deal, keeping the table, human seats, settings and results. */
+function resetForLobby(state: GameState) {
+  // House bots stand down so friends can join; `start` fills open seats again.
+  state.players = state.players.filter((p) => !p.isBot);
+  state.phase = "lobby";
   state.replayVotes = [];
   state.readyIds = [];
   state.readyDeadline = null;
@@ -516,23 +526,26 @@ function removeFromTable(state: GameState, actor: Player) {
   state.stickWindowUntil = null;
   state.tally = {};
   state.turnsTaken = 0;
-  if (wasPlaying) {
-    state.phase = "lobby";
-    state.turn = null;
-    state.pendingPower = null;
-    state.pendingGives = [];
-    state.cambio = null;
-    state.reveals = [];
-    state.dealingUntil = null;
-    state.openingPeekUntil = null;
-    state.deck = [];
-    state.discard = [];
-    state.cards = {};
-    state.botKnown = {};
-    state.botHints = {};
-    state.botMissedTop = {};
-    for (const p of state.players) p.hand = [null, null, null, null];
-  }
+  state.turn = null;
+  state.pendingPower = null;
+  state.pendingGives = [];
+  state.cambio = null;
+  state.reveals = [];
+  state.dealingUntil = null;
+  state.openingPeekUntil = null;
+  state.deck = [];
+  state.discard = [];
+  state.cards = {};
+  state.botKnown = {};
+  state.botHints = {};
+  state.botMissedTop = {};
+  for (const p of state.players) p.hand = [null, null, null, null];
+  state.leadSeat = lowestSeat(state);
+}
+
+function removeFromTable(state: GameState, actor: Player) {
+  state.players = state.players.filter((p) => p.id !== actor.id);
+  resetForLobby(state);
   // Seats close up behind whoever left, so the lobby reads 1, 2, 3, 4.
   state.players.sort((a, b) => a.seat - b.seat);
   state.players.forEach((p, i) => { p.seat = i; });

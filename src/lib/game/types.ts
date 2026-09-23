@@ -284,6 +284,8 @@ export type Action =
   | { type: "give"; cardId: string }
   /** at scoring: ask for another round. A full table starts one. */
   | { type: "playAgain" }
+  /** After scoring, bring every human back to the same lobby without leaving. */
+  | { type: "returnToLobby" }
   /** Leave a table; a medium bot takes over during a round. */
   | { type: "leaveTable" }
   /** Host only. A medium bot takes over during a round; otherwise open the seat. */
