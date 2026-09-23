@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { authenticate, deleteAccount, signOut, updateAccount, type StoredProfile } from "@/lib/client/profile";
-import { AVATAR_OPTIONS, SKIN_TONE_OPTIONS, avatarChoice, avatarIndex, avatarStyle, avatarTone } from "@/lib/avatars";
+import { AVATAR_OPTIONS, SKIN_TONE_OPTIONS, avatarIndex, avatarStyle, avatarTone } from "@/lib/avatars";
 import { Avatar } from "./Avatar";
+import { AvatarPicker } from "./AvatarPicker";
 import { Button, Field, inputClass } from "./ui";
 
 type Mode = "login" | "register";
@@ -31,7 +32,7 @@ export function AuthForm({ initialMode = "login", initialName = "", legacy = fal
     finally { setBusy(false); }
   };
   return (
-    <section className="rounded-panel bg-surface p-5 hairline sm:p-6" aria-label={legacy ? "Secure your saved profile" : "Account access"}>
+    <section className="min-w-0 rounded-panel bg-surface p-5 hairline sm:p-6" aria-label={legacy ? "Secure your saved profile" : "Account access"}>
       <h1 className="t-title2">{legacy ? "Secure your saved profile" : registering ? "Create an account" : "Welcome back"}</h1>
       <p className="t-sub mt-2 text-ink-2">
         {legacy ? "Add a username and password to keep this profile, including all your stats and friends. You can then log in from any browser."
@@ -111,7 +112,7 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
   ) : null;
   const cancel = <Button type="button" variant="ghost" disabled={!!busy} onClick={() => edit(null)}>Cancel</Button>;
   const row = "flex items-center justify-between gap-4";
-  const formClass = "mt-5 flex flex-col gap-4";
+  const formClass = "mt-5 flex min-w-0 flex-col gap-4";
   const actions = "flex flex-wrap gap-2";
   return (
     <div className="grid items-start gap-8 lg:grid-cols-2" aria-label="Account settings">
@@ -130,30 +131,7 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
             const result = await updateAccount({ avatarId: selectedAvatar }); setAvatarDraft(null);
             return result.warning ?? "Avatar updated everywhere you play.";
           }); }}>
-            <fieldset disabled={!!busy}>
-              <legend className="t-sub mb-3 text-ink-2">Choose your avatar. Change it whenever you like.</legend>
-              <div className="grid grid-cols-3 gap-2">
-                {AVATAR_OPTIONS.map((option) => <label key={option.id} className="group relative min-w-0 cursor-pointer">
-                  <input className="peer absolute inset-0 z-10 size-full cursor-pointer opacity-0 disabled:cursor-wait" type="radio" name="avatarId" value={option.id} checked={selectedStyle === option.id} onChange={() => setAvatarDraft(avatarChoice(option.id, selectedTone))} autoFocus={selectedStyle === option.id} />
-                  <span className="flex min-w-0 flex-col items-center gap-1 rounded-2xl border border-line-strong px-1 py-3 transition-colors group-hover:bg-ink/5 peer-checked:border-accent peer-checked:bg-accent/10 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent peer-disabled:cursor-wait peer-disabled:opacity-60">
-                    <Avatar identity={stored.profile.id} avatarId={avatarChoice(option.id, selectedTone)} size={56} />
-                    <span className="text-center text-[11px] leading-snug text-ink-2">{option.label}</span>
-                  </span>
-                </label>)}
-              </div>
-            </fieldset>
-            <fieldset disabled={!!busy}>
-              <legend className="t-sub mb-3 text-ink-2">Skin tone</legend>
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-                {SKIN_TONE_OPTIONS.map((option) => <label key={option.id} className="group relative min-w-0 cursor-pointer">
-                  <input className="peer absolute inset-0 z-10 size-full cursor-pointer opacity-0 disabled:cursor-wait" type="radio" name="skinTone" value={option.id} checked={selectedTone === option.id} onChange={() => setAvatarDraft(avatarChoice(selectedStyle, option.id))} />
-                  <span className="flex min-w-0 flex-col items-center gap-2 rounded-xl border border-line-strong px-1 pt-3 pb-2 transition-colors group-hover:bg-ink/5 peer-checked:border-accent peer-checked:bg-accent/10 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent peer-disabled:cursor-wait peer-disabled:opacity-60">
-                    <span aria-hidden="true" className="size-6 shrink-0 rounded-full ring-1 ring-white/15" style={{ background: option.color ?? "conic-gradient(#f1c6a7, #dca27b, #ba7b53, #895337, #593725, #f1c6a7)" }} />
-                    <span className="flex min-h-7 items-center justify-center text-center text-[11px] leading-tight text-ink-2">{option.label}</span>
-                  </span>
-                </label>)}
-              </div>
-            </fieldset>
+            <AvatarPicker identity={stored.profile.id} value={selectedAvatar} onChange={setAvatarDraft} disabled={!!busy} autoFocus />
             <div className={actions}><Button type="submit" variant="primary" disabled={!!busy}>{busy === "avatar" ? "Saving" : "Save avatar"}</Button>{cancel}</div>
           </form> : null}
           {feedback("avatar")}
