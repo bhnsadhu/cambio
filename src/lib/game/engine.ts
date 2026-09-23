@@ -82,6 +82,7 @@ export type ErrorCode =
   | "INVALID_TARGET"
   | "TOO_LATE"
   | "CANT_STICK"
+  | "STALE_BOT_PLAN"
   | "PENDING_GIVE"
   | "NO_POWER"
   | "EMPTY_DECK"
