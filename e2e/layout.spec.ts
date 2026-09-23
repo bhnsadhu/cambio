@@ -160,7 +160,8 @@ test("game and results keep long names, card positions, and trailing scores with
   await page.reload();
   const results = page.getByRole("dialog", { name: "Round results", exact: true });
   await expect(results).toBeVisible();
-  await expect(results.locator("tbody tr").first().locator("td").nth(3)).toHaveText(String(Math.min(...state.results[0].scores.map((score) => score.score))));
+  const totals = state.results[0].scores.map((score) => score.score).sort((a, b) => a - b);
+  for (const [index, total] of totals.entries()) await expect(results.locator("tbody tr").nth(index).locator("td").nth(3)).toHaveText(String(total));
   await expect(results.getByText(/Best hand|Average hand/)).toHaveCount(0);
   await audit(page, "results", async (width) => {
     if (width < 1024) {
