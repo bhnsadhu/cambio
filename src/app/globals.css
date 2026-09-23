@@ -78,7 +78,7 @@
   to { transform: none; }
 }
 @keyframes slide-in {
-  from { transform: translateX(24px); opacity: 0; }
+  from { transform: translateX(16px); opacity: 0; }
   to { transform: none; opacity: 1; }
 }
 @keyframes shimmer {
