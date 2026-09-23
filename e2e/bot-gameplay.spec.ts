@@ -216,6 +216,8 @@ test("the live tiers resolve the same drawn nine with different tactics and real
       else completed = await waitForLog(state.code, (entry) => entry.actorId === fixture.actorId && ["peekOther", "skipPower"].includes(entry.kind));
     }
     outcomes[tier] = { decision, log: completed.log };
+    const visibleAction = completed.log.filter((entry) => entry.actorId === fixture.actorId).at(-1)!;
+    await expect(page.getByRole("complementary", { name: "Table log", exact: true })).toContainText(visibleAction.text);
     await page.screenshot({ path: info.outputPath(`${tier}-drawn-nine.png`), fullPage: true, animations: "disabled" });
     await page.goto("/");
     removeTables();
