@@ -19,6 +19,7 @@ export interface Profile extends ProfileStats {
   id: string;
   handle: string;
   displayName: string;
+  avatarId?: number | null;
   createdAt: string;
   lastSeenAt: string;
   lastPlayedAt: string | null;
@@ -42,6 +43,7 @@ export interface Friend {
   id: string;
   handle: string;
   displayName: string;
+  avatarId?: number | null;
   points: number;
   roundsWon: number;
   roundsPlayed: number;
@@ -63,6 +65,7 @@ export interface PendingFriend {
   id: string;
   handle: string;
   displayName: string;
+  avatarId?: number | null;
   at: string;
 }
 
@@ -71,7 +74,7 @@ export interface Invite {
   code: string;
   tableId: string;
   at: string;
-  from: { id: string; handle: string; displayName: string };
+  from: { id: string; handle: string; displayName: string; avatarId?: number | null };
   requested: boolean;
 }
 
@@ -79,7 +82,7 @@ export interface TableJoinRequest {
   id: string;
   tableId: string;
   at: string;
-  from: { id: string; handle: string; displayName: string };
+  from: { id: string; handle: string; displayName: string; avatarId?: number | null };
 }
 
 export interface SentJoinRequest {
@@ -96,6 +99,7 @@ export interface Opponent {
   id: string;
   handle: string;
   displayName: string;
+  avatarId?: number | null;
   rounds: number;
   wins: number;
   lastPlayedAt: string;

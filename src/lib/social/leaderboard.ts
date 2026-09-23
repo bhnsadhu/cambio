@@ -4,6 +4,7 @@ export interface LeaderboardEntry {
   id: string;
   handle: string;
   displayName: string;
+  avatarId?: number | null;
   points: number;
   roundsWon: number;
   roundsPlayed: number;

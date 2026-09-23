@@ -47,6 +47,7 @@ export interface Player {
   difficulty?: BotDifficulty;
   /** the saved profile playing this seat, when the player has one */
   profileId?: string | null;
+  avatarId?: number | null;
   /** secret; humans only. Never projected into a view. */
   token?: string;
   /** slot -> card id. `null` is an empty (stuck-away) slot. Length >= 4. */
@@ -298,7 +299,7 @@ export interface ActionEnvelope {
 export interface IdentityEnvelope {
   actionId: string;
   playerId: null;
-  action: { type: "syncIdentity"; profileId: string; displayName: string | null };
+  action: { type: "syncIdentity"; profileId: string; displayName: string | null; avatarId?: number | null };
 }
 
 /* ------------------------------------------------------------------ */
@@ -313,6 +314,7 @@ export interface PlayerPublic {
   isHost: boolean;
   difficulty?: BotDifficulty;
   profileId?: string | null;
+  avatarId?: number | null;
   /** slot -> card id or null (empty slot). No ranks. */
   hand: (string | null)[];
   cardCount: number;
