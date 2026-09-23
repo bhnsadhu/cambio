@@ -63,6 +63,8 @@ export function CardBack({ size = "lg", className = "", elRef }: { size?: CardSi
 }
 
 export interface TileProps {
+  /** Stable slot number, including gaps left by sticks. */
+  position?: number;
   empty?: boolean;
   selectable?: boolean;
   selected?: boolean;
@@ -81,7 +83,7 @@ export interface TileProps {
  * A card tile in a hand. Face down at rest; turns on its axis for a timed
  * reveal; dashed when the slot is empty.
  */
-export function CardTile({ empty, selectable, selected, cue, onClick, face, hidden, spotlit, slotRef }: TileProps) {
+export function CardTile({ position, empty, selectable, selected, cue, onClick, face, hidden, spotlit, slotRef }: TileProps) {
   // Keep the last face so the value stays readable while the tile turns back.
   // Once turned, the back side is invisible, so a stale face never shows.
   const [shown, setShown] = useState<Card | null>(face ?? null);
@@ -92,7 +94,7 @@ export function CardTile({ empty, selectable, selected, cue, onClick, face, hidd
       <div
         ref={slotRef}
         className="h-[var(--tile-h)] w-[var(--tile-w)] rounded-[var(--tile-r)] border-[1.5px] border-dashed border-white/20"
-        aria-label="empty slot"
+        aria-label={position ? `empty slot, position ${position}` : "empty slot"}
       />
     );
   }
@@ -110,7 +112,7 @@ export function CardTile({ empty, selectable, selected, cue, onClick, face, hidd
         selected ? "-translate-y-1.5" : "",
       ].join(" ")}
       data-face={face ? "up" : "down"}
-      aria-label={face ? `revealed ${face.rank}` : cue ? `${cue} this card` : "face down card"}
+      aria-label={`${face ? `revealed ${face.rank}` : cue ? `${cue} this card` : "face down card"}${position ? `, position ${position}` : ""}`}
     >
       {spotlit ? <span aria-hidden className="spotlight pointer-events-none absolute -inset-[3px] z-20" /> : null}
       <span className="flip-inner block">

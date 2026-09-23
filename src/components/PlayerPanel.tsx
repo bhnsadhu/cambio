@@ -85,9 +85,9 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
           // A card still in the air keeps its tile face down, so the reveal
           // turns over once it has landed instead of arriving already up.
           const face = hidden.has(key) ? null : revealed.get(cardId ?? "") ?? null;
-          return cardId ? (
+          return <div key={`position-${i}`} className="flex flex-col items-center gap-1.5">{cardId ? (
             <CardTile
-              key={cardId}
+              position={i + 1}
               cue={cueFor(cardId) ?? undefined}
               selectable={!!cueFor(cardId)}
               selected={selectedCardId === cardId}
@@ -98,8 +98,8 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
               slotRef={positions.register(key)}
             />
           ) : (
-            <CardTile key={`empty-${i}`} empty slotRef={positions.register(key)} />
-          );
+            <CardTile position={i + 1} empty slotRef={positions.register(key)} />
+          )}<span aria-hidden="true" className="tnum text-[10px] font-semibold leading-none text-ink-3">{i + 1}</span></div>;
         })}
       </div>
 
