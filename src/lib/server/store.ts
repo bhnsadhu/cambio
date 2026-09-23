@@ -56,10 +56,10 @@ export async function commit(row: GameRow, state: GameState): Promise<number | n
   return v;
 }
 
-export async function createGame(hostName: string, profileId?: string | null): Promise<{ row: GameRow; playerId: string; token: string }> {
+export async function createGame(hostName: string, profileId?: string | null, avatarId?: number | null): Promise<{ row: GameRow; playerId: string; token: string }> {
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = newCode();
-    const { state, hostId, token } = engineCreate(code, hostName, engineCtx(), profileId);
+    const { state, hostId, token } = engineCreate(code, hostName, engineCtx(), profileId, avatarId);
     try {
       const rows = await rpc<{ id: string; version: number }[]>("game_create", {
         p_code: code,
@@ -76,13 +76,22 @@ export async function createGame(hostName: string, profileId?: string | null): P
   throw new Error("Could not allocate a join code.");
 }
 
-export async function joinGame(code: string, name: string, profileId?: string | null): Promise<{ row: GameRow; playerId: string; token: string }> {
+export async function joinGame(code: string, name: string, profileId?: string | null, avatarId?: number | null): Promise<{ row: GameRow; playerId: string; token: string }> {
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const row = await loadByCode(code);
     if (!row) throw new GameError("NOT_FOUND", "No table with that code.");
     const existing = profileId ? row.state.players.find((p) => p.profileId === profileId && !p.isBot) : null;
-    if (existing?.token) return { row, playerId: existing.id, token: existing.token };
-    const { state, playerId, token } = engineJoin(row.state, name, engineCtx(), profileId);
+    if (existing?.token) {
+      const result = applyAction(row.state, {
+        actionId: crypto.randomUUID(), playerId: null,
+        action: { type: "syncIdentity", profileId: profileId!, displayName: name, avatarId },
+      }, engineCtx());
+      if (!result.changed) return { row, playerId: existing.id, token: existing.token };
+      const version = await commit(row, result.state);
+      if (version !== null) return { row: { ...row, version, state: result.state }, playerId: existing.id, token: existing.token };
+      continue;
+    }
+    const { state, playerId, token } = engineJoin(row.state, name, engineCtx(), profileId, avatarId);
     const v = await commit(row, state);
     if (v !== null) return { row: { ...row, version: v, state }, playerId, token };
   }
@@ -127,13 +136,13 @@ export function playerForToken(state: GameState, token: string | null): string |
   return p ? p.id : null;
 }
 
-/** Keep names and deleted identities in game projections consistent via CAS. */
-export async function syncProfileGames(profileId: string, displayName: string | null) {
+/** Keep names, avatars, and deleted identities in game projections consistent via CAS. */
+export async function syncProfileGames(profileId: string, displayName: string | null, avatarId?: number | null) {
   const games = await rpc<{ id: string }[]>("profile_games", { p_id: profileId });
   for (const game of games) {
     await runAction(game.id, {
       actionId: crypto.randomUUID(), playerId: null,
-      action: { type: "syncIdentity", profileId, displayName },
+      action: { type: "syncIdentity", profileId, displayName, avatarId },
     });
   }
 }

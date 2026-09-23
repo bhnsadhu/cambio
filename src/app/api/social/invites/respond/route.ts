@@ -36,8 +36,9 @@ export async function POST(req: Request) {
     // Already sitting there — nothing to join, just go.
     const seated = row.state.players.find((p) => p.profileId === me.id);
     if (seated) {
+      const seat = await joinGame(invite.code, me.displayName, me.id, me.avatarId);
       await respondToInvite(me.id, body.inviteId, true);
-      return ok({ answer: { ok: true, code: invite.code, seat: seated.token ? { playerId: seated.id, token: seated.token, name: seated.name } : null } satisfies InviteAnswer });
+      return ok({ answer: { ok: true, code: invite.code, seat: { playerId: seat.playerId, token: seat.token, name: me.displayName } } satisfies InviteAnswer });
     }
 
     if (!row.state.players.some((p) => p.profileId === invite.from.id && !p.isBot)) {
@@ -58,7 +59,7 @@ export async function POST(req: Request) {
 
     // Take the seat, then mark the invite answered: an invite is only spent
     // once it has actually put someone in a chair.
-    const { row: after, playerId, token } = await joinGame(invite.code, me.displayName, me.id);
+    const { row: after, playerId, token } = await joinGame(invite.code, me.displayName, me.id, me.avatarId);
     await respondToInvite(me.id, body.inviteId, true);
     return ok({
       answer: {

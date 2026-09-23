@@ -1,5 +1,6 @@
 import "server-only";
 import type { NextResponse } from "next/server";
+import { isAvatarId } from "@/lib/avatars";
 import { AccountError, displayNameValue, passwordValue, usernameValue } from "@/lib/account/validation";
 import { rpc } from "./db";
 import { toProfile, type RawProfile } from "./social";
@@ -110,15 +111,19 @@ export async function verifyCurrentPassword(req: Request, account: RawAccount, r
 export async function updateAccount(req: Request, body: Record<string, unknown>) {
   sameOrigin(req);
   const account = await requireAccount(req);
-  const name = body.displayName === undefined ? account.profile.display_name : displayNameValue(body.displayName);
-  const username = body.username === undefined ? account.username : usernameValue(body.username);
+  const name = body.displayName === undefined ? null : displayNameValue(body.displayName);
+  const username = body.username === undefined ? null : usernameValue(body.username);
   const password = body.password === undefined ? null : passwordValue(body.password);
-  if (password !== null || username !== account.username) await verifyCurrentPassword(req, account, body.currentPassword);
+  if (body.avatarId !== undefined && !isAvatarId(body.avatarId)) {
+    throw new AccountError("AVATAR", "Choose one of the available avatars.");
+  }
+  if (password !== null || (username !== null && username !== account.username)) await verifyCurrentPassword(req, account, body.currentPassword);
   const token = password === null ? null : newSessionToken();
   const updated = await accountRpc<RawAccount>("account_update", {
     p_session_hash: tokenHash(sessionTokenFrom(req)!), p_expected_hash: account.password_hash,
     p_display_name: name, p_username: username, p_password_hash: password === null ? null : await hashPassword(password),
     p_next_session_hash: token ? tokenHash(token) : null,
+    p_avatar_id: body.avatarId ?? null,
   });
   return { account: updated, token };
 }

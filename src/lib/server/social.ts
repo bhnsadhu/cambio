@@ -23,7 +23,7 @@ function hash(token: string): string {
 /* ------------------------------------------------------------------ */
 
 export interface RawProfile {
-  id: string; handle: string; display_name: string;
+  id: string; handle: string; display_name: string; avatar_id?: number | null;
   created_at: string; last_seen_at: string; last_played_at: string | null;
   rounds_played: number; rounds_won: number; tables_played: number;
   score_total: number; best_score: number | null;
@@ -38,6 +38,7 @@ export function toProfile(r: RawProfile): Profile {
     id: r.id,
     handle: r.handle,
     displayName: r.display_name,
+    avatarId: r.avatar_id ?? null,
     createdAt: r.created_at,
     lastSeenAt: r.last_seen_at,
     lastPlayedAt: r.last_played_at,
@@ -120,29 +121,30 @@ export async function setPresence(id: string, tabId: string, sequence: number, o
 
 interface RawSocial {
   friends: {
-    id: string; handle: string; display_name: string; points: number;
+    id: string; handle: string; display_name: string; avatar_id?: number | null; points: number;
     rounds_won: number; rounds_played: number; since: string | null;
     online: boolean; last_seen_at: string | null;
     playing: { table_id: string; together: boolean; do_not_disturb: boolean; phase: string; open_seats: number } | null;
     played_together: number; your_wins: number; their_wins: number;
   }[];
-  incoming: { id: string; handle: string; display_name: string; at: string }[];
-  outgoing: { id: string; handle: string; display_name: string; at: string }[];
-  invites: { id: string; code: string; table_id: string; requested: boolean; at: string; from: { id: string; handle: string; display_name: string } }[];
+  incoming: { id: string; handle: string; display_name: string; avatar_id?: number | null; at: string }[];
+  outgoing: { id: string; handle: string; display_name: string; avatar_id?: number | null; at: string }[];
+  invites: { id: string; code: string; table_id: string; requested: boolean; at: string; from: { id: string; handle: string; display_name: string; avatar_id?: number | null } }[];
   sent: { id: string; code: string; at: string; to_id: string }[];
-  join_requests: { id: string; table_id: string; at: string; from: { id: string; handle: string; display_name: string } }[];
+  join_requests: { id: string; table_id: string; at: string; from: { id: string; handle: string; display_name: string; avatar_id?: number | null } }[];
   sent_join_requests: { id: string; at: string; table_id: string; to_id: string; status: "pending" | "declined" }[];
-  opponents: { id: string; handle: string; display_name: string; rounds: number; wins: number; last_played_at: string }[];
+  opponents: { id: string; handle: string; display_name: string; avatar_id?: number | null; rounds: number; wins: number; last_played_at: string }[];
 }
 
 export async function socialFor(id: string): Promise<Social> {
   const raw = await rpc<RawSocial>("social_snapshot_with_requests", { p_id: id });
-  const pending = (r: { id: string; handle: string; display_name: string; at: string }): PendingFriend =>
-    ({ id: r.id, handle: r.handle, displayName: r.display_name, at: r.at });
+  const pending = (r: { id: string; handle: string; display_name: string; avatar_id?: number | null; at: string }): PendingFriend =>
+    ({ id: r.id, handle: r.handle, displayName: r.display_name, avatarId: r.avatar_id ?? null, at: r.at });
   const friends: Friend[] = (raw.friends ?? []).map((f) => ({
     id: f.id,
     handle: f.handle,
     displayName: f.display_name,
+    avatarId: f.avatar_id ?? null,
     points: f.points,
     roundsWon: f.rounds_won,
     roundsPlayed: f.rounds_played,
@@ -161,12 +163,13 @@ export async function socialFor(id: string): Promise<Social> {
     tableId: i.table_id,
     requested: i.requested,
     at: i.at,
-    from: { id: i.from.id, handle: i.from.handle, displayName: i.from.display_name },
+    from: { id: i.from.id, handle: i.from.handle, displayName: i.from.display_name, avatarId: i.from.avatar_id ?? null },
   }));
   const opponents: Opponent[] = (raw.opponents ?? []).map((o) => ({
     id: o.id,
     handle: o.handle,
     displayName: o.display_name,
+    avatarId: o.avatar_id ?? null,
     rounds: o.rounds,
     wins: o.wins,
     lastPlayedAt: o.last_played_at,
@@ -178,7 +181,7 @@ export async function socialFor(id: string): Promise<Social> {
     invites,
     sent: (raw.sent ?? []).map((s) => ({ id: s.id, code: s.code, at: s.at, toId: s.to_id })),
     joinRequests: (raw.join_requests ?? []).map((r) => ({ id: r.id, tableId: r.table_id, at: r.at,
-      from: { id: r.from.id, handle: r.from.handle, displayName: r.from.display_name } })),
+      from: { id: r.from.id, handle: r.from.handle, displayName: r.from.display_name, avatarId: r.from.avatar_id ?? null } })),
     sentJoinRequests: (raw.sent_join_requests ?? []).map((r) => ({ id: r.id, at: r.at, tableId: r.table_id, toId: r.to_id, status: r.status })),
     opponents,
   };
@@ -207,7 +210,7 @@ export interface PeekedInvite {
 }
 
 export async function peekInvite(me: string, inviteId: string): Promise<PeekedInvite | null> {
-  const raw = await rpc<{ id: string; code: string; status: PeekedInvite["status"]; from: { id: string; handle: string; display_name: string } } | null>(
+  const raw = await rpc<{ id: string; code: string; status: PeekedInvite["status"]; from: { id: string; handle: string; display_name: string; avatar_id?: number | null } } | null>(
     "invite_peek", { p_me: me, p_id: inviteId },
   );
   if (!raw) return null;

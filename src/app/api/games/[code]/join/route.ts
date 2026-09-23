@@ -8,7 +8,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ code: s
     const { code } = await params;
     const body = (await req.json().catch(() => ({}))) as { name?: string };
     const profile = await profileByToken(profileTokenFrom(req));
-    const { row, playerId, token } = await joinGame(normaliseCode(code), profile?.displayName ?? body.name ?? "", profile?.id);
+    const { row, playerId, token } = await joinGame(normaliseCode(code), profile?.displayName ?? body.name ?? "", profile?.id, profile?.avatarId);
     return ok({ code: row.code, playerId, token });
   } catch (e) {
     return fail(e);

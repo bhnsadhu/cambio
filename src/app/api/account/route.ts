@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   try {
     const { account, token } = await registerAccount(req, await req.json());
     // An upgrade retains its original profile ID and any existing seats.
-    const warning = await refreshNames(account.profile.id, account.profile.display_name);
+    const warning = await refreshIdentity(account.profile.id, account.profile.display_name, account.profile.avatar_id);
     return setSessionCookie(ok({ ...accountView(account), warning }, { status: 201 }), token);
   } catch (error) { return fail(error); }
 }
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   try {
     const { account, token } = await updateAccount(req, await req.json());
-    const warning = await refreshNames(account.profile.id, account.profile.display_name);
+    const warning = await refreshIdentity(account.profile.id, account.profile.display_name, account.profile.avatar_id);
     const response = ok({ ...accountView(account), warning });
     return token ? setSessionCookie(response, token) : response;
   } catch (error) { return fail(error); }
@@ -44,11 +44,11 @@ export async function DELETE(req: Request) {
   } catch (error) { return fail(error); }
 }
 
-async function refreshNames(id: string, name: string): Promise<string | null> {
-  try { await syncProfileGames(id, name); return null; }
+async function refreshIdentity(id: string, name: string, avatarId?: number | null): Promise<string | null> {
+  try { await syncProfileGames(id, name, avatarId); return null; }
   catch (error) {
-    console.error("[account name sync]", error);
+    console.error("[account identity sync]", error);
     // Credentials are already saved. Always deliver the rotated session cookie.
-    return "Your account is saved. A table could not refresh its name. Save your display name again to retry.";
+    return "Your account is saved. A table could not refresh your profile. Save your profile again to retry.";
   }
 }

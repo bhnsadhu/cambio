@@ -112,11 +112,12 @@ export function createGame(
   hostName: string,
   ctx: EngineCtx,
   profileId?: string | null,
+  avatarId?: number | null,
 ): { state: GameState; hostId: string; token: string } {
   const name = cleanName(hostName);
   const hostId = ctx.newId();
   const token = ctx.newId() + ctx.newId();
-  const host: Player = { id: hostId, seat: 0, name, isBot: false, isHost: true, token, profileId: profileId ?? null, hand: [null, null, null, null] };
+  const host: Player = { id: hostId, seat: 0, name, isBot: false, isHost: true, token, profileId: profileId ?? null, avatarId: avatarId ?? null, hand: [null, null, null, null] };
   const state: GameState = {
     code,
     hostId,
@@ -163,6 +164,7 @@ export function joinGame(
   rawName: string,
   ctx: EngineCtx,
   profileId?: string | null,
+  avatarId?: number | null,
 ): { state: GameState; playerId: string; token: string } {
   const state = clone(input);
   if (state.phase !== "lobby") throw new GameError("WRONG_PHASE", "This game has already started.");
@@ -176,7 +178,7 @@ export function joinGame(
   // whoever opens the link next inherits it.
   const orphaned = !state.players.some((p) => p.id === state.hostId);
   if (orphaned) state.hostId = playerId;
-  state.players.push({ id: playerId, seat, name, isBot: false, isHost: orphaned, token, profileId: profileId ?? null, hand: [null, null, null, null] });
+  state.players.push({ id: playerId, seat, name, isBot: false, isHost: orphaned, token, profileId: profileId ?? null, avatarId: avatarId ?? null, hand: [null, null, null, null] });
   state.players.sort((a, b) => a.seat - b.seat);
   addLog(state, ctx, `${name} took seat ${seat + 1}.`, { kind: "table", actorId: playerId, weight: "normal" });
   state.updatedAt = ctx.now;
@@ -216,15 +218,19 @@ export function applyAction(input: GameState, env: ActionEnvelope | IdentityEnve
   const a = env.action;
   if (a.type === "syncIdentity") {
     const players = state.players.filter((p) => p.profileId === a.profileId);
-    if (!players.length || players.every((p) => p.name === a.displayName)) return { state: input, changed: false };
+    if (!players.length || players.every((p) => p.name === a.displayName && (a.avatarId === undefined || (p.avatarId ?? null) === a.avatarId))) return { state: input, changed: false };
     for (const player of players) {
       if (a.displayName === null) {
         // Scrub this player's name from retained narration as well as seats.
         state.log = state.log.map((entry) => ({ ...entry, text: scrubName(entry.text, player.name, "Deleted player") }));
         player.name = "Deleted player";
         player.profileId = null;
+        player.avatarId = null;
         delete player.token;
-      } else player.name = cleanName(a.displayName);
+      } else {
+        player.name = cleanName(a.displayName);
+        if (a.avatarId !== undefined) player.avatarId = a.avatarId;
+      }
     }
     state.appliedActionIds.push(env.actionId);
     state.updatedAt = ctx.now;

@@ -25,6 +25,33 @@ begin
   assert public.profile_by_token('account-test-secret', 'session-a')->>'display_name' = 'Display Name';
   assert not (a->'profile' ? 'password_hash') and not (a->'profile' ? 'token_hash'), 'Public profile must not expose credentials';
 
+  -- Avatar writes use the account session, preserve unrelated data, and are
+  -- visible to every public identity projection without exposing credentials.
+  a := public.account_update('account-test-secret', 'session-a', 'hash-a', null, null, null, null, 5);
+  assert a->'profile'->>'avatar_id' = '5';
+  assert a->>'username' = 'mylogin' and a->'profile'->>'display_name' = 'Display Name';
+  assert public.account_session('account-test-secret', 'session-a')->'profile'->>'avatar_id' = '5';
+  assert public.profile_by_handle('account-test-secret', 'mylogin')->>'avatar_id' = '5';
+  assert public.social_snapshot_with_requests('account-test-secret', id_b)->'friends'->0->>'avatar_id' = '5';
+  assert public.leaderboard_snapshot('account-test-secret', id_a, 'all')->'me'->>'avatarId' = '5';
+  assert public.leaderboard_snapshot('account-test-secret', id_a, 'friends')->'me'->>'avatarId' = '5';
+  assert public.account_session('account-test-secret', 'session-b')->'profile'->'avatar_id' = 'null'::jsonb, 'One account must not change another head';
+  denied := false;
+  begin
+    perform public.account_update('account-test-secret', 'session-a', 'hash-a', null, null, null, null, 6);
+  exception when others then denied := true;
+  end;
+  assert denied, 'Invalid head indices must fail at the database boundary';
+  denied := false;
+  begin
+    perform public.account_update('account-test-secret', 'not-a-session', 'hash-a', null, null, null, null, 1);
+  exception when others then denied := true;
+  end;
+  assert denied, 'An avatar change must require a live session';
+  a := public.account_update('account-test-secret', 'session-a', 'hash-a', null, null, null, null, 0);
+  assert a->'profile'->>'avatar_id' = '0', 'The first head must be selectable';
+  denied := false;
+
   begin
     perform public.account_register('account-test-secret', 'mylogin', 'Duplicate', 'duplicate', 'hash-x', 'session-x');
   exception when unique_violation then denied := true;
@@ -54,6 +81,7 @@ begin
   assert public.account_session('account-test-secret', 'session-a2') is not null, 'Logout must leave other devices signed in';
   a := public.account_update('account-test-secret', 'session-a2', 'hash-a', 'New Name', 'newlogin', 'new-hash', 'session-a3');
   assert a->>'username' = 'newlogin' and a->'profile'->>'display_name' = 'New Name';
+  assert a->'profile'->>'avatar_id' = '0', 'Other account settings must preserve the selected avatar';
   assert a->'profile'->>'handle' = 'newlogin', 'Renaming must update public lookup with login';
   assert public.profile_by_handle('account-test-secret', 'newlogin')->>'id' = id_a::text;
   assert public.profile_by_handle('account-test-secret', 'mylogin') is null, 'Old profile link must stop resolving';
