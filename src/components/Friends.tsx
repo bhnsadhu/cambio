@@ -31,7 +31,16 @@ export function FriendsPanel({
   // lapse while they are still very much in the chair.
   const [username, setUsername] = useState("");
   const [note, setNote] = useState<string | null>(null);
+  const [noteError, setNoteError] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  const updateFriend = async (work: () => Promise<unknown>) => {
+    if (busy) return;
+    setBusy(true); setNote(null); setNoteError(false);
+    try { await work(); }
+    catch (error) { setNoteError(true); setNote(error instanceof Error ? error.message : "Could not update this friend. Try again."); }
+    finally { setBusy(false); }
+  };
 
   const add = async (e: FormEvent) => {
     e.preventDefault();
@@ -39,6 +48,7 @@ export function FriendsPanel({
     if (!wanted) return;
     setBusy(true);
     setNote(null);
+    setNoteError(false);
     try {
       const outcome = await social.addFriend(wanted);
       setNote(
@@ -49,6 +59,7 @@ export function FriendsPanel({
       );
       setUsername("");
     } catch (err) {
+      setNoteError(true);
       setNote(err instanceof Error ? err.message : "Could not send that request.");
     } finally {
       setBusy(false);
@@ -64,10 +75,12 @@ export function FriendsPanel({
     <section id="friends" className="@container flex min-w-0 flex-col gap-5 rounded-panel bg-surface p-5 hairline sm:p-6" aria-label="Friends">
       <header className="flex items-baseline justify-between gap-3">
         <h2 className="t-headline">Friends</h2>
-        <span className="t-footnote text-ink-3">{friends.length} saved</span>
+        <span className="t-footnote text-ink-3">{social.loading ? "Loading" : `${friends.length} saved`}</span>
       </header>
 
       <Link href="/leaderboard?scope=friends" className="t-sub text-ink-2 hover:text-ink">Friends leaderboard</Link>
+      {social.loading ? <p role="status" className="t-sub text-ink-3">Loading your friends</p> : null}
+      {social.error ? <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line-strong p-3"><p role="alert" className="t-sub min-w-0 flex-1 text-red">{social.error}</p><Button size="sm" variant="ghost" onClick={() => void social.refresh()}>Try again</Button></div> : null}
 
       <form onSubmit={add} className="flex items-center gap-2">
         <input
@@ -83,7 +96,7 @@ export function FriendsPanel({
         />
         <Button type="submit" variant="secondary" className="shrink-0" disabled={busy || !username.trim()}>Add</Button>
       </form>
-      {note ? <p className="t-footnote text-ink-2">{note}</p> : null}
+      {note ? <p role={noteError ? "alert" : "status"} className={`t-footnote ${noteError ? "text-red" : "text-ink-2"}`}>{note}</p> : null}
 
       {incoming.length ? (
         <div>
@@ -96,8 +109,8 @@ export function FriendsPanel({
                   <p className="t-footnote break-all text-ink-3">@{p.handle}</p>
                 </div>
                 <div className="ml-auto flex flex-wrap gap-1.5">
-                  <Button size="sm" variant="accent" onClick={() => void social.respond(p.id, true)}>Accept</Button>
-                  <Button size="sm" variant="ghost" onClick={() => void social.respond(p.id, false)}>Decline</Button>
+                  <Button size="sm" variant="accent" disabled={busy} onClick={() => void updateFriend(() => social.respond(p.id, true))}>Accept</Button>
+                  <Button size="sm" variant="ghost" disabled={busy} onClick={() => void updateFriend(() => social.respond(p.id, false))}>Decline</Button>
                 </div>
               </li>
             ))}
@@ -111,11 +124,11 @@ export function FriendsPanel({
             <FriendRow key={f.id} friend={f} social={social} inviteCode={inviteCode} atThisTable={seated.includes(f.id)} />
           ))}
         </ul>
-      ) : (
+      ) : !social.loading && !social.error ? (
         <p className="t-sub text-ink-3">
           No friends yet. Share your username, or add someone you have played against.
         </p>
-      )}
+      ) : null}
 
       {outgoing.length ? (
         <p className="t-footnote break-words text-ink-3">
@@ -133,7 +146,7 @@ export function FriendsPanel({
                   <p className="t-sub break-words font-medium">{o.displayName}</p>
                   <p className="t-footnote text-ink-3">{o.rounds} {o.rounds === 1 ? "round" : "rounds"} together</p>
                 </div>
-                <Button size="sm" variant="secondary" className="shrink-0" onClick={() => void social.addFriend(o.handle)}>Add</Button>
+                <Button size="sm" variant="secondary" className="shrink-0" disabled={busy} onClick={() => void updateFriend(() => social.addFriend(o.handle))}>Add</Button>
               </li>
             ))}
           </ul>
