@@ -40,7 +40,11 @@ async function laptopCanvas(page: Page, label: string) {
     const history = (await log.boundingBox())!;
     expect(deck.x).toBeGreaterThan(lastHand.x + lastHand.width);
     expect(history.y).toBeGreaterThan(deck.y + deck.height);
-    if (size.width === 1366) await page.screenshot({ path: `test-results/desktop/table-${label}-1366.png`, fullPage: true, animations: "disabled" });
+    if (size.width === 1366) {
+      await expect.poll(() => page.locator("[data-avatar-index] img").evaluateAll((images) => images.every((image) => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0))).toBe(true);
+      await expect(page.locator(".pointer-events-none.fixed.inset-0.z-40 > div")).toHaveCount(0);
+      await page.screenshot({ path: `test-results/desktop/table-${label}-1366.png`, fullPage: true, animations: "disabled" });
+    }
   }
 }
 
