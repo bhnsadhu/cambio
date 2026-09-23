@@ -38,6 +38,14 @@ function completeRound(seed: number, levels: BotDifficulty[]) {
       return { ...plan, due: isDeadline ? ctx.now + plan.delayMs : waiting.get(plan.intent)! + 1000 };
     }).sort((a, b) => a.due - b.due);
     const plan = scheduled[0];
+    if (plan.action.type === "callCambio") {
+      const belief = assessCambio(state, plan.playerId);
+      const context = `seed ${seed}, ${state.players.find((seat) => seat.id === plan.playerId)!.difficulty} call: ${JSON.stringify(belief)}`;
+      expect(belief.call, context).toBe(true);
+      expect(belief.ownEstimate, context).toBeLessThanOrEqual(belief.strongestOpponent);
+      expect(belief.winChance, context).toBeGreaterThanOrEqual(0.64);
+      expect(belief.nearWinChance, context).toBeGreaterThanOrEqual(0.8);
+    }
     ctx.tick(Math.max(700, plan.due - ctx.now + 1));
     const result = applyAction(state, { actionId: `strength-${seed}-${steps}`, playerId: plan.playerId, action: plan.action }, ctx);
     state = result.state;
@@ -58,9 +66,9 @@ function completeRound(seed: number, levels: BotDifficulty[]) {
 }
 
 function matchup(first: BotDifficulty, second: BotDifficulty, seeds = 24) {
-  const totals: Record<string, { winShare: number; score: number; seats: number }> = {
-    [first]: { winShare: 0, score: 0, seats: 0 },
-    [second]: { winShare: 0, score: 0, seats: 0 },
+  const totals: Record<string, { winShare: number; score: number; seats: number; calls: number; callWins: number }> = {
+    [first]: { winShare: 0, score: 0, seats: 0, calls: 0, callWins: 0 },
+    [second]: { winShare: 0, score: 0, seats: 0, calls: 0, callWins: 0 },
   };
   for (const levels of [[first, second, first, second], [second, first, second, first]]) {
     for (let seed = 1; seed <= seeds; seed++) {
@@ -69,12 +77,16 @@ function matchup(first: BotDifficulty, second: BotDifficulty, seeds = 24) {
       for (const player of state.players) {
         const tally = totals[player.difficulty!];
         if (result.winnerIds.includes(player.id)) tally.winShare += 1 / result.winnerIds.length;
+        if (result.callerId === player.id) {
+          tally.calls++;
+          if (result.winnerIds.includes(player.id)) tally.callWins++;
+        }
         tally.score += result.scores.find((score) => score.playerId === player.id)!.score;
         tally.seats++;
       }
     }
   }
-  return Object.fromEntries(Object.entries(totals).map(([level, tally]) => [level, { ...tally, average: tally.score / tally.seats }]));
+  return Object.fromEntries(Object.entries(totals).map(([level, tally]) => [level, { ...tally, average: tally.score / tally.seats, callWinRate: tally.calls ? tally.callWins / tally.calls : null }]));
 }
 
 describe("bot strategy at equal reaction speed", () => {
