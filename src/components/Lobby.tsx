@@ -4,6 +4,7 @@ import { Avatar } from "./Avatar";
 import { useState } from "react";
 import type { BotDifficulty, PublicView } from "@/lib/game/types";
 import { BOT_NAMES } from "@/lib/game/engine";
+import { SITE_URL } from "@/lib/site";
 import { Button, Chip, DifficultyPicker, Pip, PlayerName } from "./ui";
 
 export function Lobby({
@@ -32,7 +33,8 @@ export function Lobby({
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(`${location.origin}/g/${view.code}`);
+      // Keep invitations on the public domain, even when opened through a deployment URL.
+      await navigator.clipboard.writeText(`${SITE_URL}/g/${view.code}`);
       setCopied(true);
       setCopyError(false);
       setTimeout(() => setCopied(false), 1600);

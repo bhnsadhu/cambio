@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="7" height="7" fill="#f4f4f6"/>
+      <rect width="1.6" height="7" fill="#1a1a1f"/>
+    </pattern>
+    <filter id="shadow" x="-60%" y="-40%" width="220%" height="200%">
+      <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="630" fill="#000"/>
+  <circle cx="970" cy="310" r="300" fill="#0d1713"/>
+  <circle cx="970" cy="310" r="239" fill="none" stroke="#4ff0a8" stroke-opacity="0.12"/>
+  <circle cx="970" cy="310" r="188" fill="none" stroke="#4ff0a8" stroke-opacity="0.08"/>
+  <g font-family="Helvetica, Arial, sans-serif">
+    <rect x="72" y="92" width="34" height="48" rx="7" fill="#f4f4f6"/>
+    <rect x="77" y="97" width="24" height="38" rx="3" fill="url(#hatch)"/>
+    <text x="124" y="128" fill="#4ff0a8" font-size="21" font-weight="600" letter-spacing="3">LET’S PLAY</text>
+    <text x="68" y="258" fill="#fff" font-size="108" font-weight="700" letter-spacing="-5">Cambio</text>
+    <text x="72" y="326" fill="#fff" font-size="35">The memory card game,</text>
+    <text x="72" y="374" fill="#fff" font-size="35">live with friends.</text>
+    <text x="72" y="442" fill="#a6a6af" font-size="23">One code. Your friends. Game on.</text>
+    <rect x="72" y="523" width="28" height="3" rx="1.5" fill="#4ff0a8"/>
+    <text x="113" y="532" fill="#a6a6af" font-size="21">cambio.bhanusadhu.com</text>
+  </g>
+  <g filter="url(#shadow)">
+    <g transform="translate(692 177) rotate(-17 103 146)">
+      <rect width="206" height="292" rx="22" fill="#f4f4f6"/>
+      <rect x="14" y="14" width="178" height="264" rx="12" fill="url(#hatch)"/>
+    </g>
+    <g transform="translate(816 152) rotate(3 103 146)">
+      <rect width="206" height="292" rx="22" fill="#f8f8f8"/>
+      <text x="23" y="57" font-family="Helvetica, Arial, sans-serif" font-size="40" font-weight="700" fill="#0a0a0a">A</text>
+      <path d="M103 99 C92 115 65 132 65 151 C65 171 87 177 99 162 L94 188 H112 L107 162 C119 177 141 171 141 151 C141 132 114 115 103 99Z" fill="#0a0a0a"/>
+      <text transform="translate(183 235) rotate(180)" font-family="Helvetica, Arial, sans-serif" font-size="40" font-weight="700" fill="#0a0a0a">A</text>
+    </g>
+    <g transform="translate(918 212) rotate(18 103 146)">
+      <rect width="206" height="292" rx="22" fill="#f8f8f8"/>
+      <text x="23" y="57" font-family="Helvetica, Arial, sans-serif" font-size="40" font-weight="700" fill="#ff5a52">K</text>
+      <path d="M103 178 L66 141 C36 108 80 78 103 112 C126 78 170 108 140 141Z" fill="#ff5a52"/>
+      <text transform="translate(183 235) rotate(180)" font-family="Helvetica, Arial, sans-serif" font-size="40" font-weight="700" fill="#ff5a52">K</text>
+    </g>
+  </g>
+</svg>
