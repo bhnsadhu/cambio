@@ -31,6 +31,7 @@ async function friends(first: Account, second: Account) {
 }
 
 const details = (page: Page, name: string) => page.getByRole("group", { name: `${name}'s social details`, exact: true });
+const lobbyPlayer = (page: Page, name: string) => page.locator("ol > li").filter({ has: page.getByText(name, { exact: true }) });
 
 async function audit(page: Page, stage: string) {
   for (const width of [390, 1440]) {
@@ -48,7 +49,7 @@ async function audit(page: Page, stage: string) {
 
 test.beforeEach(() => sql("delete from private.auth_limits;"));
 
-test("table friends sort by seats and presence, and player cards show real tiers with working friend actions", async ({ browser, context }) => {
+test("table friends sort by seats and presence, and player cards show rank badges with working friend actions", async ({ browser, context }) => {
   test.setTimeout(150_000);
   const host = await account(browser, "Social Host");
   const here = await account(browser, "Zebra Here");
@@ -102,11 +103,12 @@ test("table friends sort by seats and presence, and player cards show real tiers
     const hereRow = panel.getByRole("listitem").filter({ has: page.getByRole("link", { name: "Zebra Here", exact: true }) });
     await expect(hereRow).toContainText("At this table with you");
     await expect(hereRow.getByRole("button", { name: "Invite", exact: true })).toHaveCount(0);
-    await expect(details(page, "Zebra Here").getByText("Silver", { exact: true })).toBeVisible();
+    await expect(lobbyPlayer(page, "Zebra Here").getByRole("img", { name: "Silver rank", exact: true })).toBeVisible();
     await expect(details(page, "Zebra Here").getByText("Friend", { exact: true })).toBeVisible();
-    await expect(details(page, "New Player").getByText("Gold", { exact: true })).toBeVisible();
-    await expect(details(page, "Social Host").getByText("Rookie", { exact: true })).toBeVisible();
-    await expect(details(page, "Social Host").getByRole("button", { name: /friend/i })).toHaveCount(0);
+    await expect(lobbyPlayer(page, "New Player").getByRole("img", { name: "Gold rank", exact: true })).toBeVisible();
+    await expect(lobbyPlayer(page, "Social Host").getByRole("img", { name: "Rookie rank", exact: true })).toBeVisible();
+    await expect(page.getByRole("group", { name: /'s social details$/ }).getByText(/^(Rookie|Silver|Gold)$/)).toHaveCount(0);
+    await expect(details(page, "Social Host")).toHaveCount(0);
     await expect(details(page, "Guest Seat")).toHaveCount(0);
     await audit(page, "lobby");
 
@@ -130,9 +132,12 @@ test("table friends sort by seats and presence, and player cards show real tiers
     expect((await action(context, table.code, { type: "ready" }, guest.token)).ok()).toBe(true);
     await expect.poll(async () => (await (await host.context.request.get(`/api/games/${table.code}/state`)).json()).view.public.phase, { timeout: 20_000 }).toBe("playing");
     await expect(page.getByRole("region", { name: "New Player's hand", exact: true })).toBeVisible();
-    await expect(details(page, "New Player").getByText("Gold", { exact: true })).toBeVisible();
+    await expect(page.getByRole("region", { name: "New Player's hand", exact: true }).getByRole("img", { name: "Gold rank", exact: true })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Zebra Here's hand", exact: true }).getByRole("img", { name: "Silver rank", exact: true })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Social Host's hand", exact: true }).getByRole("img", { name: "Rookie rank", exact: true })).toBeVisible();
     await expect(details(page, "Zebra Here").getByText("Friend", { exact: true })).toBeVisible();
-    await expect(details(page, "Social Host").getByRole("button", { name: /friend/i })).toHaveCount(0);
+    await expect(page.getByRole("group", { name: /'s social details$/ }).getByText(/^(Rookie|Silver|Gold)$/)).toHaveCount(0);
+    await expect(details(page, "Social Host")).toHaveCount(0);
     await expect(details(page, "Guest Seat")).toHaveCount(0);
     await audit(page, "playing");
     await details(page, "New Player").getByRole("button", { name: "Add friend", exact: true }).click();
@@ -185,7 +190,7 @@ test("table friends sort by seats and presence, and player cards show real tiers
     expect(bot).toBeTruthy();
     await expect(page.getByRole("region", { name: `${bot.name}'s hand`, exact: true })).toBeVisible();
     await expect(details(page, bot.name)).toHaveCount(0);
-    await expect(page.getByRole("group", { name: /'s social details$/ })).toHaveCount(3);
+    await expect(page.getByRole("group", { name: /'s social details$/ })).toHaveCount(2);
   } finally {
     for (const player of [host, here, online, offline, stranger]) await player.context.close();
   }

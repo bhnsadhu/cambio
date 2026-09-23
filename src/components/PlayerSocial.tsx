@@ -6,7 +6,6 @@ import { loginHref } from "@/lib/account/navigation";
 import type { SocialHook } from "@/lib/client/social";
 import { useTableProfiles } from "@/lib/client/tableProfiles";
 import type { PlayerPublic, PublicView } from "@/lib/game/types";
-import { standingFor } from "@/lib/social/rank";
 import type { TableProfile } from "@/lib/social/types";
 import { RankBadge } from "./RankBadge";
 import { Button, buttonClass, Chip } from "./ui";
@@ -63,7 +62,6 @@ function AccountSocial({ table, player, profileId, isMe }: { table: TableSocial;
   const incoming = social.social.incoming.find((p) => p.id === profileId);
   const outgoing = social.social.outgoing.find((p) => p.id === profileId);
   const profile = profileForPlayer(table, profileId);
-  const standing = profile ? standingFor(profile.points) : null;
   // If the write succeeds but refreshing fails, retain its confirmed outcome
   // until the next social snapshot arrives instead of offering a second send.
   const relationship = result?.snapshot === social.social ? result.status
@@ -90,24 +88,21 @@ function AccountSocial({ table, player, profileId, isMe }: { table: TableSocial;
     }
   };
 
+  if (self) return null;
+
   return (
     <div role="group" aria-label={`${player.name}'s social details`} className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5">
-      {profile && standing ? (
-        <span className="min-w-0 break-words text-[11.5px] leading-4 text-ink-2">{standing.tier.name}</span>
-      ) : null}
-      {!self ? (
-        !social.profile ? (
-          <Link href={loginHref(`/g/${code}`)} className={buttonClass({ variant: "ghost", size: "sm", className: actionClass })}>Add friend</Link>
-        ) : relationship === "friend" ? (
-          <Chip tone="accent">Friend</Chip>
-        ) : relationship === "outgoing" ? (
-          <span role="status" className="text-[11.5px] leading-4 text-ink-3">Request sent</span>
-        ) : (
-          <Button variant="ghost" size="sm" className={actionClass} disabled={busy || social.loading || (!incoming && !profile?.handle)} onClick={() => void connect()}>
-            {busy ? (incoming ? "Accepting" : "Sending") : incoming ? "Accept friend" : "Add friend"}
-          </Button>
-        )
-      ) : null}
+      {!social.profile ? (
+        <Link href={loginHref(`/g/${code}`)} className={buttonClass({ variant: "ghost", size: "sm", className: actionClass })}>Add friend</Link>
+      ) : relationship === "friend" ? (
+        <Chip tone="accent">Friend</Chip>
+      ) : relationship === "outgoing" ? (
+        <span role="status" className="text-[11.5px] leading-4 text-ink-3">Request sent</span>
+      ) : (
+        <Button variant="ghost" size="sm" className={actionClass} disabled={busy || social.loading || (!incoming && !profile?.handle)} onClick={() => void connect()}>
+          {busy ? (incoming ? "Accepting" : "Sending") : incoming ? "Accept friend" : "Add friend"}
+        </Button>
+      )}
       {error ? <p role="alert" className="w-full break-words text-[11.5px] leading-4 text-red">{error}</p> : null}
     </div>
   );
