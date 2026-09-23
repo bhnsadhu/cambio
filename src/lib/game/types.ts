@@ -303,7 +303,9 @@ export interface ActionEnvelope {
 export interface IdentityEnvelope {
   actionId: string;
   playerId: null;
-  action: { type: "syncIdentity"; profileId: string; displayName: string | null; avatarId?: number | null };
+  action:
+    | { type: "syncIdentity"; profileId: string; displayName: string | null; avatarId?: number | null }
+    | { type: "claimIdentity"; token: string; profileId: string; displayName: string; avatarId?: number | null };
 }
 
 /* ------------------------------------------------------------------ */

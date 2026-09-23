@@ -4,6 +4,38 @@ import { projectPublic } from "./view";
 import { makeCtx, started } from "./testkit";
 
 describe("Account identity maintenance", () => {
+  it("claims a guest's existing hand during a paused round without creating another player", () => {
+    const ctx = makeCtx();
+    const { state, ids } = started(ctx);
+    state.paused = true;
+    const guest = state.players[1];
+    const envelope = { actionId: "signup", playerId: null, action: {
+      type: "claimIdentity" as const, token: guest.token!, profileId: "new-account", displayName: "New name", avatarId: 25,
+    } };
+    const result = applyAction(state, envelope, ctx);
+    expect(result.changed).toBe(true);
+    expect(result.state).toEqual({
+      ...state,
+      players: state.players.map((p) => p.id === ids[1] ? { ...p, profileId: "new-account", name: "New name", avatarId: 25 } : p),
+      appliedActionIds: [...state.appliedActionIds, "signup"],
+      updatedAt: ctx.now,
+    });
+    expect(applyAction(result.state, { ...envelope, actionId: "signup-retry" }, ctx).changed).toBe(false);
+    const updated = applyAction(result.state, { actionId: "avatar-after-signup", playerId: null,
+      action: { type: "syncIdentity", profileId: "new-account", displayName: "New name", avatarId: 33 } }, ctx).state;
+    expect(updated.players).toHaveLength(4);
+    expect(updated.players[1]).toEqual({ ...result.state.players[1], avatarId: 33 });
+    expect(state.players[1].profileId).toBeNull();
+  });
+  it("cannot claim seats with another account, an invalid token, or an already seated profile", () => {
+    const ctx = makeCtx();
+    const { state } = started(ctx);
+    state.players[0].profileId = "existing-account";
+    for (const [token, profileId] of [["wrong-token", "new-account"], [state.players[0].token!, "new-account"], [state.players[1].token!, "existing-account"]]) {
+      expect(applyAction(state, { actionId: ctx.newId(), playerId: null,
+        action: { type: "claimIdentity", token, profileId, displayName: "Player" } }, ctx)).toEqual({ state, changed: false });
+    }
+  });
   it("updates a name even while paused without changing cards or timers", () => {
     const ctx = makeCtx();
     const { state } = started(ctx);

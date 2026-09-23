@@ -4,7 +4,7 @@ import {
 } from "@/lib/server/account";
 import { AccountError } from "@/lib/account/validation";
 import { fail, ok } from "@/lib/server/http";
-import { syncProfileGames } from "@/lib/server/store";
+import { claimGuestSeats, syncProfileGames } from "@/lib/server/store";
 
 export async function GET(req: Request) {
   try {
@@ -15,17 +15,19 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { account, token } = await registerAccount(req, await req.json());
+    const body = await req.json();
+    const { account, token } = await registerAccount(req, body);
     // An upgrade retains its original profile ID and any existing seats.
-    const warning = await refreshIdentity(account.profile.id, account.profile.display_name, account.profile.avatar_id);
+    const warning = await refreshIdentity(account.profile.id, account.profile.display_name, account.profile.avatar_id, body.guestSeats);
     return setSessionCookie(ok({ ...accountView(account), warning }, { status: 201 }), token);
   } catch (error) { return fail(error); }
 }
 
 export async function PATCH(req: Request) {
   try {
-    const { account, token } = await updateAccount(req, await req.json());
-    const warning = await refreshIdentity(account.profile.id, account.profile.display_name, account.profile.avatar_id);
+    const body = await req.json();
+    const { account, token } = await updateAccount(req, body);
+    const warning = await refreshIdentity(account.profile.id, account.profile.display_name, account.profile.avatar_id, body.guestSeats);
     const response = ok({ ...accountView(account), warning });
     return token ? setSessionCookie(response, token) : response;
   } catch (error) { return fail(error); }
@@ -44,8 +46,12 @@ export async function DELETE(req: Request) {
   } catch (error) { return fail(error); }
 }
 
-async function refreshIdentity(id: string, name: string, avatarId?: number | null): Promise<string | null> {
-  try { await syncProfileGames(id, name, avatarId); return null; }
+async function refreshIdentity(id: string, name: string, avatarId?: number | null, guestSeats?: unknown): Promise<string | null> {
+  try {
+    await claimGuestSeats(guestSeats, id, name, avatarId);
+    await syncProfileGames(id, name, avatarId);
+    return null;
+  }
   catch (error) {
     console.error("[account identity sync]", error);
     // Credentials are already saved. Always deliver the rotated session cookie.

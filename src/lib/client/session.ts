@@ -24,6 +24,22 @@ export function clearSession(code: string) {
   try { localStorage.removeItem(key(code)); } catch { /* ignore */ }
 }
 
+/** Credentials prove which existing guest seats a newly created account owns. */
+export function savedSeats(): { code: string; token: string }[] {
+  const seats: { code: string; token: string }[] = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const code = /^cambio:seat:([A-Z0-9]{5})$/.exec(localStorage.key(i) ?? "")?.[1];
+      if (!code) continue;
+      const seat = loadSession(code);
+      if (typeof seat?.token === "string" && seat.token) seats.push({ code, token: seat.token });
+    }
+  } catch { /* Storage is optional. */ }
+  const current = recentTable()?.code;
+  seats.sort((a, b) => Number(b.code === current) - Number(a.code === current));
+  return seats.slice(0, 20);
+}
+
 /** One recent visit, not a history of the browser's saved seats. */
 const RECENT_TABLE_KEY = "cambio:recent-table";
 export const RECENT_TABLE_MS = 30 * 60 * 1000;

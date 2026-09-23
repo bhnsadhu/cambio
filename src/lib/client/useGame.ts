@@ -91,7 +91,7 @@ export function useGame(code: string): GameHook {
       // (hydration fires one fetch before the stored seat is known).
       if (gen !== profileGeneration() || (sessionRef.current?.token ?? null) !== token) return;
       acceptFull(res.view, res.me);
-      if (res.seat && (!sessionRef.current || sessionRef.current.name !== res.seat.name)) setSession(res.seat);
+      if (res.seat && (sessionRef.current?.playerId !== res.seat.playerId || sessionRef.current?.token !== res.seat.token || sessionRef.current?.name !== res.seat.name)) setSession(res.seat);
       else if (token && !res.me) setSession(null);
       setStatus("ready");
     } catch (e) {

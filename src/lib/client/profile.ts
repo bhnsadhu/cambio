@@ -2,7 +2,7 @@
 
 import { useEffect, useSyncExternalStore } from "react";
 import type { Profile } from "@/lib/social/types";
-import { clearAllSessions, storeName } from "./session";
+import { clearAllSessions, savedSeats, storeName } from "./session";
 import { advanceSessionRevision, SESSION_REVISION_KEY, sessionRevision, waitForSessionChange, withSessionChange } from "./accountSession";
 
 const KEY = "cambio:profile";
@@ -73,7 +73,10 @@ interface AccountResponse { profile: Profile; username: string; warning?: string
 function rememberAccount(res: AccountResponse, gen: string) {
   if (gen !== profileGeneration()) return;
   accountNotice = null;
-  if (read()?.profile.id !== res.profile.id) clearAllSessions();
+  const previous = read();
+  // Signup upgrades guest seats in place. Only switching from another saved
+  // identity should discard their credentials and the recent-table shortcut.
+  if (previous && previous.profile.id !== res.profile.id) clearAllSessions();
   saveStoredProfile({ token: `account:${res.profile.id}`, profile: res.profile, username: res.username }, gen);
   storeName(res.profile.displayName);
 }
@@ -89,7 +92,7 @@ function changeAccount<T>(work: (gen: string) => Promise<T>): Promise<T> {
 export function authenticate(mode: "login" | "register", values: { username: string; password: string; displayName?: string }) {
   return changeAccount(async (gen) => {
     const res = await fetchProfile<AccountResponse>(mode === "login" ? "/api/account/login" : "/api/account", {
-      method: "POST", body: JSON.stringify(values),
+      method: "POST", body: JSON.stringify(mode === "register" ? { ...values, guestSeats: savedSeats() } : values),
     }, gen);
     rememberAccount(res, gen);
     return res;
@@ -97,7 +100,7 @@ export function authenticate(mode: "login" | "register", values: { username: str
 }
 export function updateAccount(values: { avatarId?: number; displayName?: string; username?: string; currentPassword?: string; password?: string }) {
   return changeAccount(async (gen) => {
-    const res = await fetchProfile<AccountResponse>("/api/account", { method: "PATCH", body: JSON.stringify(values) }, gen);
+    const res = await fetchProfile<AccountResponse>("/api/account", { method: "PATCH", body: JSON.stringify({ ...values, guestSeats: savedSeats() }) }, gen);
     rememberAccount(res, gen);
     return res;
   });
@@ -156,7 +159,7 @@ export function AccountSession() {
       const previous = read()?.token;
       generation += 1;
       cache = undefined;
-      if (read()?.token !== previous) clearAllSessions();
+      if (previous && read()?.token !== previous) clearAllSessions();
       emit();
       refresh();
     };

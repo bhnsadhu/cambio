@@ -1,5 +1,5 @@
 import type { Action, PlayerView } from "@/lib/game/types";
-import type { Session } from "./session";
+import { loadSession, type Session } from "./session";
 import { profileToken } from "./profile";
 import { waitForSessionChange } from "./accountSession";
 
@@ -36,7 +36,7 @@ export interface ActionResponse extends StateResponse { note: { kind: "stick"; c
 
 export const api = {
   create: (name: string) => call<Seat>("/api/games", { method: "POST", body: JSON.stringify({ name }) }),
-  join: (code: string, name: string) => call<Seat>(`/api/games/${code}/join`, { method: "POST", body: JSON.stringify({ name }) }),
+  join: (code: string, name: string) => call<Seat>(`/api/games/${code}/join`, { method: "POST", token: loadSession(code)?.token, body: JSON.stringify({ name }) }),
   state: (code: string, token: string | null) => call<StateResponse>(`/api/games/${code}/state`, { token }),
   action: (code: string, token: string, actionId: string, action: Action) =>
     call<ActionResponse>(`/api/games/${code}/actions`, { method: "POST", token, body: JSON.stringify({ actionId, action }) }),

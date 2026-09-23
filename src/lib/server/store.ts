@@ -76,15 +76,19 @@ export async function createGame(hostName: string, profileId?: string | null, av
   throw new Error("Could not allocate a join code.");
 }
 
-export async function joinGame(code: string, name: string, profileId?: string | null, avatarId?: number | null): Promise<{ row: GameRow; playerId: string; token: string }> {
+export async function joinGame(code: string, name: string, profileId?: string | null, avatarId?: number | null, seatToken?: string | null): Promise<{ row: GameRow; playerId: string; token: string }> {
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const row = await loadByCode(code);
     if (!row) throw new GameError("NOT_FOUND", "No table with that code.");
-    const existing = profileId ? row.state.players.find((p) => p.profileId === profileId && !p.isBot) : null;
+    const existing = (profileId ? row.state.players.find((p) => p.profileId === profileId && !p.isBot) : null)
+      ?? (seatToken ? row.state.players.find((p) => !p.isBot && !p.profileId && p.token === seatToken) : null);
     if (existing?.token) {
+      if (!profileId) return { row, playerId: existing.id, token: existing.token };
       const result = applyAction(row.state, {
         actionId: crypto.randomUUID(), playerId: null,
-        action: { type: "syncIdentity", profileId: profileId!, displayName: name, avatarId },
+        action: existing.profileId
+          ? { type: "syncIdentity", profileId, displayName: name, avatarId }
+          : { type: "claimIdentity", token: existing.token, profileId, displayName: name, avatarId },
       }, engineCtx());
       if (!result.changed) return { row, playerId: existing.id, token: existing.token };
       const version = await commit(row, result.state);
@@ -143,6 +147,21 @@ export async function syncProfileGames(profileId: string, displayName: string | 
     await runAction(game.id, {
       actionId: crypto.randomUUID(), playerId: null,
       action: { type: "syncIdentity", profileId, displayName, avatarId },
+    });
+  }
+}
+
+/** Signup upgrades only guest seats proved by their existing secret tokens. */
+export async function claimGuestSeats(guestSeats: unknown, profileId: string, displayName: string, avatarId?: number | null) {
+  if (!Array.isArray(guestSeats)) return;
+  for (const seat of guestSeats.slice(0, 20)) {
+    if (!seat || typeof seat.code !== "string" || !/^[A-Z0-9]{5}$/.test(seat.code)
+      || typeof seat.token !== "string" || !seat.token || seat.token.length > 200) continue;
+    const row = await loadByCode(seat.code);
+    if (!row || !row.state.players.some((p) => !p.isBot && !p.profileId && p.token === seat.token)) continue;
+    await runAction(row.id, {
+      actionId: crypto.randomUUID(), playerId: null,
+      action: { type: "claimIdentity", token: seat.token, profileId, displayName, avatarId },
     });
   }
 }

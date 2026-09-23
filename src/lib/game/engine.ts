@@ -221,6 +221,18 @@ export function applyAction(input: GameState, env: ActionEnvelope | IdentityEnve
   }
   const state = clone(input);
   const a = env.action;
+  if (a.type === "claimIdentity") {
+    const player = state.players.find((p) => !p.isBot && !p.profileId && p.token && p.token === a.token);
+    // Possession of the guest credential is required. Never transfer another
+    // account's seat or create a second seat for the new account.
+    if (!player || state.players.some((p) => p.profileId === a.profileId)) return { state: input, changed: false };
+    player.profileId = a.profileId;
+    player.name = cleanName(a.displayName);
+    player.avatarId = a.avatarId ?? null;
+    state.appliedActionIds.push(env.actionId);
+    state.updatedAt = ctx.now;
+    return { state, changed: true };
+  }
   if (a.type === "syncIdentity") {
     const players = state.players.filter((p) => p.profileId === a.profileId);
     if (!players.length || players.every((p) => p.name === a.displayName && (a.avatarId === undefined || (p.avatarId ?? null) === a.avatarId))) return { state: input, changed: false };
