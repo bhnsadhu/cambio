@@ -178,7 +178,7 @@ function FriendRow({ friend, social, inviteCode, atThisTable = false }: { friend
   return (
     <li className="rounded-[16px] bg-surface-2 p-4">
       <div className="grid grid-cols-[36px_minmax(0,1fr)] items-center gap-x-3 gap-y-2.5 @[360px]:grid-cols-[36px_minmax(0,1fr)_auto]">
-        <Avatar identity={friend.id} size={36} />
+        <Avatar identity={friend.id} avatarId={friend.avatarId} size={36} />
         <div className="min-w-0 flex-1">
           <p className="t-sub flex min-w-0 items-center gap-1.5 font-medium">
             <Link href={`/p/${friend.handle}`} className="min-w-0 truncate hover:text-accent">{friend.displayName}</Link><RankBadge points={friend.points} size={16} />

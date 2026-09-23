@@ -81,7 +81,7 @@ export function Lobby({
                 <p className="t-caption text-ink-3">Seat {seat + 1}</p>
                 {p ? (
                   <div className="mt-3 min-w-0 flex-1">
-                    <p className="t-headline flex min-w-0 items-center gap-2"><Avatar identity={p.profileId ?? p.name} size={40} /><span className="min-w-0 [overflow-wrap:anywhere]"><PlayerName name={p.name} isBot={p.isBot} /></span></p>
+                    <p className="t-headline flex min-w-0 items-center gap-2"><Avatar identity={p.profileId ?? p.name} avatarId={p.avatarId} size={40} /><span className="min-w-0 [overflow-wrap:anywhere]"><PlayerName name={p.name} isBot={p.isBot} /></span></p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {p.isHost ? <Chip>Host</Chip> : null}
                       {p.id === me ? <Chip tone="ink">You</Chip> : null}

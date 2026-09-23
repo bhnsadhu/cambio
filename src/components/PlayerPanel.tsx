@@ -48,7 +48,7 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
       <header className="flex min-h-24 flex-wrap items-start justify-between gap-2 sm:min-h-20 xl:min-h-16">
         <div className="min-w-0">
           <div className="flex min-h-10 items-center gap-2">
-            <Avatar identity={player.profileId ?? player.name} size={36} />
+            <Avatar identity={player.profileId ?? player.name} avatarId={player.avatarId} size={36} />
             {isTurn || ready === true ? <Pip /> : null}
             <h3 className="t-headline min-w-0 break-words text-[15px]! sm:text-[17px]!">
               <span><PlayerName name={player.name} isBot={player.isBot} /></span>

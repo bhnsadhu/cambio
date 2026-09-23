@@ -107,7 +107,7 @@ export function Scoreboard({
               <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                 <div className="min-w-0">
                   <div className="flex min-w-0 items-center gap-2">
-                    <Avatar identity={player.profileId ?? player.name} size={32} />
+                    <Avatar identity={player.profileId ?? player.name} avatarId={player.avatarId} size={32} />
                     <p className="t-sub min-w-0 font-semibold [overflow-wrap:anywhere]"><span className="mr-1.5 text-ink-3">{rank}.</span><PlayerName name={player.name} isBot={player.isBot} /></p>
                   </div>
                   <div className="mt-1 flex flex-wrap gap-1.5">{player.id === me ? <Chip>You</Chip> : null}{won ? <Chip tone="accent">Winner</Chip> : null}</div>
@@ -147,7 +147,7 @@ export function Scoreboard({
                   <td className={`t-money border-t border-line py-3.5 pl-2 align-middle text-[17px] ${won ? "text-accent" : "text-ink-3"}`}>{rank}</td>
                   <td className="border-t border-line py-3.5 pr-4 align-middle">
                     <div className="flex min-w-0 items-center gap-2 text-[15px] font-medium">
-                      <Avatar identity={player.profileId ?? player.name} size={36} />
+                      <Avatar identity={player.profileId ?? player.name} avatarId={player.avatarId} size={36} />
                       <div className="min-w-0 [overflow-wrap:anywhere]">
                         {isMe ? (
                           <p>You <span className="t-sub font-normal text-ink-3">{player.name}</span></p>

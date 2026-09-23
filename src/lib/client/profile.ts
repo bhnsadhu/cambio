@@ -95,7 +95,7 @@ export function authenticate(mode: "login" | "register", values: { username: str
     return res;
   });
 }
-export function updateAccount(values: { displayName?: string; username?: string; currentPassword?: string; password?: string }) {
+export function updateAccount(values: { avatarId?: number; displayName?: string; username?: string; currentPassword?: string; password?: string }) {
   return changeAccount(async (gen) => {
     const res = await fetchProfile<AccountResponse>("/api/account", { method: "PATCH", body: JSON.stringify(values) }, gen);
     rememberAccount(res, gen);

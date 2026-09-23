@@ -16,7 +16,7 @@ export function ProfileCard({ profile, compact = false }: { profile: Profile; co
   return (
     <section aria-label={`${profile.displayName}'s record`}>
       <header className="flex items-center gap-3 pb-7">
-        <Avatar identity={profile.id} size={68} />
+        <Avatar identity={profile.id} avatarId={profile.avatarId} size={68} />
         <div className="min-w-0 flex-1">
           <h1 className="flex items-center gap-2 text-[26px] font-medium leading-tight tracking-[-0.025em]"><span className="min-w-0 break-words">{profile.displayName}</span><RankBadge points={profile.points} size={22} decorative /></h1>
           <p className="mt-1 text-sm text-ink-3">@{profile.handle}</p>

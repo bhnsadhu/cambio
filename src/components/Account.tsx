@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { authenticate, deleteAccount, signOut, updateAccount, type StoredProfile } from "@/lib/client/profile";
+import { AVATAR_OPTIONS, avatarIndex } from "@/lib/avatars";
+import { Avatar } from "./Avatar";
 import { Button, Field, inputClass } from "./ui";
 
 type Mode = "login" | "register";
@@ -63,9 +65,11 @@ export function AuthForm({ initialMode = "login", initialName = "", legacy = fal
 }
 
 export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onExit: () => void }) {
-  type Editor = "name" | "username" | "password" | "delete";
+  type Editor = "avatar" | "name" | "username" | "password" | "delete";
   const [editing, setEditing] = useState<Editor | null>(null);
   const changeButtons = useRef<Partial<Record<Editor, HTMLButtonElement | null>>>({});
+  const [avatarDraft, setAvatarDraft] = useState<number | null>(null);
+  const selectedAvatar = avatarDraft ?? avatarIndex(stored.profile.id, stored.profile.avatarId);
   const [nameDraft, setDisplayName] = useState<string | null>(null);
   const displayName = nameDraft ?? stored.profile.displayName;
   const [usernameDraft, setUsername] = useState<string | null>(null);
@@ -79,6 +83,7 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ kind: string; text: string; error: boolean } | null>(null);
   const edit = (next: Editor | null) => {
+    setAvatarDraft(null);
     setDisplayName(null); setUsername(null); setUsernamePassword("");
     setCurrentPassword(""); setPassword(""); setConfirmPassword("");
     setDeletePassword(""); setConfirmation(""); setNotice(null);
@@ -109,6 +114,34 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
   return (
     <div className="flex flex-col gap-5" aria-label="Account settings">
       <div className="divide-y divide-ink/10 rounded-panel bg-surface hairline">
+        <section className="p-5 sm:p-6" aria-labelledby="avatar-heading">
+          <div className={row}>
+            <div className="flex min-w-0 items-center gap-3">
+              <Avatar identity={stored.profile.id} avatarId={selectedAvatar} size={64} />
+              <div className="min-w-0"><h2 id="avatar-heading" className="t-headline">Avatar</h2><p className="t-sub mt-1 text-ink-2">Your look at the table.</p></div>
+            </div>
+            {change("avatar", "avatar")}
+          </div>
+          {editing === "avatar" ? <form id="avatar-form" className={formClass} aria-label="Avatar settings" onSubmit={(event) => { event.preventDefault(); void perform("avatar", async () => {
+            const result = await updateAccount({ avatarId: selectedAvatar }); setAvatarDraft(null);
+            return result.warning ?? "Avatar updated everywhere you play.";
+          }); }}>
+            <fieldset disabled={!!busy}>
+              <legend className="t-sub mb-3 text-ink-2">Choose your avatar. Change it whenever you like.</legend>
+              <div className="grid grid-cols-3 gap-2">
+                {AVATAR_OPTIONS.map((option) => <label key={option.id} className="min-w-0 cursor-pointer">
+                  <input className="peer sr-only" type="radio" name="avatarId" value={option.id} checked={selectedAvatar === option.id} onChange={() => setAvatarDraft(option.id)} autoFocus={selectedAvatar === option.id} />
+                  <span className="flex min-w-0 flex-col items-center gap-1 rounded-2xl border border-line-strong px-1 py-3 transition-colors hover:bg-ink/5 peer-checked:border-accent peer-checked:bg-accent/10 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent peer-disabled:cursor-wait peer-disabled:opacity-60">
+                    <Avatar identity={stored.profile.id} avatarId={option.id} size={56} />
+                    <span className="text-center text-[11px] leading-snug text-ink-2">{option.label}</span>
+                  </span>
+                </label>)}
+              </div>
+            </fieldset>
+            <div className={actions}><Button type="submit" variant="primary" disabled={!!busy}>{busy === "avatar" ? "Saving" : "Save avatar"}</Button>{cancel}</div>
+          </form> : null}
+          {feedback("avatar")}
+        </section>
         <section className="p-5 sm:p-6" aria-labelledby="display-name-heading">
           <div className={row}>
             <div className="min-w-0"><h2 id="display-name-heading" className="t-headline">Display name</h2>{editing !== "name" ? <p className="t-body mt-1 break-words">{stored.profile.displayName}</p> : null}</div>

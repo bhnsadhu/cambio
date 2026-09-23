@@ -102,7 +102,7 @@ function Standings({ scope }: { scope: LeaderboardScope }) {
             </td>
             <th scope="row" className="rounded-r-2xl py-4 pl-2 pr-5 font-normal sm:pr-6">
               <Link href={`/p/${entry.handle}`} className="flex min-w-0 items-center gap-3 hover:text-accent sm:gap-4">
-                <Avatar identity={entry.id} size={52} />
+                <Avatar identity={entry.id} avatarId={entry.avatarId} size={52} />
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2 text-[17px] font-medium leading-snug"><span className="min-w-0 break-words">{entry.displayName}</span><RankBadge points={entry.points} size={18} /></span>
                   <span className="tnum mt-1 block text-[14px] text-ink-3">{entry.points.toLocaleString()} points{entry.id === data.me?.id ? " · You" : ""}</span>
