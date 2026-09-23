@@ -123,6 +123,11 @@ test("laptop browsers keep hands, piles, activity, and turn actions together thr
   const reveal = page.getByText("Two cards. Your call.", { exact: true }).locator("..").locator("..").locator("..");
   await expect(vote).toBeVisible();
   await expect(reveal).toBeVisible();
+  // Bounding boxes include transforms. Measure the final layout after the
+  // notices finish entering, rather than sampling a partly translated card.
+  await Promise.all([vote, reveal].map((notice) => notice.evaluate(async (element) => {
+    await Promise.all(element.getAnimations().map((animation) => animation.finished));
+  })));
   await expect(page.getByRole("button", { name: "Swap them", exact: true })).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Leave them", exact: true })).toHaveCount(1);
   for (const size of laptopSizes) {
