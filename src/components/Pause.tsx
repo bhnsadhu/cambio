@@ -1,9 +1,10 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 import type { PlayerPublic, PublicView } from "@/lib/game/types";
 import { useModalFocus } from "@/lib/client/useModalFocus";
-import { Button, Pip, PlayerName } from "./ui";
+import { Button, buttonClass, Pip, PlayerName } from "./ui";
 import { TablePlayers } from "./TablePlayers";
 
 /**
@@ -162,7 +163,9 @@ export function PauseOverlay({ view, me, busy, onRequest, onVote, onKick, onLeav
             {playerControl}
           </div>
           <Button variant="ghost" size="sm" disabled={busy} onClick={onLeave}>Leave table</Button>
-        </div> : null}
+        </div> : <div className="mt-5 flex justify-end border-t border-line pt-4">
+          <Link href="/" className={buttonClass({ variant: "secondary", size: "sm" })}>Home</Link>
+        </div>}
       </div>
     </div>
   );

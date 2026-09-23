@@ -1,11 +1,12 @@
 "use client";
 
 import { Avatar } from "./Avatar";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useModalFocus } from "@/lib/client/useModalFocus";
 import type { PublicView } from "@/lib/game/types";
 import { FaceCard } from "./cards";
-import { Button, Chip, Pip, PlayerName } from "./ui";
+import { Button, buttonClass, Chip, Pip, PlayerName } from "./ui";
 
 /**
  * The payoff. Players are ranked from winner down, your own row says so,
@@ -83,7 +84,10 @@ export function Scoreboard({
                 <p className="t-footnote text-ink-3 lg:text-right">Back to table keeps everyone together without starting another round.</p>
               </>
             ) : (
-              <p className="t-sub max-w-[230px] text-ink-3 lg:text-right">Watching. The table decides whether to play on.</p>
+              <>
+                <p className="t-sub max-w-[230px] text-ink-3 lg:text-right">Watching. The table decides whether to play on.</p>
+                <Link href="/" className={buttonClass({ variant: "secondary", size: "sm" })}>Home</Link>
+              </>
             )}
             {waiting.length ? (
               <p className="t-footnote max-w-[350px] text-ink-3 lg:max-w-[230px] lg:text-right">

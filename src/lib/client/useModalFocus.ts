@@ -5,15 +5,8 @@ import { useEffect, useRef, type RefObject } from "react";
 const stack: { dialog: HTMLElement; layer: number }[] = [];
 let previousOverflow = "";
 
-/** A late game overlay must not steal focus from a visibly higher editor. */
-function topDialog() {
-  let top: HTMLElement | null = null;
-  let topLayer = -Infinity;
-  for (const { dialog, layer } of stack) {
-    if (layer >= topLayer) { top = dialog; topLayer = layer; }
-  }
-  return top;
-}
+/** The stack follows paint order, including when equal layers mount out of order. */
+function topDialog() { return stack.at(-1)?.dialog ?? null; }
 
 function restoreDialogFocus(trigger: HTMLElement | null, preferred?: RefObject<HTMLElement | null>) {
   const next = topDialog();
@@ -24,7 +17,7 @@ function restoreDialogFocus(trigger: HTMLElement | null, preferred?: RefObject<H
   else next?.focus({ preventScroll: true });
 }
 
-/** Keep keyboard navigation in the highest dialog; newer dialogs win ties. */
+/** Keep keyboard navigation in the highest visible dialog. */
 export function useModalFocus(open = true, restoreFocus?: RefObject<HTMLElement | null>) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -32,10 +25,18 @@ export function useModalFocus(open = true, restoreFocus?: RefObject<HTMLElement 
     if (!open || !dialog) return;
     const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     if (!stack.length) { previousOverflow = document.body.style.overflow; document.body.style.overflow = "hidden"; }
-    // Keep the layer after React removes the DOM node, so cleanup can still
-    // identify the departing top dialog and restore focus underneath it.
+    // Cache paint order while nodes are connected. React removes nodes before
+    // effect cleanup, which must still identify the departing top dialog.
     const entry = { dialog, layer: Number.parseInt(getComputedStyle(dialog).zIndex, 10) || 0 };
     stack.push(entry);
+    stack.sort((a, b) => {
+      if (a.layer !== b.layer) return a.layer - b.layer;
+      const position = a.dialog.compareDocumentPosition(b.dialog);
+      if (position & Node.DOCUMENT_POSITION_DISCONNECTED) return 0;
+      if (position & Node.DOCUMENT_POSITION_FOLLOWING) return -1;
+      if (position & Node.DOCUMENT_POSITION_PRECEDING) return 1;
+      return 0;
+    });
     const top = () => topDialog() === dialog;
     if (top()) dialog.focus({ preventScroll: true });
     const onKey = (event: KeyboardEvent) => {
