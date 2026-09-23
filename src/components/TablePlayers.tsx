@@ -33,8 +33,8 @@ function PlayersDialog({ view, busy, onKick, onClose }: Props & { onClose: () =>
   }, [busy, onClose]);
 
   return <div ref={ref} tabIndex={-1} role="dialog" aria-modal aria-labelledby="table-players-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 outline-none animate-fade">
-    <div className="w-full max-w-[480px] rounded-panel bg-surface p-6 shadow-float hairline sm:p-8">
-      <h2 id="table-players-title" className="t-title2">{target ? `Remove ${target.name}?` : "Table players"}</h2>
+    <div className="max-h-[calc(100dvh-32px)] w-full max-w-[480px] overflow-y-auto rounded-panel bg-surface p-6 shadow-float hairline sm:p-8">
+      <h2 id="table-players-title" className="t-title2 [overflow-wrap:anywhere]">{target ? `Remove ${target.name}?` : "Table players"}</h2>
       {target ? <>
         <p className="t-body mt-3 text-ink-2">{activeRound
           ? "A medium bot will take over their seat and exact cards. The round will continue."

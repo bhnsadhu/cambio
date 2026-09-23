@@ -102,7 +102,7 @@ test("laptop browsers keep hands, piles, activity, and turn actions together thr
   await page.getByRole("button", { name: "Leave", exact: true }).click();
   const leave = page.getByRole("dialog", { name: "Leave this table?", exact: true });
   await expect(leave).toBeVisible();
-  await expect(leave).toContainText("The round keeps going after you leave");
+  await expect(leave).toContainText("A medium bot will take over your seat and exact cards.");
   await page.keyboard.press("Escape");
   await expect(leave).toHaveCount(0);
   await expect(actions.getByRole("button", { name: "Skip the power", exact: true })).toBeVisible();

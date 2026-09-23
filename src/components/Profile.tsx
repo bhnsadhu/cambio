@@ -20,17 +20,17 @@ export function ProfileCard({ profile, compact = false, actions }: { profile: Pr
         <Avatar identity={profile.id} avatarId={profile.avatarId} size={76} />
         <div className="min-w-0 flex-1">
           <h1 className="flex items-center gap-2 text-[28px] font-medium leading-tight tracking-[-0.025em]"><span className="min-w-0 break-words">{profile.displayName}</span><RankBadge points={profile.points} size={22} decorative /></h1>
-          <p className="mt-1 text-sm text-ink-3">@{profile.handle}</p>
+          <p className="mt-1 break-all text-sm text-ink-3">@{profile.handle}</p>
         </div>
       </header>
 
       <div className="rounded-2xl border border-line-strong bg-[#111113] px-5 py-5">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
           <div className="flex min-w-0 items-center gap-3">
             <RankBadge points={profile.points} size={36} decorative />
-            <div><p className="text-base font-medium">{standing.tier.name}</p><p className="mt-0.5 text-xs text-ink-3">{standingLine(profile)}</p></div>
+            <div className="min-w-0"><p className="break-words text-base font-medium">{standing.tier.name}</p><p className="mt-0.5 text-xs text-ink-3">{standingLine(profile)}</p></div>
           </div>
-          <div className="shrink-0 text-right"><p className="tnum text-[24px] font-medium leading-tight">{profile.points.toLocaleString()}</p><p className="mt-0.5 text-xs text-ink-3">Points</p></div>
+          <div className="ml-auto shrink-0 text-right"><p className="tnum text-[24px] font-medium leading-tight">{profile.points.toLocaleString()}</p><p className="mt-0.5 text-xs text-ink-3">Points</p></div>
         </div>
         <div className="mt-5 h-1 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-label="Progress to next rank" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(standing.progress * 100)}>
           <span className="block h-full rounded-full bg-accent" style={{ width: `${Math.round(standing.progress * 100)}%` }} />

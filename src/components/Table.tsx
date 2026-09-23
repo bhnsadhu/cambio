@@ -261,6 +261,7 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
   return (
     <div className="flex flex-col gap-4 pb-4 lg:grid lg:h-[calc(100dvh-96px)] lg:min-h-[600px] lg:grid-cols-[minmax(0,1fr)_240px]">
       <div className="contents min-h-0 min-w-0 lg:flex lg:flex-col lg:gap-4">
+        {/* Each panel shares the header, card and count rows with its neighbours. */}
         <div className="order-1 grid grid-cols-2 gap-3 md:grid-cols-4 lg:shrink-0 xl:gap-4">
           {pub.players.map((p) => (
             <PlayerPanel

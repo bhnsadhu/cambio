@@ -43,7 +43,7 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
 
   return (
     <section
-      className={`relative flex min-w-0 flex-col gap-3 rounded-panel px-3 pt-3 pb-4 transition-[box-shadow,background-color] duration-300 ease-out xl:gap-4 xl:px-4 xl:pt-4 xl:pb-5 ${surface} ${ring}`}
+      className={`relative row-span-3 grid min-w-0 grid-rows-subgrid gap-3 rounded-panel px-3 pt-3 pb-4 transition-[box-shadow,background-color] duration-300 ease-out xl:gap-4 xl:px-4 xl:pt-4 xl:pb-5 ${surface} ${ring}`}
       aria-label={`${player.name}'s hand`}
     >
       <header className="flex min-h-24 flex-wrap items-start justify-between gap-2 sm:min-h-20 xl:min-h-16">
@@ -84,7 +84,7 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
         </div>
       </header>
 
-      <div className="grid grid-cols-2 gap-2 justify-items-center xl:gap-3">
+      <div className="grid grid-cols-2 content-start gap-2 justify-items-center xl:gap-3">
         {player.hand.map((cardId, i) => {
           const key = `slot:${player.id}:${i}`;
           // A card still in the air keeps its tile face down, so the reveal

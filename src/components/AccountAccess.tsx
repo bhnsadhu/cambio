@@ -21,8 +21,8 @@ export function AccountAccess({ next, initialMode }: { next: string; initialMode
   return (
     <main className="site-shell min-h-screen pb-16">
       <AppHeader active="login" loginNext={next} trailing={<Link href={back} className="t-sub text-ink-2 hover:text-ink">{backLabel(back)}</Link>} />
-      <div className="grid items-start gap-12 pt-10 lg:grid-cols-[minmax(0,1fr)_480px] lg:gap-20 lg:py-16">
-        <aside className="hidden min-w-0 py-8 lg:block" aria-label="Your Cambio account">
+      <div className="grid items-start gap-8 pt-8 lg:grid-cols-[minmax(0,1fr)_480px] lg:gap-12 lg:py-12">
+        <aside className="hidden min-w-0 py-6 lg:block" aria-label="Your Cambio account">
           <p className="t-overline text-accent">Your Cambio account</p>
           <p className="mt-5 max-w-md text-[42px] font-medium leading-[1.1] tracking-tight">Pick up where you left off.</p>
           <p className="t-body mt-5 max-w-md text-ink-2">A familiar seat at every table. Keep your record, find your friends, and make your profile your own.</p>
@@ -32,7 +32,7 @@ export function AccountAccess({ next, initialMode }: { next: string; initialMode
             <div className="py-5"><dt className="font-medium">Your profile</dt><dd className="t-sub mt-1 text-ink-2">Choose your avatar and the name other players see.</dd></div>
           </dl>
         </aside>
-        <div className="mx-auto w-full max-w-[480px] lg:mx-0">
+        <div className="mx-auto min-w-0 w-full max-w-[480px] lg:mx-0">
         {!ready || stored?.username ? <p role="status" className="t-sub text-ink-2">{ready ? "Taking you back" : "Checking your account"}</p>
           : <AuthForm key={`${initialMode}:${next}`} initialMode={initialMode} initialName={name} legacy={!!stored} />}
         </div>

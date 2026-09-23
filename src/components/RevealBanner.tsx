@@ -55,12 +55,12 @@ export function RevealBanner({
                   </p>
                   {hint ? <p className="t-footnote mt-2 max-w-[220px] text-ink-3">{hint}</p> : null}
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex max-w-full items-start justify-center gap-3">
                   {r.cards.map((c, i) => (
-                    <div key={c.id} className="flex flex-col items-center gap-1.5">
+                    <div key={c.id} className={`flex min-w-0 flex-col items-center gap-1.5 ${isKing ? "w-[100px]" : ""}`}>
                       <FaceCard card={c} size="md" className="animate-flip-in" />
                       {isKing ? (
-                        <span className="t-footnote text-ink-3">{ownerOf(r.cardIds[i])?.id === view.private?.playerId ? "Yours" : names.get(ownerOf(r.cardIds[i])?.id ?? "")}</span>
+                        <span className="t-footnote w-full text-center text-ink-3 [overflow-wrap:anywhere]">{ownerOf(r.cardIds[i])?.id === view.private?.playerId ? "Yours" : names.get(ownerOf(r.cardIds[i])?.id ?? "")}</span>
                       ) : null}
                     </div>
                   ))}
