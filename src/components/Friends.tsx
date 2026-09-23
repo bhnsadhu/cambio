@@ -1,5 +1,6 @@
 "use client";
 
+import { Avatar } from "./Avatar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
@@ -177,7 +178,8 @@ function FriendRow({ friend, social, inviteCode, atThisTable = false }: { friend
   return (
     <li className="rounded-[16px] bg-surface-2 px-3.5 py-2.5">
       <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
+        <Avatar identity={friend.id} size={36} />
+        <div className="min-w-0 flex-1">
           <p className="t-sub flex min-w-0 items-center gap-1.5 font-medium">
             <Link href={`/p/${friend.handle}`} className="min-w-0 truncate hover:text-accent">{friend.displayName}</Link><RankBadge points={friend.points} size={16} />
           </p>

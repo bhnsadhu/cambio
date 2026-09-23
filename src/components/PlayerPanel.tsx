@@ -1,5 +1,6 @@
 "use client";
 
+import { Avatar } from "./Avatar";
 import type { Card, PlayerPublic } from "@/lib/game/types";
 import type { LocKey, Positions } from "@/lib/client/positions";
 import { CardBack, CardTile } from "./cards";
@@ -47,6 +48,7 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
       <header className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
+            <Avatar identity={player.profileId ?? player.name} size={36} />
             {isTurn || ready === true ? <Pip /> : null}
             <h3 className="t-headline min-w-0 break-words text-[15px]! sm:text-[17px]!">
               <span><PlayerName name={player.name} isBot={player.isBot} /></span>

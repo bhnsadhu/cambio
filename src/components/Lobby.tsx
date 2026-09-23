@@ -1,5 +1,6 @@
 "use client";
 
+import { Avatar } from "./Avatar";
 import { useState } from "react";
 import type { BotDifficulty, PublicView } from "@/lib/game/types";
 import { BOT_NAMES } from "@/lib/game/engine";
@@ -80,7 +81,7 @@ export function Lobby({
                 <p className="t-caption text-ink-3">Seat {seat + 1}</p>
                 {p ? (
                   <div>
-                    <p className="t-headline break-words"><PlayerName name={p.name} isBot={p.isBot} /></p>
+                    <p className="t-headline flex items-center gap-2 break-words"><Avatar identity={p.profileId ?? p.name} size={40} /><PlayerName name={p.name} isBot={p.isBot} /></p>
                     <div className="mt-1.5 flex gap-1.5">
                       {p.isHost ? <Chip>Host</Chip> : null}
                       {p.id === me ? <Chip tone="ink">You</Chip> : null}

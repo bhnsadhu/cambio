@@ -1,5 +1,6 @@
 "use client";
 
+import { Avatar } from "./Avatar";
 import { useEffect, useState } from "react";
 import { useModalFocus } from "@/lib/client/useModalFocus";
 import type { PublicView } from "@/lib/game/types";
@@ -105,7 +106,7 @@ export function Scoreboard({
             return <li key={player.id} className={`rounded-card p-4 ${player.id === me ? "bg-accent-soft" : "bg-surface-2"}`} aria-label={`${player.name}'s result`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="t-sub break-words font-semibold"><span className="mr-2 text-ink-3">{rank}.</span><PlayerName name={player.name} isBot={player.isBot} /></p>
+                  <p className="t-sub flex items-center gap-2 break-words font-semibold"><Avatar identity={player.profileId ?? player.name} size={32} /><span className="mr-2 text-ink-3">{rank}.</span><PlayerName name={player.name} isBot={player.isBot} /></p>
                   <div className="mt-1 flex flex-wrap gap-1.5">{player.id === me ? <Chip>You</Chip> : null}{won ? <Chip tone="accent">Winner</Chip> : null}</div>
                 </div>
                 <div className="shrink-0 text-right"><p className="t-caption text-ink-3">Hand total</p><p className={`t-money text-[26px] ${won ? "text-accent" : ""}`}><CountUp value={score} delay={240 + index * 220} /></p></div>
@@ -137,6 +138,7 @@ export function Scoreboard({
                   <td className={`t-money border-t border-line py-3.5 pl-2 align-middle text-[17px] ${won ? "text-accent" : "text-ink-3"}`}>{rank}</td>
                   <td className="border-t border-line py-3.5 pr-4 align-middle">
                     <div className="flex items-center gap-2 text-[15px] font-medium">
+                      <Avatar identity={player.profileId ?? player.name} size={36} />
                       {isMe ? (
                         <span>You <span className="t-sub font-normal text-ink-3">{player.name}</span></span>
                       ) : (

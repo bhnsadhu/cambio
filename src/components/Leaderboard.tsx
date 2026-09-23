@@ -1,5 +1,6 @@
 "use client";
 
+import { Avatar } from "./Avatar";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { loginHref } from "@/lib/account/navigation";
@@ -104,9 +105,10 @@ function Standings({ scope }: { scope: LeaderboardScope }) {
             <tbody>{data.entries.map((entry) => <tr key={entry.id} aria-label={entry.id === data.me?.id ? "Your leaderboard row" : undefined} className={`border-t border-line ${entry.id === data.me?.id ? "bg-accent-soft" : ""}`}>
               <td className="tnum py-4 pl-1 text-ink-2">{entry.rank}</td>
               <th scope="row" className="py-4 pr-2 font-normal">
-                <Link href={`/p/${entry.handle}`} className="block hover:text-accent">
+                <Link href={`/p/${entry.handle}`} className="flex items-center gap-3 hover:text-accent">
+                  <Avatar identity={entry.id} size={40} /><span className="min-w-0">
                   <span className="t-sub flex items-center gap-2 font-semibold"><span className="min-w-0 break-words">{entry.displayName}</span><RankBadge points={entry.points} size={18} /></span>
-                  <span className="t-footnote block break-all text-ink-3">@{entry.handle}</span>
+                  <span className="t-footnote block break-all text-ink-3">@{entry.handle}</span></span>
                 </Link>
                 {entry.id === data.me?.id ? <span className="mt-1 inline-block"><Chip tone="accent">You</Chip></span> : null}
               </th>

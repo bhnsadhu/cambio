@@ -1,5 +1,6 @@
 "use client";
 
+import { Avatar } from "./Avatar";
 import Link from "next/link";
 import { type ReactNode } from "react";
 import { standingFor, standingLine, stickRate, winRate } from "@/lib/social/rank";
@@ -18,6 +19,7 @@ export function ProfileCard({ profile, compact = false }: { profile: Profile; co
   return (
     <section className="rounded-panel bg-surface p-6 hairline" aria-label={`${profile.displayName}'s record`}>
       <header className="flex flex-wrap items-start justify-between gap-4">
+        <Avatar identity={profile.id} size={64} />
         <div className="min-w-0">
           <p className="t-caption flex items-center gap-2 text-accent"><RankBadge points={profile.points} decorative />{standing.tier.name}</p>
           <h1 className="t-title2 mt-1 flex items-center gap-2"><span className="min-w-0 break-words">{profile.displayName}</span><RankBadge points={profile.points} /></h1>
