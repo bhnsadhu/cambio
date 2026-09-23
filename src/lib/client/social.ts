@@ -23,7 +23,7 @@ export interface SocialHook {
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
-  addFriend: (username: string) => Promise<string>;
+  addFriend: (username: string, expectedProfileId?: string) => Promise<string>;
   respond: (profileId: string, accept: boolean) => Promise<void>;
   remove: (profileId: string) => Promise<void>;
   invite: (profileId: string, code: string) => Promise<InviteOutcome>;
@@ -116,18 +116,19 @@ export function useSocial(): SocialHook {
     return () => { active = false; streaming.current = false; stop(); };
   }, [channel, identity, refresh]);
 
-  const addFriend = useCallback(async (username: string) => {
+  const addFriend = useCallback(async (username: string, expectedProfileId?: string) => {
     const res = await callProfile<{ outcome: string }>("/api/social/friends", {
       method: "POST",
-      body: JSON.stringify({ username }),
+      body: JSON.stringify({ username, expectedProfileId }),
     });
     await refresh();
     return res.outcome;
   }, [refresh]);
 
   const respond = useCallback(async (profileId: string, accept: boolean) => {
-    await callProfile("/api/social/friends/respond", { method: "POST", body: JSON.stringify({ profileId, accept }) });
+    const res = await callProfile<{ outcome: string }>("/api/social/friends/respond", { method: "POST", body: JSON.stringify({ profileId, accept }) });
     await refresh();
+    if (accept && res.outcome !== "accepted") throw new Error("That friend request is no longer available.");
   }, [refresh]);
 
   const remove = useCallback(async (profileId: string) => {

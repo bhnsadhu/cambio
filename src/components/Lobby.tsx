@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { BotDifficulty, PublicView } from "@/lib/game/types";
 import { BOT_NAMES } from "@/lib/game/engine";
 import { SITE_URL } from "@/lib/site";
+import { PlayerSocial } from "./PlayerSocial";
 import { Button, Chip, DifficultyPicker, Pip, PlayerName } from "./ui";
 
 export function Lobby({
@@ -88,6 +89,7 @@ export function Lobby({
                       {p.isHost ? <Chip>Host</Chip> : null}
                       {p.id === me ? <Chip tone="ink">You</Chip> : null}
                     </div>
+                    <PlayerSocial player={p} isMe={p.id === me} />
                   </div>
                 ) : (
                   <div className="mt-3 flex flex-1 flex-col">

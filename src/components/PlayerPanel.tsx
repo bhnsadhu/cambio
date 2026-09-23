@@ -4,6 +4,7 @@ import { Avatar } from "./Avatar";
 import type { Card, PlayerPublic } from "@/lib/game/types";
 import type { LocKey, Positions } from "@/lib/client/positions";
 import { CardBack, CardTile } from "./cards";
+import { PlayerSocial } from "./PlayerSocial";
 import { Chip, DIFFICULTY_LABEL, Pip, PlayerName } from "./ui";
 
 export interface PanelProps {
@@ -63,6 +64,7 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
               <span className={ready ? "text-accent" : "text-ink-2"}> · {ready ? "Ready" : "Not ready"}</span>
             )}
           </p>
+          <PlayerSocial player={player} isMe={isMe} />
         </div>
         <div className="flex shrink-0 flex-wrap items-end gap-1">
           {holding ? (

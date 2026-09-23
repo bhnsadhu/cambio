@@ -7,6 +7,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import type { SocialHook } from "@/lib/client/social";
 import { saveSession } from "@/lib/client/session";
 import type { Friend } from "@/lib/social/types";
+import { orderFriends } from "@/lib/social/friends-order";
 import { RankBadge } from "./RankBadge";
 import { Button, PresenceDot, inputClass, presenceOf } from "./ui";
 
@@ -67,6 +68,7 @@ export function FriendsPanel({
   };
 
   const { friends, incoming, outgoing, opponents } = social.social;
+  const orderedFriends = orderFriends(friends, inviteCode ? seated : null);
   const strangers = opponents.filter(
     (o) => !friends.some((f) => f.id === o.id) && !outgoing.some((f) => f.id === o.id) && !incoming.some((f) => f.id === o.id),
   );
@@ -120,8 +122,8 @@ export function FriendsPanel({
 
       {friends.length ? (
         <ul className="flex flex-col gap-2">
-          {friends.map((f) => (
-            <FriendRow key={f.id} friend={f} social={social} inviteCode={inviteCode} atThisTable={seated.includes(f.id)} />
+          {orderedFriends.map(({ friend, here }) => (
+            <FriendRow key={friend.id} friend={friend} social={social} inviteCode={inviteCode} here={here} />
           ))}
         </ul>
       ) : !social.loading && !social.error ? (
@@ -168,11 +170,10 @@ function useResendCooldown(at?: string) {
   return remaining;
 }
 
-function FriendRow({ friend, social, inviteCode, atThisTable = false }: { friend: Friend; social: SocialHook; inviteCode: string | null; atThisTable?: boolean }) {
+function FriendRow({ friend, social, inviteCode, here }: { friend: Friend; social: SocialHook; inviteCode: string | null; here: boolean }) {
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const live = friend.playing;
-  const here = inviteCode ? atThisTable : friend.online && !!live?.together;
   const sent = social.social.sent.find((s) => s.toId === friend.id && s.code === inviteCode);
   const cooldown = useResendCooldown(sent?.at);
   // A friend at another table can still choose to accept an invitation here.

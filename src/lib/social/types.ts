@@ -30,6 +30,13 @@ export interface Profile extends ProfileStats {
   totalPlayers: number;
 }
 
+/** Public account details displayed on a seat, separate from the secret deal. */
+export interface TableProfile {
+  id: string;
+  handle: string;
+  points: number;
+}
+
 /** Where a friend is playing right now. */
 export interface LiveGame {
   tableId: string;

@@ -21,6 +21,7 @@ import { FlightLayer, useFlights } from "./FlightLayer";
 import { PauseButton, PauseOverlay } from "./Pause";
 import { RoomSettings } from "./RoomSettings";
 import { TablePlayers } from "./TablePlayers";
+import { TableSocialProvider } from "./PlayerSocial";
 import { Button, buttonClass, Chip, DotOff, Field, inputClass, Pip, Wordmark } from "./ui";
 
 /**
@@ -112,7 +113,7 @@ function GameShell({ code }: { code: string }) {
   }
 
   return (
-    <>
+    <TableSocialProvider code={code} view={view?.public ?? null} social={social}>
       <main className="mx-auto min-h-screen w-full max-w-[1600px] px-5 sm:px-8">
         <header className="mb-4 flex min-h-20 flex-wrap items-center justify-between gap-x-5 gap-y-2 border-b border-line py-3">
           <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 sm:gap-x-5">
@@ -163,7 +164,7 @@ function GameShell({ code }: { code: string }) {
         <Toasts toasts={game.toasts} />
         <Notifications social={social} atCode={code} acceptsJoinRequests={!seated || !view?.public.doNotDisturb} />
       </main>
-    </>
+    </TableSocialProvider>
   );
 }
 
