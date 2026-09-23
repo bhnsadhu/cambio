@@ -11,7 +11,7 @@ import { ordinal } from "@/lib/social/rank";
 import { RankBadge } from "./RankBadge";
 import { Notifications } from "./Friends";
 import { AccountLink } from "./Profile";
-import { Button, buttonClass, Chip, Wordmark } from "./ui";
+import { Button, buttonClass, Wordmark } from "./ui";
 
 export function Leaderboard({ initialScope }: { initialScope: LeaderboardScope | null }) {
   const ready = useAccountReady();
@@ -20,17 +20,16 @@ export function Leaderboard({ initialScope }: { initialScope: LeaderboardScope |
   const scope = initialScope ?? (stored ? "friends" : "all");
   const path = `/leaderboard?scope=${scope}`;
   return (
-    <main className="mx-auto min-h-screen w-full max-w-[800px] px-5 pb-16 sm:px-8">
+    <main className="mx-auto min-h-screen w-full max-w-[620px] px-5 pb-16 sm:px-8">
       <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 py-3">
         <Link href="/" aria-label="Cambio home"><Wordmark /></Link>
-        <nav aria-label="Main navigation" className="flex items-center gap-4">
+        <nav aria-label="Main navigation" className="flex flex-wrap items-center gap-3">
           <Link href="/" className="t-sub text-ink-2 hover:text-ink">Back to play</Link>
           {ready ? stored ? <AccountLink from={path} /> : <Link href={loginHref(path)} className="t-sub text-ink-2 hover:text-ink">Log in</Link> : null}
         </nav>
       </header>
-      <div className="pt-8 pb-6">
-        <h1 className="t-title">Leaderboard</h1>
-        <p className="t-body mt-2 text-ink-2">A little friendly competition. Every round counts.</p>
+      <div className="pt-10 pb-7">
+        <h1 className="text-[30px] font-normal leading-tight tracking-[-0.025em] text-ink-2">Leaderboard</h1>
       </div>
       <nav className="mb-6 flex gap-2" aria-label="Leaderboard views">
         {(["friends", "all"] as const).map((value) => (
@@ -86,38 +85,32 @@ function Standings({ scope }: { scope: LeaderboardScope }) {
         <Button size="sm" onClick={() => { setError(null); setAttempt((value) => value + 1); }}>Try again</Button>
       </div> : null}
       {!data ? !error ? <p role="status" className="t-sub text-ink-2">Loading the leaderboard</p> : null : <>
-        {data.me ? <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-panel bg-accent-soft px-5 py-4" aria-label="Your standing">
+        {data.me ? <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-line px-1 pb-5" aria-label="Your standing">
           <div>
-            <p className="t-caption text-accent">Your rank {scope === "friends" ? "among friends" : "among all players"}</p>
-            <p className="t-title2 mt-1">{ordinal(data.me.rank)} <span className="t-body text-ink-2">of {data.total}</span></p>
+            <p className="text-xs text-ink-3">Your rank {scope === "friends" ? "among friends" : "among all players"}</p>
+            <p className="mt-1 text-xl font-medium">{ordinal(data.me.rank)} <span className="t-body text-ink-2">of {data.total}</span></p>
           </div>
           <Link href={`/p/${data.me.handle}`} className="t-sub font-medium text-accent">Your record</Link>
         </div> : <p className="t-sub mb-5 text-ink-2"><Link href={loginHref(`/leaderboard?scope=${scope}`, "register")} className="font-medium text-ink hover:text-accent">Create an account</Link> to appear here and save your results.</p>}
-        <div className="overflow-hidden rounded-panel bg-surface p-4 hairline sm:p-6">
-          <table className="w-full table-fixed border-collapse text-left">
-            <caption className="sr-only">{scope === "friends" ? "You and your friends" : "All players"}, ranked by points</caption>
-            <thead className="t-caption text-ink-3"><tr>
-              <th scope="col" className="w-9 pb-3 font-medium sm:w-16">Rank</th>
-              <th scope="col" className="pb-3 font-medium">Player</th>
-              <th scope="col" className="w-10 pb-3 text-right font-medium sm:w-16">Wins</th>
-              <th scope="col" className="w-14 pb-3 text-right font-medium sm:w-20">Points</th>
-            </tr></thead>
-            <tbody>{data.entries.map((entry) => <tr key={entry.id} aria-label={entry.id === data.me?.id ? "Your leaderboard row" : undefined} className={`border-t border-line ${entry.id === data.me?.id ? "bg-accent-soft" : ""}`}>
-              <td className="tnum py-4 pl-1 text-ink-2">{entry.rank}</td>
-              <th scope="row" className="py-4 pr-2 font-normal">
-                <Link href={`/p/${entry.handle}`} className="flex items-center gap-3 hover:text-accent">
-                  <Avatar identity={entry.id} size={40} /><span className="min-w-0">
-                  <span className="t-sub flex items-center gap-2 font-semibold"><span className="min-w-0 break-words">{entry.displayName}</span><RankBadge points={entry.points} size={18} /></span>
-                  <span className="t-footnote block break-all text-ink-3">@{entry.handle}</span></span>
-                </Link>
-                {entry.id === data.me?.id ? <span className="mt-1 inline-block"><Chip tone="accent">You</Chip></span> : null}
-              </th>
-              <td className="tnum py-4 text-right text-ink-2">{entry.roundsWon}</td>
-              <td className="tnum py-4 pr-1 text-right font-medium">{entry.points}</td>
-            </tr>)}</tbody>
-          </table>
-          {!data.entries.length ? <p className="t-body py-6 text-ink-2">{offset ? "No more players on this page." : "No players yet. Be the first to join."}</p> : null}
-        </div>
+        <table className="w-full table-fixed border-separate border-spacing-x-0 border-spacing-y-1 text-left">
+          <caption className="sr-only">{scope === "friends" ? "You and your friends" : "All players"}, ranked by points</caption>
+          <thead className="sr-only"><tr><th scope="col">Rank</th><th scope="col">Player and points</th></tr></thead>
+          <tbody>{data.entries.map((entry) => <tr key={entry.id} aria-label={entry.id === data.me?.id ? "Your leaderboard row" : undefined} className={entry.id === data.me?.id ? "bg-surface-2" : ""}>
+            <td className="w-12 rounded-l-2xl py-4 pl-3 pr-2 align-middle text-center sm:w-16 sm:pl-5">
+              {entry.rank <= 3 ? <Placement rank={entry.rank} /> : <span className="tnum text-lg text-ink-2">{entry.rank}</span>}
+            </td>
+            <th scope="row" className="rounded-r-2xl py-4 pl-2 pr-5 font-normal sm:pr-6">
+              <Link href={`/p/${entry.handle}`} className="flex min-w-0 items-center gap-3 hover:text-accent sm:gap-4">
+                <Avatar identity={entry.id} size={52} />
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-2 text-[17px] font-medium leading-snug"><span className="min-w-0 break-words">{entry.displayName}</span><RankBadge points={entry.points} size={18} /></span>
+                  <span className="tnum mt-1 block text-[14px] text-ink-3">{entry.points.toLocaleString()} points{entry.id === data.me?.id ? " · You" : ""}</span>
+                </span>
+              </Link>
+            </th>
+          </tr>)}</tbody>
+        </table>
+        {!data.entries.length ? <p className="t-body px-3 py-6 text-ink-2">{offset ? "No more players on this page." : "No players yet. Be the first to join."}</p> : null}
         {offset > 0 || data.nextOffset !== null ? <nav aria-label="Leaderboard pages" className="mt-4 flex items-center justify-between gap-3">
           <Button size="sm" disabled={offset === 0} onClick={() => changePage(Math.max(0, offset - 50))}>Previous</Button>
           <span className="t-sub text-ink-3">Page {Math.floor(offset / 50) + 1}</span>
@@ -132,4 +125,14 @@ function Standings({ scope }: { scope: LeaderboardScope }) {
       </>}
     </section>
   );
+}
+
+function Placement({ rank }: { rank: number }) {
+  const color = ["#dfb75d", "#c1c4d2", "#bd8961"][rank - 1];
+  return <svg width="26" height="32" viewBox="0 0 26 32" className="mx-auto" role="img" aria-label={`${ordinal(rank)} place`}>
+    <path d="m3 1 5 12h10L23 1h-7l-3 6-3-6Z" fill="#5382cb" />
+    <circle cx="13" cy="20" r="10" fill={color} />
+    <circle cx="13" cy="20" r="7.5" fill="none" stroke="#000" strokeOpacity=".15" />
+    <text x="13" y="24" textAnchor="middle" fill="#372b1f" fontSize="12" fontWeight="600">{rank}</text>
+  </svg>;
 }
