@@ -10,6 +10,7 @@ import { api, RequestError } from "@/lib/client/api";
 import { useSocial } from "@/lib/client/social";
 import { saveSession, storeName } from "@/lib/client/session";
 import { useStoredName } from "@/lib/client/useStoredName";
+import { useModalFocus } from "@/lib/client/useModalFocus";
 import { PositionsProvider } from "@/lib/client/positions";
 import { setPref, usePrefs } from "@/lib/client/prefs";
 import { Lobby } from "./Lobby";
@@ -49,11 +50,6 @@ function GameShell({ code }: { code: string }) {
   const [replay, setReplay] = useState(false);
   const [watching, setWatching] = useState(false);
   const [leaving, setLeaving] = useState(false);
-  useEffect(() => {
-    if (!leaving) return;
-    const id = window.setTimeout(() => setLeaving(false), 4000);
-    return () => window.clearTimeout(id);
-  }, [leaving]);
   /**
    * Leaving between rounds is told to the table: the seat is given up, the
    * bots stand down and everyone else lands back in the lobby with a gap to
@@ -146,11 +142,7 @@ function GameShell({ code }: { code: string }) {
             <Button variant="ghost" size="sm" onClick={() => prefs.onboarded ? setHelp(true) : setReplay(true)}>How to play</Button>
             {game.session ? (
               leaving ? (
-                <span className="flex max-w-full flex-wrap items-center gap-1.5">
-                  <span className="t-sub text-ink-2">Leave this table?</span>
-                  <Button variant="secondary" size="sm" disabled={game.busy} onClick={() => void leave()}>Leave</Button>
-                  <Button variant="ghost" size="sm" onClick={() => setLeaving(false)}>Stay</Button>
-                </span>
+                <span className="t-sub px-3.5 text-ink-3">Leaving table</span>
               ) : (
                 <Button variant="ghost" size="sm" onClick={() => setLeaving(true)}>Leave</Button>
               )
@@ -168,12 +160,43 @@ function GameShell({ code }: { code: string }) {
 
         <FlightLayer specs={flights.specs} onLanded={flights.onLanded} />
         {view ? <PauseOverlay view={view.public} {...pause} /> : null}
+        {leaving && game.session ? <LeaveTableDialog
+          phase={view?.public.phase ?? "lobby"}
+          busy={game.busy}
+          onCancel={() => setLeaving(false)}
+          onLeave={() => void leave()}
+        /> : null}
         <Toasts toasts={game.toasts} />
         <Notifications social={social} atCode={code} acceptsJoinRequests={!seated || !view?.public.doNotDisturb} />
         {showExplainer ? <Explainer onDone={closeExplainer} onRules={() => { closeExplainer(); setHelp(true); }} /> : null}
         <HowToPlay open={help} onClose={() => setHelp(false)} onReplay={() => { setHelp(false); setReplay(true); }} />
       </main>
     </>
+  );
+}
+
+function LeaveTableDialog({ phase, busy, onCancel, onLeave }: { phase: string; busy: boolean; onCancel: () => void; onLeave: () => void }) {
+  const ref = useModalFocus();
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape" && !busy) onCancel(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [busy, onCancel]);
+  return (
+    <div ref={ref} tabIndex={-1} role="dialog" aria-modal aria-labelledby="leave-table-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 outline-none animate-fade">
+      <div className="w-full max-w-[520px] rounded-panel bg-surface p-6 shadow-float hairline sm:p-8">
+        <h2 id="leave-table-title" className="t-title2">Leave this table?</h2>
+        <p className="t-body mt-3 text-ink-2">
+          {phase === "lobby" ? "Your seat will be opened for another player."
+            : phase === "scoring" ? "The other players will return to the lobby with your seat open."
+              : "The round keeps going after you leave. Any remaining turns in your seat will run out on the turn timer."}
+        </p>
+        <div className="mt-6 flex justify-end gap-3">
+          <Button variant="secondary" disabled={busy} onClick={onCancel}>Stay</Button>
+          <Button variant="primary" disabled={busy} onClick={onLeave}>Leave</Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
