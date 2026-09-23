@@ -17,7 +17,20 @@ export function loadSession(code: string): Session | null {
 }
 
 export function saveSession(code: string, s: Session) {
-  try { localStorage.setItem(key(code), JSON.stringify(s)); } catch { /* private mode etc. */ }
+  try { localStorage.setItem(key(code), JSON.stringify({ ...s, savedAt: Date.now() })); } catch { /* private mode etc. */ }
+}
+
+/** Only locally remembered seats are candidates; the server verifies each one. */
+export function recentSessions(): { code: string; session: Session }[] {
+  try {
+    return Object.keys(localStorage).filter((key) => /^cambio:seat:[A-Z0-9]{5}$/.test(key)).flatMap((key) => {
+      try {
+        const session = JSON.parse(localStorage.getItem(key) ?? "null");
+        return typeof session?.token === "string" && typeof session.playerId === "string"
+          ? [{ code: key.slice(-5), session, savedAt: Number(session.savedAt) || 0 }] : [];
+      } catch { return []; }
+    }).sort((a, b) => b.savedAt - a.savedAt).slice(0, 6);
+  } catch { return []; }
 }
 
 export function clearSession(code: string) {
