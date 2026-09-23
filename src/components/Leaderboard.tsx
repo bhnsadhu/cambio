@@ -94,6 +94,7 @@ function Standings({ scope }: { scope: LeaderboardScope }) {
         </div> : <p className="t-sub mb-5 text-ink-2"><Link href={loginHref(`/leaderboard?scope=${scope}`, "register")} className="font-medium text-ink hover:text-accent">Create an account</Link> to appear here and save your results.</p>}
         <table className="w-full table-fixed border-separate border-spacing-x-0 border-spacing-y-1 text-left">
           <caption className="sr-only">{scope === "friends" ? "You and your friends" : "All players"}, ranked by points</caption>
+          <colgroup><col className="w-12 sm:w-16" /><col /></colgroup>
           <thead className="sr-only"><tr><th scope="col">Rank</th><th scope="col">Player and points</th></tr></thead>
           <tbody>{data.entries.map((entry) => <tr key={entry.id} aria-label={entry.id === data.me?.id ? "Your leaderboard row" : undefined} className={entry.id === data.me?.id ? "bg-surface-2" : ""}>
             <td className="w-12 rounded-l-2xl py-4 pl-3 pr-2 align-middle text-center sm:w-16 sm:pl-5">
