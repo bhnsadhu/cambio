@@ -7,7 +7,7 @@ import { useAccountReady, useStoredProfile } from "@/lib/client/profile";
 import { loginHref } from "@/lib/account/navigation";
 import { useGame } from "@/lib/client/useGame";
 import { api, RequestError } from "@/lib/client/api";
-import { useSocial, usePresence } from "@/lib/client/social";
+import { useSocial } from "@/lib/client/social";
 import { saveSession, storeName } from "@/lib/client/session";
 import { useStoredName } from "@/lib/client/useStoredName";
 import { PositionsProvider } from "@/lib/client/positions";
@@ -45,7 +45,6 @@ function GameShell({ code }: { code: string }) {
   const view = game.view;
   // Friends can see the table you are sitting at, and whether it has a seat
   // left. Watching a table is not sitting at one, so it lights nothing up.
-  usePresence(game.session ? code : null);
   const [help, setHelp] = useState(false);
   const [replay, setReplay] = useState(false);
   const [watching, setWatching] = useState(false);

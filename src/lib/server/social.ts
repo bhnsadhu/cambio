@@ -110,8 +110,8 @@ export async function respondToTableJoin(me: string, requestId: string, accept: 
   return rpc("table_join_request_respond", { p_me: me, p_id: requestId, p_accept: accept });
 }
 
-export async function setPresence(id: string, code: string | null, phase: string | null, openSeats: number): Promise<void> {
-  await rpc<null>("presence_set", { p_id: id, p_code: code, p_phase: phase, p_open_seats: openSeats });
+export async function setPresence(id: string, tabId: string, sequence: number, online: boolean, sessionHash: string | null, code: string | null, phase: string | null, openSeats: number): Promise<void> {
+  await rpc<null>("presence_tab_set", { p_id: id, p_tab_id: tabId, p_sequence: sequence, p_online: online, p_session_hash: sessionHash, p_code: code, p_phase: phase, p_open_seats: openSeats });
 }
 
 /* ------------------------------------------------------------------ */

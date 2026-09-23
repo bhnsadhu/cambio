@@ -45,11 +45,11 @@ export function AuthForm({ initialMode = "login", initialName = "", legacy = fal
           <input className={inputClass} name="displayName" value={name} onChange={(event) => setDisplayName(event.target.value)} autoComplete="nickname" maxLength={18} required disabled={busy} placeholder="Your name at the table" />
         </Field> : null}
         <Field label="Password">
-          <input className={inputClass} name="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={registering ? "new-password" : "current-password"} minLength={registering ? 15 : 1} maxLength={128} required disabled={busy} />
+          <input className={inputClass} name="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={registering ? "new-password" : "current-password"} minLength={registering ? 8 : 1} maxLength={128} required disabled={busy} />
         </Field>
         {registering ? <>
-          <p className="t-footnote -mt-2 text-ink-3">Use 15 to 128 characters. A memorable phrase works well. Save it in your password manager.</p>
-          <Field label="Confirm password"><input className={inputClass} name="confirmPassword" type="password" value={confirm} onChange={(event) => setConfirm(event.target.value)} autoComplete="new-password" minLength={15} maxLength={128} required disabled={busy} /></Field>
+          <p className="t-footnote -mt-2 text-ink-3">Use 8 to 128 characters. A memorable phrase works well. Save it in your password manager.</p>
+          <Field label="Confirm password"><input className={inputClass} name="confirmPassword" type="password" value={confirm} onChange={(event) => setConfirm(event.target.value)} autoComplete="new-password" minLength={8} maxLength={128} required disabled={busy} /></Field>
         </> : null}
         {error ? <p role="alert" className="t-sub text-red">{error}</p> : null}
         <Button type="submit" variant="primary" size="lg" disabled={busy}>{busy ? "Please wait" : registering ? legacy ? "Secure this profile" : "Create account" : "Log in"}</Button>
@@ -152,11 +152,11 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
             await updateAccount({ password, currentPassword }); setCurrentPassword(""); setPassword(""); setConfirmPassword("");
             return "Password changed. Other devices have been signed out.";
           }); }}>
-            <p className="t-sub text-ink-2">Use 15 to 128 characters. Changing your password signs out other devices.</p>
+            <p className="t-sub text-ink-2">Use 8 to 128 characters. Changing your password signs out other devices.</p>
             <input type="hidden" name="username" value={stored.username ?? ""} autoComplete="username" />
             <Field label="Current password"><input autoFocus className={inputClass} name="currentPassword" type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} autoComplete="current-password" maxLength={128} required disabled={!!busy} /></Field>
-            <Field label="New password"><input className={inputClass} name="newPassword" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" minLength={15} maxLength={128} required disabled={!!busy} /></Field>
-            <Field label="Confirm new password"><input className={inputClass} name="confirmPassword" type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" minLength={15} maxLength={128} required disabled={!!busy} /></Field>
+            <Field label="New password"><input className={inputClass} name="newPassword" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" minLength={8} maxLength={128} required disabled={!!busy} /></Field>
+            <Field label="Confirm new password"><input className={inputClass} name="confirmPassword" type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" minLength={8} maxLength={128} required disabled={!!busy} /></Field>
             <div className={actions}><Button type="submit" variant="primary" disabled={!!busy}>{busy === "password" ? "Saving" : "Save password"}</Button>{cancel}</div>
           </form> : null}
           {feedback("password")}

@@ -157,7 +157,7 @@ function FriendRow({ friend, social, inviteCode, atThisTable = false }: { friend
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const live = friend.playing;
-  const here = atThisTable || !!live?.together;
+  const here = friend.online && (atThisTable || !!live?.together);
   const sent = social.social.sent.find((s) => s.toId === friend.id && s.code === inviteCode);
   const cooldown = useResendCooldown(sent?.at);
   // You can only ask someone who is free to be asked: not already at this
@@ -192,9 +192,7 @@ function FriendRow({ friend, social, inviteCode, atThisTable = false }: { friend
                   : <>{live.phase === "lobby" ? "Table full" : "Playing a round"}</>
                 : friend.online
                   ? <>Online</>
-                  : friend.playedTogether > 0
-                    ? <>{friend.yourWins} to {friend.theirWins} across {friend.playedTogether} {friend.playedTogether === 1 ? "round" : "rounds"}</>
-                    : <>@{friend.handle}</>}
+                  : <>Offline</>}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">

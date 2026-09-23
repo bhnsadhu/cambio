@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { loginHref } from "@/lib/account/navigation";
 import { callProfile, profileGeneration, useAccountReady, useStoredProfile } from "@/lib/client/profile";
-import { usePresence, useSocial } from "@/lib/client/social";
+import { useSocial } from "@/lib/client/social";
 import type { LeaderboardScope, LeaderboardSnapshot } from "@/lib/social/leaderboard";
 import { ordinal } from "@/lib/social/rank";
 import { Notifications } from "./Friends";
@@ -15,7 +15,6 @@ export function Leaderboard({ initialScope }: { initialScope: LeaderboardScope |
   const ready = useAccountReady();
   const stored = useStoredProfile();
   const social = useSocial();
-  usePresence(null);
   const scope = initialScope ?? (stored ? "friends" : "all");
   const path = `/leaderboard?scope=${scope}`;
   return (

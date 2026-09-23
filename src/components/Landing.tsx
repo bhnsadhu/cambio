@@ -8,7 +8,7 @@ import { api, RequestError } from "@/lib/client/api";
 import { dismissAccountNotice, useAccountNotice, useAccountReady } from "@/lib/client/profile";
 import { setPref, usePrefs } from "@/lib/client/prefs";
 import { saveSession, storeName } from "@/lib/client/session";
-import { usePresence, useSocial } from "@/lib/client/social";
+import { useSocial } from "@/lib/client/social";
 import { useStoredName } from "@/lib/client/useStoredName";
 import { CardBack, FaceCard } from "./cards";
 import { Explainer } from "./Explainer";
@@ -23,7 +23,6 @@ export function Landing() {
   const accountReady = useAccountReady();
   const notice = useAccountNotice();
   const prefs = usePrefs();
-  usePresence(null);
   const [name, setName] = useStoredName();
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState<"create" | "join" | null>(null);

@@ -126,6 +126,8 @@ Accounts use a unique username and password, separate from the display name show
 
 Passwords use salted scrypt hashes. Random session tokens live in HttpOnly cookies with SameSite protection and a 30 day lifetime; only their hashes are stored in the database. Login and sensitive changes have persistent request limits. Clearing browser storage does not delete an account: logging in restores its profile ID, stats, friends, and existing seats.
 
+Presence tracks each open browser tab across the site. Leaving sends an offline update; other open tabs keep the account online. Friends refresh every 10 seconds, and missing heartbeats expire after 75 seconds if a browser crashes or loses its connection. Apply `0010_browser_presence.sql` before deploying the presence update.
+
 The account page provides display name, username, and password changes, plus separate sign out and permanent deletion controls. Password changes revoke other sessions. Deletion requires the current password and an explicit confirmation, removes all account and social records, and anonymizes retained game seats. Game actions check the live account session as well as any saved seat token.
 
 Existing browser profiles can add credentials without changing their profile ID. After upgrading, the old browser key no longer grants access. A profile whose original browser key was already lost cannot be claimed by name alone.
@@ -264,6 +266,7 @@ supabase/migrations/0006_table_join_requests.sql
 supabase/migrations/0007_social_resends.sql
 supabase/migrations/0008_room_do_not_disturb.sql
 supabase/migrations/0009_leaderboard.sql
+supabase/migrations/0010_browser_presence.sql
 ```
 
 Then store a server secret:

@@ -1,9 +1,18 @@
 import { test, expect, type Browser, type BrowserContext } from "@playwright/test";
+import { randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
 
 const origin = process.env.E2E_APP_ORIGIN ?? "http://localhost:3100";
 const password = "A memorable table password 72!";
-const post = (context: BrowserContext, path: string, data: unknown) => context.request.post(path, { headers: { origin }, data });
+const presenceTabs = new WeakMap<BrowserContext, { tabId: string; sequence: number }>();
+const post = (context: BrowserContext, path: string, data: unknown) => {
+  if (path === "/api/presence") {
+    const tab = presenceTabs.get(context) ?? { tabId: randomUUID(), sequence: 0 };
+    presenceTabs.set(context, tab);
+    data = { ...(data as object), tabId: tab.tabId, sequence: ++tab.sequence, online: true };
+  }
+  return context.request.post(path, { headers: { origin }, data });
+};
 const snapshot = async (context: BrowserContext) => (await (await context.request.get("/api/social")).json()).social;
 function sql(query: string) {
   const db = process.env.E2E_DB_CONTAINER ?? "";

@@ -7,7 +7,7 @@ import { AccountLink, ProfileCard } from "@/components/Profile";
 import { Button, buttonClass, Wordmark } from "@/components/ui";
 import { callProfile, useAccountReady } from "@/lib/client/profile";
 import { loginHref } from "@/lib/account/navigation";
-import { usePresence, useSocial } from "@/lib/client/social";
+import { useSocial } from "@/lib/client/social";
 import type { Profile } from "@/lib/social/types";
 
 type Relation = "self" | "friends" | "incoming" | "outgoing" | "none";
@@ -17,7 +17,6 @@ export default function PlayerPage({ params }: { params: Promise<{ handle: strin
   const { handle } = use(params);
   const social = useSocial();
   const accountReady = useAccountReady();
-  usePresence(null);
   const [state, setState] = useState<{ profile: Profile; relation: Relation; playedTogether: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);

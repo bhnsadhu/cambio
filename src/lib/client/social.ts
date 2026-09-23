@@ -13,8 +13,6 @@ import { callProfile, profileGeneration, saveStoredProfile, storedProfile, useSt
  */
 
 const POLL_MS = 10_000;
-/** Three of these inside the 75 seconds the server calls a row stale. */
-const PRESENCE_BEAT_MS = 25_000;
 
 export const EMPTY_SOCIAL: Social = { friends: [], incoming: [], outgoing: [], invites: [], sent: [], joinRequests: [], sentJoinRequests: [], opponents: [] };
 
@@ -149,52 +147,4 @@ export function useSocial(): SocialHook {
     () => ({ profile, social, loading, error, refresh, addFriend, respond, remove, invite, answerInvite, askToJoin, answerJoinRequest }),
     [profile, social, loading, error, refresh, addFriend, respond, remove, invite, answerInvite, askToJoin, answerJoinRequest],
   );
-}
-
-/**
- * Tells the server where this browser is, so friends can see it: a table code
- * while seated at one, null while just about. Called from every page, so
- * "online" means the app is open rather than "happens to be mid game".
- *
- * Keyed on the token rather than the stored object: the profile object is
- * replaced on every poll, and depending on it tore this effect down and set
- * it up again every few seconds — each teardown blanking the row for as long
- * as it took the next beat to land, which is what made a friend flicker
- * between online and offline.
- */
-export function usePresence(code: string | null) {
-  const token = useStoredProfile()?.token ?? null;
-  useEffect(() => {
-    if (!token) return;
-    let stopped = false;
-    const beat = () => {
-      if (stopped) return;
-      void callProfile("/api/presence", { method: "POST", body: JSON.stringify({ code }) }).catch(() => {});
-    };
-    beat();
-    const id = setInterval(beat, PRESENCE_BEAT_MS);
-    // A closed tab should go dark at once rather than linger until the row
-    // goes stale; `sendBeacon` is the one send that survives an unload. This
-    // is `pagehide` rather than `visibilitychange`, because switching tabs is
-    // not leaving — the beat carries on in the background.
-    const onLeave = () => {
-      try {
-        navigator.sendBeacon?.("/api/presence", new Blob(
-          [JSON.stringify({ code: null, token })],
-          { type: "application/json" },
-        ));
-      } catch { /* best effort */ }
-    };
-    // Coming back to a backgrounded tab checks in at once rather than waiting
-    // out the rest of a throttled interval.
-    const onVisible = () => { if (document.visibilityState === "visible") beat(); };
-    window.addEventListener("pagehide", onLeave);
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      stopped = true;
-      clearInterval(id);
-      window.removeEventListener("pagehide", onLeave);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, [token, code]);
 }

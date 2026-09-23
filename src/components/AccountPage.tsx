@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { backLabel, loginHref } from "@/lib/account/navigation";
 import { refreshProfile, useAccountReady, useStoredProfile } from "@/lib/client/profile";
-import { usePresence } from "@/lib/client/social";
 import { AccountSettings } from "./Account";
 import { Wordmark } from "./ui";
 
@@ -14,7 +13,6 @@ export function AccountPage({ back }: { back: string }) {
   const stored = useStoredProfile();
   const ready = useAccountReady();
   const exited = useRef(false);
-  usePresence(null);
   useEffect(() => {
     if (ready && !stored?.username && !exited.current) router.replace(loginHref("/me"));
   }, [ready, stored?.username, router]);

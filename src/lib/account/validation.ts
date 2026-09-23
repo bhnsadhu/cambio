@@ -20,8 +20,8 @@ export function usernameForLookup(raw: unknown): string | null {
 }
 
 export function passwordValue(raw: unknown, isNew = true): string {
-  if (typeof raw !== "string" || raw.length > 128 || raw.length < (isNew ? 15 : 1)) {
-    throw new AccountError("PASSWORD", isNew ? "Use 15 to 128 characters for your password." : "Enter your password.");
+  if (typeof raw !== "string" || raw.length > 128 || raw.length < (isNew ? 8 : 1)) {
+    throw new AccountError("PASSWORD", isNew ? "Use 8 to 128 characters for your password." : "Enter your password.");
   }
   return raw; // Spaces and capitalization are part of the password.
 }

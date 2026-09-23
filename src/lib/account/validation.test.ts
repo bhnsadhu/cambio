@@ -7,6 +7,10 @@ describe("Account form validation", () => {
     expect(displayNameValue("  McKenzie  Lee ")).toBe("McKenzie Lee");
     expect(passwordValue("  My strong password  ")).toBe("  My strong password  ");
   });
+  it("accepts passwords from 8 through 128 characters", () => {
+    expect(passwordValue("x".repeat(8))).toBe("x".repeat(8));
+    expect(passwordValue("x".repeat(128))).toBe("x".repeat(128));
+  });
   it("finds the same username with optional @ and capitalization", () => {
     for (const value of ["MixedCase42", "@MixedCase42", "  @mixedcase42  "]) {
       expect(usernameForLookup(value)).toBe(usernameValue("MixedCase42"));
@@ -19,7 +23,7 @@ describe("Account form validation", () => {
   });
   it("rejects missing values, malformed usernames, and weak or unbounded passwords", () => {
     for (const value of [null, {}, "ab", "a b c", "a/b", "x".repeat(19)]) expect(() => usernameValue(value)).toThrow();
-    for (const value of [null, {}, "", "short", "x".repeat(129)]) expect(() => passwordValue(value)).toThrow();
+    for (const value of [null, {}, "", "short", "x".repeat(7), "x".repeat(129)]) expect(() => passwordValue(value)).toThrow();
     for (const value of [null, {}, "", "   ", "x".repeat(19), "CaMiLa"]) expect(() => displayNameValue(value)).toThrow();
   });
 });
