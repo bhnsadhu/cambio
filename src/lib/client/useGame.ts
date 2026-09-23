@@ -26,6 +26,9 @@ export interface GameHook {
 }
 
 const POLL_MS = 5000;
+// The fallback must be quicker than the final sticking window, including
+// when a realtime connection silently stops delivering table updates.
+const PLAY_POLL_MS = 1000;
 const NUDGE_AFTER_MS = 6000;
 
 export function useGame(code: string): GameHook {
@@ -105,7 +108,7 @@ export function useGame(code: string): GameHook {
     return () => window.clearTimeout(t);
   }, [session, account?.token, refresh]);
 
-  // Realtime subscription + fallback poll + reconnect refresh.
+  // Realtime subscription and reconnect refresh.
   useEffect(() => {
     const stop = subscribeGame(
       code,
@@ -123,15 +126,19 @@ export function useGame(code: string): GameHook {
         if (s === "live") void refresh();
       },
     );
-    const poll = setInterval(() => void refresh(), POLL_MS);
     const onVisible = () => { if (document.visibilityState === "visible") void refresh(); };
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       stop();
-      clearInterval(poll);
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [code, acceptPublic, refresh]);
+
+  const activeRound = view?.public.phase === "playing" || view?.public.phase === "final";
+  useEffect(() => {
+    const poll = setInterval(() => void refresh(), activeRound ? PLAY_POLL_MS : POLL_MS);
+    return () => clearInterval(poll);
+  }, [activeRound, refresh]);
 
   const send = useCallback(async (action: Action): Promise<ActionResponse | null> => {
     const s = sessionRef.current;
@@ -185,10 +192,8 @@ export function useGame(code: string): GameHook {
         reportedDeadline.current = v.readyDeadline;
         void send({ type: "timeout" });
       }
-      // A card was still on the table matching the pile when the final turns
-      // finished; the grace window for it has now run out with nobody
-      // sticking it. Report it so the round closes rather than holding open
-      // on an unclaimed match forever.
+      // The final reaction window elapsed without another successful stick.
+      // Report it so the round still closes if the server runner stopped.
       if (v.phase === "final" && v.stickWindowUntil !== null && serverNow >= v.stickWindowUntil + 200
           && sessionRef.current && reportedStickWindow.current !== v.stickWindowUntil) {
         reportedStickWindow.current = v.stickWindowUntil;
