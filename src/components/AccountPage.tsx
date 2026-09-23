@@ -6,7 +6,7 @@ import { useEffect, useRef } from "react";
 import { backLabel, loginHref } from "@/lib/account/navigation";
 import { refreshProfile, useAccountReady, useStoredProfile } from "@/lib/client/profile";
 import { AccountSettings } from "./Account";
-import { Wordmark } from "./ui";
+import { AppHeader } from "./AppHeader";
 
 export function AccountPage({ back }: { back: string }) {
   const router = useRouter();
@@ -25,14 +25,11 @@ export function AccountPage({ back }: { back: string }) {
   // Returning to your own record follows a username change made here.
   const destination = back === "record" ? stored ? `/p/${stored.profile.handle}` : "/" : back === "/me" ? "/" : back;
   return (
-    <main className="mx-auto min-h-screen w-full max-w-[1080px] px-5 pb-16 sm:px-8">
-      <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 py-3">
-        <Link href="/" aria-label="Cambio home"><Wordmark /></Link>
-        <Link href={destination} className="t-sub text-ink-2 hover:text-ink">{backLabel(destination)}</Link>
-      </header>
-      <div className="mx-auto max-w-[560px] pt-8">
+    <main className="site-shell min-h-screen pb-16">
+      <AppHeader active="account" trailing={<Link href={destination} className="t-sub text-ink-2 hover:text-ink">{backLabel(destination)}</Link>} />
+      <div className="pt-8 lg:pt-12">
         {!ready || !stored?.username ? <p role="status" className="t-sub text-ink-2">Checking your account</p> : <>
-          <h1 className="t-title mb-6">Account settings</h1>
+          <div className="mb-8"><h1 className="t-title">Account settings</h1><p className="t-body mt-3 text-ink-2">Manage your player profile and account access.</p></div>
           <AccountSettings key={stored.profile.id} stored={stored} onExit={exit} />
         </>}
       </div>

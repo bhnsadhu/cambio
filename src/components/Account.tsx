@@ -112,13 +112,15 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
   const formClass = "mt-5 flex flex-col gap-4";
   const actions = "flex flex-wrap gap-2";
   return (
-    <div className="flex flex-col gap-5" aria-label="Account settings">
+    <div className="grid items-start gap-8 lg:grid-cols-2" aria-label="Account settings">
+      <div className="min-w-0">
+      <h2 className="mb-4 text-lg font-medium">Player profile</h2>
       <div className="divide-y divide-ink/10 rounded-panel bg-surface hairline">
         <section className="p-5 sm:p-6" aria-labelledby="avatar-heading">
           <div className={row}>
             <div className="flex min-w-0 items-center gap-3">
               <Avatar identity={stored.profile.id} avatarId={selectedAvatar} size={64} />
-              <div className="min-w-0"><h2 id="avatar-heading" className="t-headline">Avatar</h2><p className="t-sub mt-1 text-ink-2">Your look at the table.</p></div>
+              <div className="min-w-0"><h3 id="avatar-heading" className="t-headline">Avatar</h3><p className="t-sub mt-1 text-ink-2">Your look at the table.</p></div>
             </div>
             {change("avatar", "avatar")}
           </div>
@@ -144,7 +146,7 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
         </section>
         <section className="p-5 sm:p-6" aria-labelledby="display-name-heading">
           <div className={row}>
-            <div className="min-w-0"><h2 id="display-name-heading" className="t-headline">Display name</h2>{editing !== "name" ? <p className="t-body mt-1 break-words">{stored.profile.displayName}</p> : null}</div>
+            <div className="min-w-0"><h3 id="display-name-heading" className="t-headline">Display name</h3>{editing !== "name" ? <p className="t-body mt-1 break-words">{stored.profile.displayName}</p> : null}</div>
             {change("name", "display name")}
           </div>
           <p className="t-sub mt-2 text-ink-2">The name players see at the table.</p>
@@ -157,9 +159,14 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
           </form> : null}
           {feedback("name")}
         </section>
+      </div>
+      </div>
+      <div className="min-w-0">
+      <h2 className="mb-4 text-lg font-medium">Security &amp; access</h2>
+      <div className="divide-y divide-ink/10 rounded-panel bg-surface hairline">
         <section className="p-5 sm:p-6" aria-labelledby="username-heading">
           <div className={row}>
-            <div className="min-w-0"><h2 id="username-heading" className="t-headline">Username</h2>{editing !== "username" ? <p className="t-body mt-1 break-all">@{stored.username}</p> : null}</div>
+            <div className="min-w-0"><h3 id="username-heading" className="t-headline">Username</h3>{editing !== "username" ? <p className="t-body mt-1 break-all">@{stored.username}</p> : null}</div>
             {change("username", "username")}
           </div>
           <p className="t-sub mt-2 text-ink-2">Use it to log in. Friends use it to find and add you.</p>
@@ -177,7 +184,7 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
         </section>
         <section className="p-5 sm:p-6" aria-labelledby="password-heading">
           <div className={row}>
-            <div className="min-w-0"><h2 id="password-heading" className="t-headline">Password</h2><p className="t-sub mt-2 text-ink-2">Keep your account secure.</p></div>
+            <div className="min-w-0"><h3 id="password-heading" className="t-headline">Password</h3><p className="t-sub mt-2 text-ink-2">Keep your account secure.</p></div>
             {change("password", "password")}
           </div>
           {editing === "password" ? <form id="password-form" className={formClass} aria-label="Password settings" onSubmit={(event) => { event.preventDefault(); void perform("password", async () => {
@@ -195,15 +202,15 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
           {feedback("password")}
         </section>
       </div>
-      <div className="divide-y divide-ink/10 rounded-panel bg-surface hairline">
+      <div className="mt-5 divide-y divide-ink/10 rounded-panel bg-surface hairline">
         <section className="p-5 sm:p-6" aria-label="Sign out">
-          <h2 className="t-headline">Sign out</h2>
+          <h3 className="t-headline">Sign out</h3>
           <p className="t-sub mt-2 text-ink-2">Sign out of this browser. Your stats and friends stay saved.</p>
           <Button className="mt-4" type="button" disabled={!!busy} onClick={() => void perform("logout", async () => { await signOut(); onExit(); return "Signed out."; })}>{busy === "logout" ? "Signing out" : "Sign out"}</Button>
           {feedback("logout")}
         </section>
         <section className="p-5 sm:p-6" aria-label="Delete account">
-          <h2 className="t-headline">Delete account</h2>
+          <h3 className="t-headline">Delete account</h3>
           <p className="t-sub mt-2 text-ink-2">Permanently delete your account, stats, friends, and invites. This cannot be undone.</p>
           {editing === "delete" ? <form id="delete-form" className={formClass} aria-label="Confirm account deletion" onSubmit={(event) => { event.preventDefault(); void perform("delete", async () => { await deleteAccount(deletePassword, confirmation); onExit(); return "Account deleted."; }); }}>
             <input type="hidden" name="username" value={stored.username ?? ""} autoComplete="username" />
@@ -213,6 +220,7 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
           </form> : <Button ref={(button) => { changeButtons.current.delete = button; }} className="mt-4 text-red" type="button" disabled={!!busy} onClick={() => edit("delete")}>Delete account</Button>}
           {feedback("delete")}
         </section>
+      </div>
       </div>
     </div>
   );
