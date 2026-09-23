@@ -58,11 +58,13 @@ function GameShell({ code }: { code: string }) {
    */
   const leave = useCallback(async () => {
     const phase = game.view?.public.phase;
-    if (game.session && (phase === "lobby" || phase === "scoring")) {
+    if (game.session && (phase === "lobby" || phase === "ready" || phase === "scoring")) {
       const result = await game.send({ type: "leaveTable" });
       if (!result) return;
+      game.setSession(null);
     }
-    game.setSession(null);
+    // During a round the server still holds this seat. Keep its credential
+    // so a guest can return to the same hand after stepping away.
     router.push("/");
   }, [game, router]);
 
@@ -188,8 +190,8 @@ function LeaveTableDialog({ phase, busy, onCancel, onLeave }: { phase: string; b
         <h2 id="leave-table-title" className="t-title2">Leave this table?</h2>
         <p className="t-body mt-3 text-ink-2">
           {phase === "lobby" ? "Your seat will be opened for another player."
-            : phase === "scoring" ? "The other players will return to the lobby with your seat open."
-              : "The round keeps going after you leave. Any remaining turns in your seat will run out on the turn timer."}
+            : phase === "scoring" || phase === "ready" ? "The other players will return to the lobby with your seat open."
+              : "The round keeps going after you leave. Any remaining turns in your seat will run out on the turn timer. You can return to your seat from this browser."}
         </p>
         <div className="mt-6 flex justify-end gap-3">
           <Button variant="secondary" disabled={busy} onClick={onCancel}>Stay</Button>

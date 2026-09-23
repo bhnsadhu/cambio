@@ -24,6 +24,39 @@ export function clearSession(code: string) {
   try { localStorage.removeItem(key(code)); } catch { /* ignore */ }
 }
 
+/** One recent visit, not a history of the browser's saved seats. */
+const RECENT_TABLE_KEY = "cambio:recent-table";
+export const RECENT_TABLE_MS = 30 * 60 * 1000;
+export interface RecentTable { code: string; visitedAt: number }
+const recentListeners = new Set<() => void>();
+
+export function recentTable(now = Date.now()): RecentTable | null {
+  try {
+    const raw = localStorage.getItem(RECENT_TABLE_KEY);
+    const value = raw ? JSON.parse(raw) as RecentTable : null;
+    return value && /^[A-Z0-9]{5}$/.test(value.code) && Number.isFinite(value.visitedAt)
+      && value.visitedAt <= now && now - value.visitedAt < RECENT_TABLE_MS ? value : null;
+  } catch { return null; }
+}
+
+export function rememberTable(code: string) {
+  try { localStorage.setItem(RECENT_TABLE_KEY, JSON.stringify({ code: code.toUpperCase(), visitedAt: Date.now() })); } catch { /* Storage is optional. */ }
+  for (const listener of recentListeners) listener();
+}
+
+export function forgetRecentTable(code?: string) {
+  if (code && recentTable()?.code !== code) return;
+  try { localStorage.removeItem(RECENT_TABLE_KEY); } catch { /* Storage is optional. */ }
+  for (const listener of recentListeners) listener();
+}
+
+export function subscribeRecentTable(listener: () => void): () => void {
+  recentListeners.add(listener);
+  const onStorage = (event: StorageEvent) => { if (event.key === RECENT_TABLE_KEY || event.key === null) listener(); };
+  window.addEventListener("storage", onStorage);
+  return () => { recentListeners.delete(listener); window.removeEventListener("storage", onStorage); };
+}
+
 export function lastName(): string {
   try { return localStorage.getItem("cambio:name") ?? ""; } catch { return ""; }
 }
@@ -80,6 +113,7 @@ export function storeName(name: string) {
 
 /** A new account must never inherit another account's cached game seats. */
 export function clearAllSessions() {
+  forgetRecentTable();
   try {
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const key = localStorage.key(i);

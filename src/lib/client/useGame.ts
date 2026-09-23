@@ -5,7 +5,7 @@ import type { Action, PlayerView, PublicView } from "@/lib/game/types";
 import { profileGeneration, useStoredProfile } from "./profile";
 import { api, RequestError, type ActionResponse } from "./api";
 import { subscribeGame, type ConnectionStatus } from "./realtime";
-import { getServerSessionSnapshot, getSessionSnapshot, setSessionValue, subscribeSession, type Session } from "./session";
+import { getServerSessionSnapshot, getSessionSnapshot, recentTable, rememberTable, setSessionValue, subscribeSession, type Session } from "./session";
 
 export interface Toast { id: number; text: string; tone: "neutral" | "good" | "bad" }
 
@@ -107,6 +107,25 @@ export function useGame(code: string): GameHook {
     const t = window.setTimeout(() => { void refresh(); }, 0);
     return () => window.clearTimeout(t);
   }, [session, account?.token, refresh]);
+
+  // Only real, foreground table use renews the home shortcut. An older tab's
+  // polling must never take it back from a more recently visited table.
+  useEffect(() => {
+    if (status !== "ready" || !me || session?.playerId !== me) return;
+    const visible = () => document.visibilityState === "visible" && document.hasFocus();
+    const visit = () => { if (visible()) rememberTable(code); };
+    visit();
+    window.addEventListener("focus", visit);
+    document.addEventListener("visibilitychange", visit);
+    const timer = window.setInterval(() => {
+      if (visible() && recentTable()?.code === code) rememberTable(code);
+    }, 15_000);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", visit);
+      document.removeEventListener("visibilitychange", visit);
+    };
+  }, [code, me, status, session?.playerId]);
 
   // Realtime subscription and reconnect refresh.
   useEffect(() => {

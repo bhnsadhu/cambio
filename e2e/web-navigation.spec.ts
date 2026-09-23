@@ -24,6 +24,8 @@ test("browser Back and reopening a table URL preserve a seat, while leaving rele
   const original = await page.evaluate((code) => JSON.parse(localStorage.getItem(`cambio:seat:${code}`)!), code);
   await page.getByRole("link", { name: "Cambio home", exact: true }).click();
   await expect(page.getByRole("region", { name: "Your tables", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Recent table", exact: true })).toContainText(code);
+  await expect(page.getByRole("link", { name: "Return to table", exact: true })).toHaveAttribute("href", `/g/${code}`);
   await expect(page.getByRole("form", { name: "New table", exact: true })).toBeVisible();
   await expect(page.getByRole("form", { name: "Join with code", exact: true })).toBeVisible();
   const second = await context.newPage();
@@ -44,6 +46,7 @@ test("browser Back and reopening a table URL preserve a seat, while leaving rele
   await leave.getByRole("button", { name: "Leave", exact: true }).click();
   await expect(page).toHaveURL(`${origin}/`);
   await expect(page.getByRole("region", { name: "Your tables", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Recent table", exact: true })).toHaveCount(0);
   expect(await page.evaluate((code) => localStorage.getItem(`cambio:seat:${code}`), code)).toBeNull();
 });
 

@@ -15,6 +15,7 @@ import { Explainer } from "./Explainer";
 import { FriendsPanel, Notifications } from "./Friends";
 import { HowToPlay } from "./HowToPlay";
 import { AppHeader } from "./AppHeader";
+import { RecentTable } from "./RecentTable";
 import { Button, Field, inputClass, PlayerName } from "./ui";
 
 export function Landing() {
@@ -90,6 +91,7 @@ export function Landing() {
         <p role="status" className="t-sub min-w-0 flex-1 basis-40 text-accent">{notice}</p>
         <Button type="button" variant="ghost" size="sm" className="shrink-0" aria-label="Dismiss message" onClick={dismissAccountNotice}>Dismiss</Button>
       </div> : null}
+      <RecentTable />
       {profile ? <>
         <header className="pt-10 pb-7"><h1 className="t-title">Ready for a round?</h1><p className="t-body mt-2 text-ink-2">Open a table, share the code, and invite your friends.</p></header>
         <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1fr)_300px] lg:grid-cols-[minmax(0,1fr)_340px] xl:gap-8">
