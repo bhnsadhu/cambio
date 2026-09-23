@@ -16,6 +16,12 @@ Generated with the built-in `image_gen` edit tool using `heads.png` as the edit 
 
 These color references specify the intended midtone; the rendered skin retains highlights and shadows. The artwork changes exposed skin independently of hair, eyes, mouth, accessories and background. No whole-image color filter is used.
 
+## Rendering without a halo
+
+The original sheet contains a transparent head silhouette; the tone sheets are opaque and retain a blurred studio background. `src/lib/avatar-crops.ts` traces the original alpha boundaries as vector contours. `Avatar` applies the same contour and square crop to every tone of a style, so only the head is visible and changing tones cannot introduce the baked background. The renderer uses no radial fade or blur. Images use quality 90 with source sizes calculated for the cropped sprite, keeping the face and hair sharp at small display sizes.
+
+`e2e/avatar-rendering.spec.ts` checks all 36 combinations against clear regions in the original alpha channel, verifies that the head stays visible, and captures each tone's six-style picker for visual review. The original asset pixels remain unchanged.
+
 ## Final prompt set
 
 Every call used the prompt below with the substitutions in the table. All calls referenced the original default sheet, never another generated tone.
@@ -48,4 +54,3 @@ The project copies are the deliverables. Built-in output originals remain at:
   exec-e75c5238-291b-4086-8605-f56569cf8d8d.png  deep
   exec-f6c3c4b5-d4c2-49cc-aad8-fc9de1b506fc.png  very-deep
 ```
-
