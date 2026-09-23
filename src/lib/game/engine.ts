@@ -151,6 +151,8 @@ export function createGame(
     log: [],
     logSeq: 0,
     botKnown: {},
+    botHints: {},
+    botMissedTop: {},
     tally: {},
     appliedActionIds: [],
     createdAt: ctx.now,
@@ -426,6 +428,8 @@ function doLeaveTable(state: GameState, actor: Player, ctx: EngineCtx) {
     state.discard = [];
     state.cards = {};
     state.botKnown = {};
+    state.botHints = {};
+    state.botMissedTop = {};
     for (const p of state.players) p.hand = [null, null, null, null];
   }
   // Seats close up behind whoever left, so the lobby reads 1, 2, 3, 4.
@@ -514,6 +518,8 @@ function dealRound(state: GameState, ctx: EngineCtx) {
   state.cambio = null;
   state.reveals = [];
   state.botKnown = {};
+  state.botHints = {};
+  state.botMissedTop = {};
   state.tally = {};
   state.readyIds = [];
   state.readyDeadline = null;
@@ -602,6 +608,7 @@ function doSwap(state: GameState, actor: Player, cardId: string, ctx: EngineCtx)
   state.turn!.drawnCardId = null;
   toDiscard(state, cardId);
   const own = at.player.id === actor.id;
+  (state.botHints ??= {})[drawn] = own ? "kept" : "pushed";
   addLog(state, ctx,
     own
       ? `${actor.name} swapped the drawn card into ${where}, discarding ${shortLabel(old)}.`
@@ -829,6 +836,7 @@ function doStick(state: GameState, actor: Player, cardId: string, ctx: EngineCtx
     // The card stays where it is and its value is never shown: a wrong stick
     // must not become a free peek for the table.
     tallyFor(state, actor.id).misses += 1;
+    if (actor.isBot) (state.botMissedTop ??= {})[actor.id] = top.id;
     const penalty = drawFromDeck(state, ctx);
     // Which card was wrongly stuck is never named or highlighted: that it is
     // *not* the rank on the pile is information the table has not earned.
@@ -1166,6 +1174,7 @@ function trimHand(p: Player) {
 
 function toDiscard(state: GameState, cardId: string) {
   state.discard.push(cardId);
+  if (state.botHints) delete state.botHints[cardId];
   for (const id of Object.keys(state.botKnown)) {
     state.botKnown[id] = state.botKnown[id].filter((c) => c !== cardId);
   }
@@ -1208,9 +1217,19 @@ function pruneReveals(state: GameState, now: number) {
 }
 
 function remember(state: GameState, botId: string, cardIds: string[]) {
-  const known = new Set(state.botKnown[botId] ?? []);
-  for (const id of cardIds) known.add(id);
-  state.botKnown[botId] = [...known];
+  const bot = state.players.find((p) => p.id === botId)!;
+  const incoming = new Set(cardIds);
+  const known = [...(state.botKnown[botId] ?? []).filter((id) => !incoming.has(id)), ...incoming];
+  if (bot.difficulty === "easy") {
+    // Limited short-term memory: a new draw or peek can displace an opening card.
+    state.botKnown[botId] = known.slice(-2);
+  } else if (bot.difficulty === "hard") {
+    state.botKnown[botId] = known;
+  } else {
+    const mine = (id: string) => bot.hand.includes(id) ||
+      (state.turn?.playerId === botId && state.turn.drawnCardId === id);
+    state.botKnown[botId] = [...known.filter(mine), ...known.filter((id) => !mine(id)).slice(-2)];
+  }
 }
 
 function nextOpenSeat(state: GameState): number {

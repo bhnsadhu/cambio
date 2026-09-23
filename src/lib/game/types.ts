@@ -242,6 +242,10 @@ export interface GameState {
   logSeq: number;
   /** bot memory: cards each bot has seen, by card id */
   botKnown: Record<string, string[]>;
+  /** Public behavior clues, never the hidden face: a drawn card kept or pushed. */
+  botHints?: Record<string, "kept" | "pushed">;
+  /** Do not repeat a failed guess against the same live discard. */
+  botMissedTop?: Record<string, string>;
   /** this round's sticks and misses, by player, for the record books */
   tally: Record<string, RoundTally>;
   /** idempotency: recently applied action ids */
