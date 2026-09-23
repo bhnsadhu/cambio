@@ -222,7 +222,7 @@ function opponentsOf(state: GameState, bot: Player): Player[] {
   return state.players.filter((p) => p.id !== bot.id && cardCount(p) > 0);
 }
 
-/** The opponent closest to winning: fewest cards, then the lowest hand we can see. */
+/** The opponent closest to winning by the hand this bot actually believes they hold. */
 function leaderOf(state: GameState, brain: Brain): Player | null {
   const opponents = opponentsOf(state, brain.bot);
   if (!opponents.length) return null;
@@ -530,14 +530,22 @@ function pickStick(state: GameState, brain: Brain): string | null {
 
   // Own cards first: sticking one costs nothing, sticking someone else's
   // costs a card out of this hand (but lets it choose which).
-  const own = bot.hand.find((id) => matches(id) && (brain.diff !== "hard" || cardValue(state.cards[id!]) >= 0 || cardCount(bot) === 1));
+  const own = bot.hand.find((id) => matches(id) && (brain.diff !== "hard" || cardValue(state.cards[id!]) >= 0));
   if (own) return own;
   const others = brain.diff === "hard"
     ? opponentsOf(state, bot).slice().sort((a, b) => estimateOther(state, brain, a) - estimateOther(state, brain, b))
     : state.players.filter((p) => p.id !== bot.id);
   for (const p of others) {
     const hit = p.hand.find(matches);
-    if (hit) return hit;
+    if (!hit) continue;
+    if (brain.diff === "hard") {
+      const give = pickGive(state, brain);
+      if (!give) continue;
+      const value = expectedCard(state, bot, give, brain.pool);
+      const gain = tacticalGain(state, brain, new Map([[bot.id, -value], [p.id, value - cardValue(state.cards[hit])]]));
+      if (gain <= 0) continue;
+    }
+    return hit;
   }
   return null;
 }
