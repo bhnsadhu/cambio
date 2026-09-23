@@ -51,7 +51,7 @@ export function Explainer({ onDone, onRules }: { onDone: () => void; onRules?: (
   return (
     <div ref={dialogRef} tabIndex={-1} className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 outline-none animate-fade" role="dialog" aria-modal aria-label="How Cambio works">
       <div className="max-h-[calc(100dvh-32px)] w-full max-w-[560px] animate-rise overflow-y-auto rounded-panel bg-surface shadow-float hairline">
-        <div className="flex h-[180px] items-center justify-center bg-bg sm:h-[220px]" key={i}>
+        <div className="flex h-[180px] items-center justify-center rounded-t-panel bg-bg px-4 sm:h-[220px]" key={i}>
           <div className="animate-pop">{step.art}</div>
         </div>
         <div className="min-h-[236px] px-5 pt-6 pb-7 sm:px-8">
@@ -65,7 +65,7 @@ export function Explainer({ onDone, onRules }: { onDone: () => void; onRules?: (
                 <span key={k} className={`h-1.5 rounded-full transition-all duration-200 ease-out ${k === i ? "w-5 bg-ink" : "w-1.5 bg-line-strong"}`} />
               ))}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
               {!last ? <Button variant="ghost" onClick={onDone}>Skip</Button> : null}
               {i > 0 ? <Button variant="secondary" onClick={() => setI(i - 1)}>Back</Button> : null}
               {last ? (
@@ -107,12 +107,12 @@ function Art2() {
 
 function Art3() {
   return (
-    <div className="flex items-center gap-5">
+    <div className="flex items-center gap-3 sm:gap-5">
       <CardBack size="md" className="opacity-60" />
       <span className="t-sub text-ink-3">Place</span>
-      <div className="flex flex-col items-center gap-2">
+      <div className="flex max-w-[124px] flex-col items-center gap-2">
         <FaceCard size="md" card={{ id: "x3", rank: "8", suit: "D" }} className="shadow-lift" />
-        <span className="rounded-full bg-ink px-2 py-0.5 text-[11px] font-medium text-bg">Peek at one of yours</span>
+        <span className="rounded-full bg-ink px-2 py-1 text-center text-[11px] leading-4 font-medium text-bg">Peek at one of yours</span>
       </div>
     </div>
   );
@@ -120,7 +120,7 @@ function Art3() {
 
 function Art4() {
   return (
-    <div className="flex items-center gap-6">
+    <div className="flex items-center gap-4 sm:gap-6">
       <div className="relative">
         <CardBack size="md" className="-translate-y-1.5 shadow-lift" />
         <span className="absolute inset-x-0 -bottom-1 rounded-b-[8px] bg-bg/95 py-0.5 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-ink">Stick</span>

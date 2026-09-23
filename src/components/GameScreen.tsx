@@ -128,10 +128,10 @@ function GameShell({ code }: { code: string }) {
     <>
       <main className="mx-auto min-h-screen w-full max-w-[1480px] px-5 sm:px-8">
         <header className="flex min-h-14 flex-wrap items-center justify-between gap-x-5 gap-y-2 py-3">
-          <div className="flex items-center gap-3 sm:gap-5">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 sm:gap-x-5">
             <Link href="/" aria-label="Cambio home"><Wordmark /></Link>
             {view ? (
-              <div className="t-sub flex items-center gap-2 text-ink-2">
+              <div className="t-sub flex flex-wrap items-center gap-x-2 gap-y-1 text-ink-2">
                 <span className="text-ink-3">Code</span>
                 <span className="tnum font-semibold tracking-[0.08em] text-ink">{view.public.code}</span>
                 {view.public.round > 0 ? <span className="text-ink-3">· Round {view.public.round}</span> : null}
@@ -146,7 +146,7 @@ function GameShell({ code }: { code: string }) {
             <Button variant="ghost" size="sm" onClick={() => prefs.onboarded ? setHelp(true) : setReplay(true)}>How to play</Button>
             {game.session ? (
               leaving ? (
-                <span className="flex items-center gap-1.5">
+                <span className="flex max-w-full flex-wrap items-center gap-1.5">
                   <span className="t-sub text-ink-2">Leave this table?</span>
                   <Button variant="secondary" size="sm" disabled={game.busy} onClick={() => void leave()}>Leave</Button>
                   <Button variant="ghost" size="sm" onClick={() => setLeaving(false)}>Stay</Button>
@@ -216,7 +216,7 @@ function JoinForm({ code, onJoined }: { code: string; onJoined: (s: { playerId: 
     }
   };
   return (
-    <div className="mx-auto max-w-[420px] pt-24 animate-rise">
+    <div className="mx-auto max-w-[420px] pt-12 pb-8 animate-rise sm:pt-24">
       <p className="t-caption text-ink-3">Join table</p>
       <h1 className="t-title tnum mt-1.5 tracking-[0.06em]">{code}</h1>
       <form onSubmit={submit} className="mt-6 flex flex-col gap-4" aria-label="Join table">
@@ -235,11 +235,11 @@ function JoinForm({ code, onJoined }: { code: string; onJoined: (s: { playerId: 
 
 function MidRound({ code, canLogin, onWatch }: { code: string; canLogin: boolean; onWatch: () => void }) {
   return (
-    <div className="mx-auto max-w-[460px] pt-24 animate-rise">
+    <div className="mx-auto max-w-[460px] pt-12 pb-8 animate-rise sm:pt-24">
       <p className="t-caption text-ink-3">Table {code}</p>
       <h1 className="t-title mt-1.5">This table is mid round.</h1>
       <p className="t-body mt-2 text-ink-2">Seats are set once a round starts. You can watch this one, or open a table of your own.</p>
-      <div className="mt-6 flex gap-3">
+      <div className="mt-6 flex flex-wrap gap-3">
         <Button variant="primary" size="lg" onClick={onWatch}>Watch</Button>
         <Link href="/" className={buttonClass({ variant: "secondary", size: "lg" })}>Open a table</Link>
       </div>
@@ -250,7 +250,7 @@ function MidRound({ code, canLogin, onWatch }: { code: string; canLogin: boolean
 
 function Empty({ title, body }: { title: string; body: string }) {
   return (
-    <div className="mx-auto max-w-[420px] pt-24 animate-rise">
+    <div className="mx-auto max-w-[420px] pt-12 pb-8 animate-rise sm:pt-24">
       <h1 className="t-title">{title}</h1>
       <p className="t-body mt-2 text-ink-2">{body}</p>
       <Link href="/" className={buttonClass({ variant: "primary", className: "mt-6" })}>Back to start</Link>

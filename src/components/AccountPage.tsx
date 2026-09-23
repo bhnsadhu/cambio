@@ -26,7 +26,7 @@ export function AccountPage({ back }: { back: string }) {
   const destination = back === "record" ? stored ? `/p/${stored.profile.handle}` : "/" : back === "/me" ? "/" : back;
   return (
     <main className="mx-auto min-h-screen w-full max-w-[1080px] px-5 pb-16 sm:px-8">
-      <header className="flex h-16 items-center justify-between gap-3">
+      <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 py-3">
         <Link href="/" aria-label="Cambio home"><Wordmark /></Link>
         <Link href={destination} className="t-sub text-ink-2 hover:text-ink">{backLabel(destination)}</Link>
       </header>

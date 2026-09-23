@@ -28,11 +28,11 @@ export function HowToPlay({ open, onClose, onReplay }: { open: boolean; onClose:
     <div ref={dialogRef} tabIndex={-1} className="fixed inset-0 z-50 outline-none animate-fade" role="dialog" aria-modal aria-label="How to play">
       <button type="button" tabIndex={-1} aria-hidden className="absolute inset-0 bg-black/60" onClick={onClose} />
       <aside className="animate-slide-in absolute inset-y-0 right-0 flex w-[380px] max-w-full flex-col bg-surface shadow-float">
-        <header className="flex items-center justify-between px-6 pt-5 pb-4">
+        <header className="flex shrink-0 items-center justify-between gap-4 px-5 pt-5 pb-4 sm:px-6">
           <h2 className="t-headline">How to play</h2>
           <Button variant="ghost" size="sm" onClick={onClose}>Close</Button>
         </header>
-        <div className="flex-1 overflow-y-auto px-6 pb-6">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-6 sm:px-6">
           {SECTIONS.map((s) => (
             <section key={s.title} className="border-t border-line py-4">
               <h3 className="t-caption text-ink-3">{s.title}</h3>

@@ -61,7 +61,7 @@ export function FriendsPanel({
   );
 
   return (
-    <section id="friends" className="flex flex-col gap-5 rounded-panel bg-surface p-6 hairline" aria-label="Friends">
+    <section id="friends" className="@container flex min-w-0 flex-col gap-5 rounded-panel bg-surface p-5 hairline sm:p-6" aria-label="Friends">
       <header className="flex items-baseline justify-between gap-3">
         <h2 className="t-headline">Friends</h2>
         <span className="t-footnote text-ink-3">{friends.length} saved</span>
@@ -69,7 +69,7 @@ export function FriendsPanel({
 
       <Link href="/leaderboard?scope=friends" className="t-sub text-ink-2 hover:text-ink">Friends leaderboard</Link>
 
-      <form onSubmit={add} className="flex gap-2">
+      <form onSubmit={add} className="flex items-center gap-2">
         <input
           className={`${inputClass} h-10`}
           name="username"
@@ -81,7 +81,7 @@ export function FriendsPanel({
           spellCheck={false}
           autoCapitalize="none"
         />
-        <Button type="submit" variant="secondary" disabled={busy || !username.trim()}>Add</Button>
+        <Button type="submit" variant="secondary" className="shrink-0" disabled={busy || !username.trim()}>Add</Button>
       </form>
       {note ? <p className="t-footnote text-ink-2">{note}</p> : null}
 
@@ -90,12 +90,12 @@ export function FriendsPanel({
           <p className="t-caption mb-2 text-ink-3">Asked to be friends</p>
           <ul className="flex flex-col gap-2">
             {incoming.map((p) => (
-              <li key={p.id} className="flex items-center justify-between gap-3 rounded-[16px] bg-surface-2 px-3.5 py-2.5">
+              <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 rounded-[16px] bg-surface-2 p-4">
                 <div className="min-w-0">
-                  <p className="t-sub flex min-w-0 items-center gap-1.5 font-medium">{p.displayName}</p>
-                  <p className="t-footnote text-ink-3">@{p.handle}</p>
+                  <p className="t-sub break-words font-medium">{p.displayName}</p>
+                  <p className="t-footnote break-all text-ink-3">@{p.handle}</p>
                 </div>
-                <div className="flex shrink-0 gap-1.5">
+                <div className="ml-auto flex flex-wrap gap-1.5">
                   <Button size="sm" variant="accent" onClick={() => void social.respond(p.id, true)}>Accept</Button>
                   <Button size="sm" variant="ghost" onClick={() => void social.respond(p.id, false)}>Decline</Button>
                 </div>
@@ -118,7 +118,7 @@ export function FriendsPanel({
       )}
 
       {outgoing.length ? (
-        <p className="t-footnote text-ink-3">
+        <p className="t-footnote break-words text-ink-3">
           Waiting on {outgoing.map((p) => `@${p.handle}`).join(", ")}.
         </p>
       ) : null}
@@ -128,12 +128,12 @@ export function FriendsPanel({
           <p className="t-caption mb-2 text-ink-3">Played against</p>
           <ul className="flex flex-col gap-2">
             {strangers.slice(0, 5).map((o) => (
-              <li key={o.id} className="flex items-center justify-between gap-3 rounded-[16px] bg-surface-2 px-3.5 py-2.5">
+              <li key={o.id} className="flex items-center justify-between gap-3 rounded-[16px] bg-surface-2 p-4">
                 <div className="min-w-0">
-                  <p className="t-sub flex min-w-0 items-center gap-1.5 font-medium">{o.displayName}</p>
+                  <p className="t-sub break-words font-medium">{o.displayName}</p>
                   <p className="t-footnote text-ink-3">{o.rounds} {o.rounds === 1 ? "round" : "rounds"} together</p>
                 </div>
-                <Button size="sm" variant="secondary" onClick={() => void social.addFriend(o.handle)}>Add</Button>
+                <Button size="sm" variant="secondary" className="shrink-0" onClick={() => void social.addFriend(o.handle)}>Add</Button>
               </li>
             ))}
           </ul>
@@ -176,8 +176,8 @@ function FriendRow({ friend, social, inviteCode, atThisTable = false }: { friend
   };
 
   return (
-    <li className="rounded-[16px] bg-surface-2 px-3.5 py-2.5">
-      <div className="flex items-center justify-between gap-3">
+    <li className="rounded-[16px] bg-surface-2 p-4">
+      <div className="grid grid-cols-[36px_minmax(0,1fr)] items-center gap-x-3 gap-y-2.5 @[360px]:grid-cols-[36px_minmax(0,1fr)_auto]">
         <Avatar identity={friend.id} size={36} />
         <div className="min-w-0 flex-1">
           <p className="t-sub flex min-w-0 items-center gap-1.5 font-medium">
@@ -198,7 +198,7 @@ function FriendRow({ friend, social, inviteCode, atThisTable = false }: { friend
                   : <>Offline</>}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="col-start-2 flex items-center justify-end gap-1.5 empty:hidden @[360px]:col-start-auto">
           {live && !here ? <AskToJoin friend={friend} social={social} /> : null}
           {invitable ? (
             <div className="flex flex-col items-end gap-1">
@@ -210,7 +210,7 @@ function FriendRow({ friend, social, inviteCode, atThisTable = false }: { friend
           ) : null}
         </div>
       </div>
-      {note ? <p className="t-footnote mt-1.5 text-ink-2">{note}</p> : null}
+      {note ? <p className="t-footnote mt-2.5 break-words text-ink-2">{note}</p> : null}
     </li>
   );
 }
@@ -231,7 +231,7 @@ export function AskToJoin({ friend, social }: { friend: Friend; social: SocialHo
     if (!outcome.ok) setError(outcome.message);
     setBusy(false);
   };
-  return <div className="flex max-w-[200px] flex-col items-end gap-1.5">
+  return <div className="flex min-w-0 max-w-[200px] flex-col items-end gap-1.5 text-right">
     <Button size="sm" variant="secondary" disabled={busy || cooldown > 0 || invited} onClick={() => void ask()}>
       {invited ? "Invited" : busy ? "Asking" : cooldown > 0 ? "Request sent" : request ? "Ask again" : "Ask to join"}
     </Button>
@@ -286,7 +286,7 @@ export function Notifications({ social, atCode = null, acceptsJoinRequests = tru
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 flex max-h-[70vh] w-[290px] max-w-[calc(100vw-3rem)] flex-col gap-2 overflow-y-auto" aria-label="Table invitations and requests">
+    <div className="fixed bottom-5 right-5 z-40 flex max-h-[70dvh] w-[320px] max-w-[calc(100vw-2.5rem)] flex-col gap-2 overflow-y-auto sm:bottom-6 sm:right-6" aria-label="Table invitations and requests">
       {requests.map((request) => (
         <div key={request.id} role="region" aria-label={`Join request from ${request.from.displayName}`} className="animate-rise rounded-[18px] bg-surface-2 p-3.5 shadow-float hairline-strong">
           <p className="t-sub"><span className="font-semibold">{request.from.displayName}</span> asked to join your table.</p>

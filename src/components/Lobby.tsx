@@ -53,17 +53,17 @@ export function Lobby({
             Share the code to invite someone. {hasAccount ? (view.doNotDisturb ? "Do not disturb is on, so friends need an invitation. " : "Friends can also ask to join and wait for you to accept. ") : ""}Seats still open when the round starts go to the house bots.
           </p>
         </div>
-        <div className="flex flex-col items-start gap-2 xl:max-w-[260px] xl:items-end">
+        <div className="flex min-w-0 flex-col items-start gap-2 xl:max-w-[260px] xl:items-end">
           {isHost ? (
             <>
               <Button variant="primary" size="lg" disabled={busy} onClick={onStart}>Start round</Button>
-              <p className="t-footnote text-ink-3">
+              <p className="t-footnote text-ink-3 xl:text-right">
                 {open === 0 ? "All four seats are taken." : open === 1 ? "One bot will fill the last seat." : `${open} bots will fill the empty seats.`}
                 {" "}Starting deals the cards; the round itself waits on every seat to say ready.
               </p>
             </>
           ) : (
-            <p className="t-sub inline-flex items-center gap-2 text-ink-2"><Pip />Waiting for {host ? <PlayerName name={host.name} isBot={host.isBot} /> : "the host"} to start</p>
+            <p className="t-sub flex min-w-0 items-center gap-2 text-ink-2"><Pip /><span className="min-w-0 break-words">Waiting for {host ? <PlayerName name={host.name} isBot={host.isBot} /> : "the host"} to start</span></p>
           )}
         </div>
       </header>
@@ -80,9 +80,9 @@ export function Lobby({
               <li key={seat} className={`flex min-h-[136px] min-w-0 flex-col justify-between rounded-panel border-[1.5px] px-5 py-4 transition-[box-shadow,background-color] duration-300 xl:px-3 ${p ? "border-transparent bg-surface hairline animate-pop" : "border-dashed border-line-strong"}`}>
                 <p className="t-caption text-ink-3">Seat {seat + 1}</p>
                 {p ? (
-                  <div>
-                    <p className="t-headline flex items-center gap-2 break-words"><Avatar identity={p.profileId ?? p.name} size={40} /><PlayerName name={p.name} isBot={p.isBot} /></p>
-                    <div className="mt-1.5 flex gap-1.5">
+                  <div className="min-w-0">
+                    <p className="t-headline flex min-w-0 items-center gap-2"><Avatar identity={p.profileId ?? p.name} size={40} /><span className="min-w-0 [overflow-wrap:anywhere]"><PlayerName name={p.name} isBot={p.isBot} /></span></p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
                       {p.isHost ? <Chip>Host</Chip> : null}
                       {p.id === me ? <Chip tone="ink">You</Chip> : null}
                     </div>

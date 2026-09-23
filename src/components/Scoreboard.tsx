@@ -57,9 +57,9 @@ export function Scoreboard({
 
   return (
     <div ref={dialogRef} tabIndex={-1} className="fixed inset-0 z-40 flex items-center justify-center bg-black/75 p-4 outline-none animate-fade" role="dialog" aria-modal aria-label="Round results">
-      <div className="max-h-[calc(100dvh-32px)] w-full max-w-[860px] animate-rise overflow-y-auto rounded-panel bg-surface p-5 shadow-float hairline sm:p-8">
+      <div className="max-h-[calc(100dvh-32px)] w-full min-w-0 max-w-[860px] animate-rise overflow-y-auto rounded-panel bg-surface p-5 shadow-float hairline sm:p-8">
         <header className="flex flex-col items-start justify-between gap-5 lg:flex-row lg:gap-6">
-          <div>
+          <div className="min-w-0 break-words">
             <p className="t-caption text-ink-3">Round {result.round} of this table</p>
             <h2 className="t-title mt-1.5">{headline}</h2>
             <p className="t-callout mt-1.5 text-ink-2">
@@ -67,7 +67,7 @@ export function Scoreboard({
               Lowest hand wins. Ties share the win.
             </p>
           </div>
-          <div className="flex shrink-0 flex-col items-start gap-2.5 lg:items-end">
+          <div className="flex max-w-full flex-col items-start gap-2.5 lg:w-[230px] lg:shrink-0 lg:items-end">
             {seated ? (
               ready ? (
                 <>
@@ -75,13 +75,13 @@ export function Scoreboard({
                   <Button variant="ghost" size="sm" disabled={busy} onClick={onLeave}>Leave instead</Button>
                 </>
               ) : (
-                <div className="flex items-center gap-2.5">
+                <div className="flex flex-wrap items-center gap-2.5">
                   <Button variant="secondary" size="lg" disabled={busy} onClick={onLeave}>Leave</Button>
                   <Button variant="primary" size="lg" disabled={busy} onClick={onPlayAgain}>I&apos;m ready</Button>
                 </div>
               )
             ) : (
-              <p className="t-sub max-w-[190px] text-right text-ink-3">Watching. The table decides whether to play on.</p>
+              <p className="t-sub max-w-[230px] text-ink-3 lg:text-right">Watching. The table decides whether to play on.</p>
             )}
             {waiting.length ? (
               <p className="t-footnote max-w-[350px] text-ink-3 lg:max-w-[230px] lg:text-right">
@@ -95,7 +95,7 @@ export function Scoreboard({
                 . If anyone leaves, the rest go back to the lobby.
               </p>
             ) : (
-              <p className="t-footnote text-right text-ink-3">Everyone is ready. Dealing.</p>
+              <p className="t-footnote text-ink-3 lg:text-right">Everyone is ready. Dealing.</p>
             )}
           </div>
         </header>
@@ -104,27 +104,36 @@ export function Scoreboard({
           {rows.map(({ player, score, cards, rank }, index) => {
             const won = result.winnerIds.includes(player.id);
             return <li key={player.id} className={`rounded-card p-4 ${player.id === me ? "bg-accent-soft" : "bg-surface-2"}`} aria-label={`${player.name}'s result`}>
-              <div className="flex items-start justify-between gap-3">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                 <div className="min-w-0">
-                  <p className="t-sub flex items-center gap-2 break-words font-semibold"><Avatar identity={player.profileId ?? player.name} size={32} /><span className="mr-2 text-ink-3">{rank}.</span><PlayerName name={player.name} isBot={player.isBot} /></p>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Avatar identity={player.profileId ?? player.name} size={32} />
+                    <p className="t-sub min-w-0 font-semibold [overflow-wrap:anywhere]"><span className="mr-1.5 text-ink-3">{rank}.</span><PlayerName name={player.name} isBot={player.isBot} /></p>
+                  </div>
                   <div className="mt-1 flex flex-wrap gap-1.5">{player.id === me ? <Chip>You</Chip> : null}{won ? <Chip tone="accent">Winner</Chip> : null}</div>
                 </div>
                 <div className="shrink-0 text-right"><p className="t-caption text-ink-3">Hand total</p><p className={`t-money text-[26px] ${won ? "text-accent" : ""}`}><CountUp value={score} delay={240 + index * 220} /></p></div>
               </div>
-              <div className="mt-3 flex flex-wrap gap-2">{cards.length ? cards.map((card) => <FaceCard key={card.id} card={card} size="sm" />) : <span className="t-sub text-ink-3">No cards</span>}</div>
+              <div className="mt-3 flex flex-wrap gap-2">{cards.length ? cards.map((card) => (
+                <div key={card.id} className="flex shrink-0 flex-col items-center gap-1">
+                  <FaceCard card={card} size="sm" />
+                  <span className="text-[10px] leading-3 font-medium text-ink-3" aria-label={`Card position ${player.hand.indexOf(card.id) + 1}`}>{player.hand.indexOf(card.id) + 1}</span>
+                </div>
+              )) : <span className="t-sub text-ink-3">No cards</span>}</div>
               <p className="t-footnote mt-3 text-ink-2">Rounds won: {roundsWon.get(player.id) ?? 0} of {view.results.length}</p>
             </li>;
           })}
         </ol>
 
-        <table className="mt-7 hidden w-full border-separate border-spacing-0 lg:table">
+        <table className="mt-7 hidden w-full table-fixed border-separate border-spacing-0 lg:table">
+          <colgroup><col className="w-[5%]" /><col className="w-[29%]" /><col className="w-[33%]" /><col className="w-[15%]" /><col className="w-[18%]" /></colgroup>
           <thead>
             <tr className="t-caption text-left text-ink-3">
-              <th className="w-10 pb-2.5 font-medium">#</th>
-              <th className="pb-2.5 font-medium">Player</th>
-              <th className="pb-2.5 font-medium">Final hand</th>
-              <th className="pb-2.5 pl-6 text-right font-medium">Hand total</th>
-              <th className="pb-2.5 pl-8 text-right font-medium">Rounds won</th>
+              <th className="pb-2.5 pl-2 font-medium">#</th>
+              <th className="pb-2.5 pr-4 font-medium">Player</th>
+              <th className="pb-2.5 pr-3 font-medium">Final hand</th>
+              <th className="px-3 pb-2.5 text-right font-medium">Hand total</th>
+              <th className="px-4 pb-2.5 text-right font-medium">Rounds won</th>
             </tr>
           </thead>
           <tbody>
@@ -137,27 +146,32 @@ export function Scoreboard({
                 <tr key={player.id} className={isMe ? "bg-surface-2/60" : ""}>
                   <td className={`t-money border-t border-line py-3.5 pl-2 align-middle text-[17px] ${won ? "text-accent" : "text-ink-3"}`}>{rank}</td>
                   <td className="border-t border-line py-3.5 pr-4 align-middle">
-                    <div className="flex items-center gap-2 text-[15px] font-medium">
+                    <div className="flex min-w-0 items-center gap-2 text-[15px] font-medium">
                       <Avatar identity={player.profileId ?? player.name} size={36} />
-                      {isMe ? (
-                        <span>You <span className="t-sub font-normal text-ink-3">{player.name}</span></span>
-                      ) : (
-                        <span><PlayerName name={player.name} isBot={player.isBot} /></span>
-                      )}
-                      {won ? <Chip tone="accent">Winner</Chip> : null}
+                      <div className="min-w-0 [overflow-wrap:anywhere]">
+                        {isMe ? (
+                          <p>You <span className="t-sub font-normal text-ink-3">{player.name}</span></p>
+                        ) : (
+                          <p><PlayerName name={player.name} isBot={player.isBot} /></p>
+                        )}
+                        {won ? <div className="mt-1.5"><Chip tone="accent">Winner</Chip></div> : null}
+                      </div>
                     </div>
                   </td>
-                  <td className="border-t border-line py-3.5 pr-4 align-middle">
+                  <td className="border-t border-line py-3.5 pr-3 align-middle">
                     <div className="flex flex-wrap gap-1.5">
                       {cards.length ? cards.map((c, i) => (
-                        <FaceCard key={c.id} card={c} size="md" className="animate-flip-in" style={{ animationDelay: `${base + i * 70}ms` }} />
+                        <div key={c.id} className="flex shrink-0 flex-col items-center gap-1">
+                          <FaceCard card={c} size="md" className="animate-flip-in" style={{ animationDelay: `${base + i * 70}ms` }} />
+                          <span className="text-[10px] leading-3 font-medium text-ink-3" aria-label={`Card position ${player.hand.indexOf(c.id) + 1}`}>{player.hand.indexOf(c.id) + 1}</span>
+                        </div>
                       )) : <span className="t-sub text-ink-3">No cards</span>}
                     </div>
                   </td>
-                  <td className={`t-money border-t border-line py-3.5 pl-6 text-right align-middle text-[26px] ${won ? "text-accent" : ""}`}>
+                  <td className={`t-money border-t border-line px-3 py-3.5 text-right align-middle text-[26px] ${won ? "text-accent" : ""}`}>
                     <CountUp value={score} delay={base + cards.length * 70} />
                   </td>
-                  <td className="t-money border-t border-line py-3.5 pl-8 text-right align-middle text-[17px] text-ink-2">
+                  <td className="t-money border-t border-line px-4 py-3.5 text-right align-middle text-[17px] text-ink-2">
                     {wins}<span className="t-sub text-ink-3"> of {view.results.length}</span>
                   </td>
                 </tr>

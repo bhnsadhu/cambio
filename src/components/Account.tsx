@@ -29,7 +29,7 @@ export function AuthForm({ initialMode = "login", initialName = "", legacy = fal
     finally { setBusy(false); }
   };
   return (
-    <section className="rounded-panel bg-surface p-6 hairline" aria-label={legacy ? "Secure your saved profile" : "Account access"}>
+    <section className="rounded-panel bg-surface p-5 hairline sm:p-6" aria-label={legacy ? "Secure your saved profile" : "Account access"}>
       <h1 className="t-title2">{legacy ? "Secure your saved profile" : registering ? "Create an account" : "Welcome back"}</h1>
       <p className="t-sub mt-2 text-ink-2">
         {legacy ? "Add a username and password to keep this profile, including all your stats and friends. You can then log in from any browser."
@@ -103,13 +103,13 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
     <Button ref={(button) => { changeButtons.current[kind] = button; }} type="button" size="sm" className="shrink-0" aria-label={`Change ${label}`} disabled={!!busy} onClick={() => edit(kind)}>Change</Button>
   ) : null;
   const cancel = <Button type="button" variant="ghost" disabled={!!busy} onClick={() => edit(null)}>Cancel</Button>;
-  const row = "flex items-start justify-between gap-4";
+  const row = "flex items-center justify-between gap-4";
   const formClass = "mt-5 flex flex-col gap-4";
   const actions = "flex flex-wrap gap-2";
   return (
     <div className="flex flex-col gap-5" aria-label="Account settings">
       <div className="divide-y divide-ink/10 rounded-panel bg-surface hairline">
-        <section className="p-6" aria-labelledby="display-name-heading">
+        <section className="p-5 sm:p-6" aria-labelledby="display-name-heading">
           <div className={row}>
             <div className="min-w-0"><h2 id="display-name-heading" className="t-headline">Display name</h2>{editing !== "name" ? <p className="t-body mt-1 break-words">{stored.profile.displayName}</p> : null}</div>
             {change("name", "display name")}
@@ -124,7 +124,7 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
           </form> : null}
           {feedback("name")}
         </section>
-        <section className="p-6" aria-labelledby="username-heading">
+        <section className="p-5 sm:p-6" aria-labelledby="username-heading">
           <div className={row}>
             <div className="min-w-0"><h2 id="username-heading" className="t-headline">Username</h2>{editing !== "username" ? <p className="t-body mt-1 break-all">@{stored.username}</p> : null}</div>
             {change("username", "username")}
@@ -142,9 +142,9 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
           </form> : null}
           {feedback("username")}
         </section>
-        <section className="p-6" aria-labelledby="password-heading">
+        <section className="p-5 sm:p-6" aria-labelledby="password-heading">
           <div className={row}>
-            <div><h2 id="password-heading" className="t-headline">Password</h2><p className="t-sub mt-2 text-ink-2">Keep your account secure.</p></div>
+            <div className="min-w-0"><h2 id="password-heading" className="t-headline">Password</h2><p className="t-sub mt-2 text-ink-2">Keep your account secure.</p></div>
             {change("password", "password")}
           </div>
           {editing === "password" ? <form id="password-form" className={formClass} aria-label="Password settings" onSubmit={(event) => { event.preventDefault(); void perform("password", async () => {
@@ -163,13 +163,13 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
         </section>
       </div>
       <div className="divide-y divide-ink/10 rounded-panel bg-surface hairline">
-        <section className="p-6" aria-label="Sign out">
+        <section className="p-5 sm:p-6" aria-label="Sign out">
           <h2 className="t-headline">Sign out</h2>
           <p className="t-sub mt-2 text-ink-2">Sign out of this browser. Your stats and friends stay saved.</p>
           <Button className="mt-4" type="button" disabled={!!busy} onClick={() => void perform("logout", async () => { await signOut(); onExit(); return "Signed out."; })}>{busy === "logout" ? "Signing out" : "Sign out"}</Button>
           {feedback("logout")}
         </section>
-        <section className="p-6" aria-label="Delete account">
+        <section className="p-5 sm:p-6" aria-label="Delete account">
           <h2 className="t-headline">Delete account</h2>
           <p className="t-sub mt-2 text-ink-2">Permanently delete your account, stats, friends, and invites. This cannot be undone.</p>
           {editing === "delete" ? <form id="delete-form" className={formClass} aria-label="Confirm account deletion" onSubmit={(event) => { event.preventDefault(); void perform("delete", async () => { await deleteAccount(deletePassword, confirmation); onExit(); return "Account deleted."; }); }}>
