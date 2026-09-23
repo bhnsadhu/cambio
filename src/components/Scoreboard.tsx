@@ -57,11 +57,11 @@ export function Scoreboard({
 
   return (
     <div ref={dialogRef} tabIndex={-1} className="fixed inset-0 z-40 flex items-center justify-center bg-black/75 p-4 outline-none animate-fade" role="dialog" aria-modal aria-label="Round results">
-      <div className="max-h-[calc(100dvh-32px)] w-full min-w-0 max-w-[860px] animate-rise overflow-y-auto rounded-panel bg-surface p-5 shadow-float hairline sm:p-8">
+      <div className="max-h-[calc(100dvh-32px)] w-full min-w-0 max-w-[1040px] animate-rise overflow-y-auto rounded-panel bg-surface p-5 shadow-float hairline sm:p-8">
         <header className="flex flex-col items-start justify-between gap-5 lg:flex-row lg:gap-6">
           <div className="min-w-0 break-words">
             <p className="t-caption text-ink-3">Round {result.round} of this table</p>
-            <h2 className="t-title mt-1.5">{headline}</h2>
+            <h2 className="t-title mt-1.5 lg:max-w-[650px]">{headline}</h2>
             <p className="t-callout mt-1.5 text-ink-2">
               {caller ? (view.cambio!.reason === "zero" ? <><PlayerName name={caller.name} isBot={caller.isBot} /> ran out of cards. </> : <><PlayerName name={caller.name} isBot={caller.isBot} /> called Cambio. </>) : null}
               Lowest hand wins. Ties share the win.

@@ -50,17 +50,17 @@ export function Explainer({ onDone, onRules }: { onDone: () => void; onRules?: (
 
   return (
     <div ref={dialogRef} tabIndex={-1} className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 outline-none animate-fade" role="dialog" aria-modal aria-label="How Cambio works">
-      <div className="max-h-[calc(100dvh-32px)] w-full max-w-[560px] animate-rise overflow-y-auto rounded-panel bg-surface shadow-float hairline">
-        <div className="flex h-[180px] items-center justify-center rounded-t-panel bg-bg px-4 sm:h-[220px]" key={i}>
+      <div className="max-h-[calc(100dvh-32px)] w-full max-w-[560px] animate-rise overflow-y-auto rounded-panel lg:grid lg:max-w-[900px] lg:grid-cols-[320px_minmax(0,1fr)] bg-surface shadow-float hairline">
+        <div className="flex h-[180px] items-center justify-center rounded-t-panel bg-bg px-4 sm:h-[220px] lg:h-full lg:min-h-[360px] lg:rounded-l-panel lg:rounded-tr-none" key={i}>
           <div className="animate-pop">{step.art}</div>
         </div>
-        <div className="min-h-[236px] px-5 pt-6 pb-7 sm:px-8">
+        <div className="flex min-h-[236px] flex-col px-5 pt-6 pb-7 sm:px-8 lg:pt-8">
           <p className="t-caption text-ink-3">{i + 1} of {STEPS.length}</p>
           <h2 className="t-title2 mt-2" key={`t${i}`}>{step.title}</h2>
           <p className="t-body mt-2 text-ink-2" key={`b${i}`}>{step.body}</p>
-          {onRules ? <button type="button" onClick={onRules} className="t-sub mt-3 font-medium text-ink-2 hover:text-ink">Read full rules</button> : null}
-          <div className="mt-7 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-1.5" aria-hidden>
+          {onRules ? <button type="button" onClick={onRules} className="t-sub mt-3 self-start font-medium text-ink-2 hover:text-ink">Read full rules</button> : null}
+          <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-7">
+            <div className="flex items-center gap-1.5 lg:hidden" aria-hidden>
               {STEPS.map((_, k) => (
                 <span key={k} className={`h-1.5 rounded-full transition-all duration-200 ease-out ${k === i ? "w-5 bg-ink" : "w-1.5 bg-line-strong"}`} />
               ))}
