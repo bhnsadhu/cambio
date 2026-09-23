@@ -48,7 +48,7 @@ for (const mode of ["guest", "account"] as const) {
     await page.getByRole("button", { name: "Start round", exact: true }).click();
     const actions = page.getByRole("region", { name: "Round actions" });
     await expect(actions.getByRole("button", { name: "I'm ready", exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "face down card", exact: true })).toHaveCount(16);
+    await expect(page.getByRole("button", { name: /^face down card, position [1-4]$/ })).toHaveCount(16);
     for (const width of [320, 390, 768, 1280, 1440]) await fits(page, width);
     await page.screenshot({ path: `test-results/table-${mode}-desktop.png`, fullPage: true });
     await fits(page, 390);
@@ -61,6 +61,7 @@ for (const mode of ["guest", "account"] as const) {
     }
     await actions.getByRole("button", { name: "I'm ready", exact: true }).click();
     await expect.poll(async () => (await state(context, code)).phase, { timeout: 20_000 }).toBe("playing");
+    await expect(page.getByRole("status").filter({ hasText: "Shuffle and deal" })).toHaveCount(0);
     await page.reload();
     await expect(page.getByRole("region", { name: `${name}'s hand`, exact: true })).toContainText("You");
     await expect(page.getByRole("form", { name: "Join table" })).toHaveCount(0);
@@ -72,7 +73,7 @@ for (const mode of ["guest", "account"] as const) {
     await expect(paused).toHaveCount(0);
     await actions.getByRole("button", { name: "Draw", exact: true }).click();
     if (mode === "account") {
-      await page.getByRole("region", { name: "Cameron's hand", exact: true }).getByRole("button", { name: "Push this card", exact: true }).first().click();
+      await page.getByRole("region", { name: "Cameron's hand", exact: true }).getByRole("button", { name: /^Push this card, position [1-4]$/ }).first().click();
       await expect(actions.getByRole("button", { name: "Push it onto Cameron", exact: true })).toBeVisible();
       await fits(page, 320);
       await actions.getByRole("button", { name: "Cancel", exact: true }).click();
