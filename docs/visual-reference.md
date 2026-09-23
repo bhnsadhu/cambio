@@ -1,12 +1,18 @@
 # Visual reference and avatar artwork
 
-Cambio's personal statistics and leaderboard use these actual Offsuit screens as the visual reference:
+Cambio uses these actual Offsuit screens for its colors, avatar treatment, and visual details, adapted to a desktop website layout:
 
 - [Official Google Play leaderboard screenshot](https://play-lh.googleusercontent.com/tcNesVdAEppNUiS-o_x4s3aVbhIT2r_E-EdsySeOjOVJy3RCGJIhjcaDPXsUR6qAHxJApmB2ow46Ly_QJ7PO=w1080): black canvas, open rows, placement then avatar then player name, muted points underneath.
 - [Statistics screenshot from Offsuit's official account](https://pbs.twimg.com/ext_tw_video_thumb/1844027329166684160/pu/img/kokRezv9Aw7be8kc.jpg): quiet heading, thin rounded outlines, compact value-over-label groups, generous outer insets.
 - [Official app listing](https://apps.apple.com/us/app/offsuit-texas-holdem-poker/id6446099491).
 
 These public screenshots establish the layout and visual treatment. They are not a claim that the latest installed app has identical screens. Cambio keeps its own gameplay metrics and existing rank tiers; it does not invent poker statistics to fill the reference chart.
+
+## Desktop website
+
+Website pages share a 1280px canvas and persistent navigation for tables, the leaderboard, the player's record, and account settings. Profiles put identity beside statistics; settings separate the player profile from account access; the desktop leaderboard exposes labeled comparison columns. Smaller browser windows retain readable layouts.
+
+At laptop sizes, the game shows all four hands beside the piles and a scrollable move history. Rules and walkthroughs use the available desktop width. Browser navigation keeps seats available through the home page's verified saved tables, while an explicit Leave action explains its consequences before proceeding.
 
 ## Avatars
 
