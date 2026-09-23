@@ -119,9 +119,9 @@ export function PlayerName({ name, isBot }: { name: string; isBot: boolean }) {
 export const DIFFICULTY_LABEL: Record<BotDifficulty, string> = { easy: "Easy", medium: "Medium", hard: "Hard" };
 
 export const DIFFICULTY_BLURB: Record<BotDifficulty, string> = {
-  easy: "Lets sticks go by and keeps cards it should not. Plays like someone learning.",
-  medium: "The house's basic strategy: remembers what it has seen and plays it straight.",
-  hard: "Counts the pile, weighs every hand at the table, and reacts faster than you can.",
+  easy: "Forgets older cards, misses sticks, and often wastes useful powers.",
+  medium: "Remembers its own revealed cards and plays a sensible, straightforward strategy.",
+  hard: "Tracks every revealed card, plans swaps and sticks, and targets the strongest hand.",
 };
 
 /**
