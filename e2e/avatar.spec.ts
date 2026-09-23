@@ -74,12 +74,14 @@ test("avatar choices persist across devices, public records, friends, standings 
     await page.getByRole("button", { name: "Change avatar", exact: true }).click();
     await expect(radios.nth(original)).toBeChecked();
     await radios.nth(selected).check();
+    await expect(radios.nth(selected)).toBeChecked();
+    await expect(preview).toHaveAttribute("data-avatar-index", String(selected));
     for (const width of [320, 390, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     }
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.screenshot({ path: "test-results/avatar-picker-mobile.png", fullPage: true });
+    await page.screenshot({ path: "test-results/avatar-picker-mobile.png", fullPage: true, animations: "disabled" });
     await editor.getByRole("button", { name: "Save avatar", exact: true }).click();
     await expect(editor).toHaveCount(0);
     await expect(preview).toHaveAttribute("data-avatar-index", String(selected));
