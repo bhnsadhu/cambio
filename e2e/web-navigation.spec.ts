@@ -14,7 +14,7 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("cambio:prefs", JSON.stringify({ onboarded: true })));
 });
 
-test("browser navigation and a second tab can return to a saved seat, while leaving and expired tables clear it", async ({ page, context }) => {
+test("browser Back and reopening a table URL preserve a seat, while leaving releases it", async ({ page, context }) => {
   await page.goto("/");
   await page.getByLabel("Display name", { exact: true }).fill("Desktop Guest");
   await page.getByRole("button", { name: "Open a table", exact: true }).click();
@@ -23,25 +23,18 @@ test("browser navigation and a second tab can return to a saved seat, while leav
   const code = tableUrl.split("/").at(-1)!;
   const original = await page.evaluate((code) => JSON.parse(localStorage.getItem(`cambio:seat:${code}`)!), code);
   await page.getByRole("link", { name: "Cambio home", exact: true }).click();
-  const resume = page.getByRole("link", { name: `Return to table ${code}`, exact: true });
-  await expect(resume).toBeVisible();
-  // A stale bookmark must not be offered as an active seat.
-  await page.evaluate(() => localStorage.setItem("cambio:seat:ZZZZZ", JSON.stringify({ playerId: "expired", token: "expired", name: "Desktop Guest", savedAt: Date.now() })));
-  await page.reload();
-  await expect(resume).toBeVisible();
-  await expect(page.getByRole("link", { name: "Return to table ZZZZZ", exact: true })).toHaveCount(0);
-  await expect.poll(() => page.evaluate(() => localStorage.getItem("cambio:seat:ZZZZZ"))).toBeNull();
+  await expect(page.getByRole("region", { name: "Your tables", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("form", { name: "New table", exact: true })).toBeVisible();
+  await expect(page.getByRole("form", { name: "Join with code", exact: true })).toBeVisible();
   const second = await context.newPage();
-  await second.goto("/");
-  await second.getByRole("link", { name: `Return to table ${code}`, exact: true }).click();
+  await second.goto(tableUrl);
   await expect(second.getByRole("button", { name: "Start round", exact: true })).toBeVisible();
   expect(await second.evaluate((code) => JSON.parse(localStorage.getItem(`cambio:seat:${code}`)!).playerId, code)).toBe(original.playerId);
   await second.close();
-  await resume.click();
-  await expect(page).toHaveURL(tableUrl);
   await page.goBack();
-  await expect(resume).toBeVisible();
-  await resume.click();
+  await expect(page).toHaveURL(tableUrl);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Start round", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Leave", exact: true }).click();
   const leave = page.getByRole("dialog", { name: "Leave this table?", exact: true });
   await expect(leave).toBeVisible();
@@ -50,7 +43,8 @@ test("browser navigation and a second tab can return to a saved seat, while leav
   await page.getByRole("button", { name: "Leave", exact: true }).click();
   await leave.getByRole("button", { name: "Leave", exact: true }).click();
   await expect(page).toHaveURL(`${origin}/`);
-  await expect(resume).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Your tables", exact: true })).toHaveCount(0);
+  expect(await page.evaluate((code) => localStorage.getItem(`cambio:seat:${code}`), code)).toBeNull();
 });
 
 test("friends failures show a retry path and failed approvals can be retried without losing the request", async ({ page, context, browser }) => {

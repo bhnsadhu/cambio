@@ -15,7 +15,6 @@ import { Explainer } from "./Explainer";
 import { FriendsPanel, Notifications } from "./Friends";
 import { HowToPlay } from "./HowToPlay";
 import { AppHeader } from "./AppHeader";
-import { RecentTables } from "./RecentTables";
 import { Button, Field, inputClass, PlayerName } from "./ui";
 
 export function Landing() {
@@ -93,14 +92,12 @@ export function Landing() {
       </div> : null}
       {profile ? <>
         <header className="pt-10 pb-7"><h1 className="t-title">Ready for a round?</h1><p className="t-body mt-2 text-ink-2">Open a table, share the code, and invite your friends.</p></header>
-        <RecentTables />
         <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1fr)_300px] lg:grid-cols-[minmax(0,1fr)_340px] xl:gap-8">
           {play}
           <FriendsPanel social={social} />
         </div>
       </> : <section className="grid items-start gap-10 pt-10 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:pt-16">
         <div>
-          <RecentTables />
           {/* One clean row: same baseline, same size, no tilt, even spacing. */}
           <div className="mb-8 flex items-end gap-3" aria-hidden>
             <CardBack size="md" />

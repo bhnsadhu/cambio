@@ -12,7 +12,7 @@ These public screenshots establish the layout and visual treatment. They are not
 
 Website pages share a 1280px canvas and persistent navigation for tables, the leaderboard, the player's record, and account settings. Profiles put identity beside statistics; settings separate the player profile from account access; the desktop leaderboard exposes labeled comparison columns. Smaller browser windows retain readable layouts.
 
-At laptop sizes, the game shows all four hands beside the piles and a scrollable move history. Rules and walkthroughs use the available desktop width. Browser navigation keeps seats available through the home page's verified saved tables, while an explicit Leave action explains its consequences before proceeding.
+At laptop sizes, the game shows all four hands beside the piles and a scrollable move history. Rules and walkthroughs use the available desktop width. The home page focuses on opening a table or joining friends. An explicit Leave action explains its consequences before proceeding.
 
 ## Avatars
 
