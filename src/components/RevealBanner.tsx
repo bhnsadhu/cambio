@@ -3,7 +3,6 @@
 import type { PlayerView } from "@/lib/game/types";
 import { useClock } from "@/lib/client/useClock";
 import { FaceCard } from "./cards";
-import { Button } from "./ui";
 import { OPENING_PEEK_MS, PEEK_REVEAL_MS } from "@/lib/game/engine";
 
 /**
@@ -13,15 +12,11 @@ import { OPENING_PEEK_MS, PEEK_REVEAL_MS } from "@/lib/game/engine";
 export function RevealBanner({
   view,
   skew,
-  busy,
   hint,
-  onKingDecide,
 }: {
   view: PlayerView;
   skew: number;
-  busy: boolean;
   hint: string | null;
-  onKingDecide: (swap: boolean) => void;
 }) {
   const hasReveals = (view.private?.reveals.length ?? 0) > 0;
   // A paused table stops this countdown where it stood.
@@ -48,7 +43,6 @@ export function RevealBanner({
             r.kind === "peekOwn" ? "One of your cards" :
             r.kind === "peekOther" ? `${names.get(ownerOf(r.cardIds[0])?.id ?? "") ?? "Their"}'s card` :
             "Two cards. Your call.";
-          const kingPending = isKing && view.public.pendingPower?.playerId === view.private?.playerId && view.public.pendingPower?.lookedDone;
           return (
             <div key={r.id} className="animate-rise rounded-panel bg-surface-2 px-5 py-4 text-ink shadow-float">
               <div className="flex flex-wrap items-center justify-center gap-4 sm:justify-start sm:gap-5">
@@ -71,12 +65,7 @@ export function RevealBanner({
                     </div>
                   ))}
                 </div>
-                {kingPending ? (
-                  <div className="flex flex-col gap-2 pl-2">
-                    <Button variant="accent" size="sm" disabled={busy} onClick={() => onKingDecide(true)}>Swap them</Button>
-                    <Button variant="ghost" size="sm" disabled={busy} onClick={() => onKingDecide(false)}>Leave them</Button>
-                  </div>
-                ) : null}
+
               </div>
               {pct !== null ? (
                 <div className="mt-3 h-[3px] w-full overflow-hidden rounded-full bg-white/10">

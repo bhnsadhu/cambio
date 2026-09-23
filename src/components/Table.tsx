@@ -288,7 +288,7 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
 
         {/* The middle of the table: timed reveals and an open pause request
             live here, between the hands and the actions. */}
-        <div className="relative order-3 flex min-h-20 flex-1 flex-col items-center justify-center gap-3">
+        <div className="relative order-3 flex min-h-min flex-1 flex-col items-center justify-center gap-3">
           <BigMoment announcement={announcement} players={pub.players} me={me} />
           <PauseBanner view={pub} me={me} busy={game.busy} onVote={(agree) => void game.send({ type: "pauseVote", agree })} />
           <Announcer announcement={announcement} players={pub.players} me={me} />
@@ -296,9 +296,7 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
             <RevealBanner
               view={view}
               skew={game.skew}
-              busy={game.busy}
               hint={peekHint ? "These two are yours. When the timer ends they turn back over and stay that way." : null}
-              onKingDecide={(swap) => void fire({ type: "kingDecide", swap })}
             />
           )}
         </div>

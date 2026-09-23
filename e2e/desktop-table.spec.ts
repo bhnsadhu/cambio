@@ -1,6 +1,6 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { applyAction } from "../src/lib/game/engine";
-import { card, makeCtx, player, rig, rigDeck, started } from "../src/lib/game/testkit";
+import { act, card, makeCtx, player, rig, rigDeck, started } from "../src/lib/game/testkit";
 import { projectFor } from "../src/lib/game/view";
 import type { Action } from "../src/lib/game/types";
 
@@ -106,6 +106,48 @@ test("laptop browsers keep hands, piles, activity, and turn actions together thr
   await page.keyboard.press("Escape");
   await expect(leave).toHaveCount(0);
   await expect(actions.getByRole("button", { name: "Skip the power", exact: true })).toBeVisible();
+
+  // A pause vote can arrive while the black king is revealing two cards.
+  // Both notices must remain between the hands and the one set of decisions.
+  state = started(makeCtx(9, Date.now() - 10_001)).state;
+  for (const [index, id] of initial.ids.entries()) player(state, id).name = names[index];
+  ctx.now = Date.now();
+  state = rigDeck(state, [card("desktop-black-king", "K", "S")]);
+  state = act(state, me, { type: "draw" }, ctx);
+  state = act(state, me, { type: "place" }, ctx);
+  state = act(state, me, { type: "kingLook", cardIdA: player(state, me).hand[0]!, cardIdB: player(state, initial.ids[1]).hand[0]! }, ctx);
+  state = act(state, initial.ids[1], { type: "pauseRequest" }, ctx);
+  version++;
+  await page.reload();
+  const vote = page.getByText("Pause requested", { exact: true }).locator("..").locator("..");
+  const reveal = page.getByText("Two cards. Your call.", { exact: true }).locator("..").locator("..").locator("..");
+  await expect(vote).toBeVisible();
+  await expect(reveal).toBeVisible();
+  await expect(page.getByRole("button", { name: "Swap them", exact: true })).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Leave them", exact: true })).toHaveCount(1);
+  for (const size of laptopSizes) {
+    await page.setViewportSize(size);
+    await page.evaluate(() => scrollTo(0, 0));
+    const hands = await page.getByRole("region", { name: /'s hand$/ }).all();
+    const handBottom = Math.max(...await Promise.all(hands.map(async (hand) => { const rect = (await hand.boundingBox())!; return rect.y + rect.height; })));
+    const pauseBounds = (await vote.boundingBox())!;
+    const revealBounds = (await reveal.boundingBox())!;
+    const actionsBounds = (await actions.boundingBox())!;
+    expect(pauseBounds.y).toBeGreaterThanOrEqual(handBottom + 8);
+    expect(revealBounds.y).toBeGreaterThanOrEqual(pauseBounds.y + pauseBounds.height + 8);
+    expect(actionsBounds.y).toBeGreaterThanOrEqual(revealBounds.y + revealBounds.height + 8);
+    await actions.scrollIntoViewIfNeeded();
+    await withinViewport(actions);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
+  await actions.getByRole("button", { name: "Leave them", exact: true }).click();
+  await expect(page.getByText("Two cards. Your call.", { exact: true })).toHaveCount(0);
+  // Return to an actionable own-card power for the large-hand accessibility check.
+  state = started(makeCtx(10, Date.now() - 10_001)).state;
+  for (const [index, id] of initial.ids.entries()) player(state, id).name = names[index];
+  state = rigDeck(state, [card("desktop-penalty-peek", "7")]);
+  state = act(state, me, { type: "draw" }, ctx);
+  state = act(state, me, { type: "place" }, ctx);
 
   // Penalty hands may need vertical scrolling, but every card and action stays reachable.
   state = rig(state, me, Array.from({ length: 8 }, (_, index) => card(`penalty-${index}`, "3")));
