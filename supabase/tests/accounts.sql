@@ -4,7 +4,7 @@ insert into private.server_config(key, value) values ('server_secret', 'account-
   on conflict (key) do update set value = excluded.value;
 do $$
 declare
-  a jsonb; b jsonb; p jsonb; id_a uuid; id_b uuid; denied boolean := false;
+  a jsonb; b jsonb; p jsonb; id_a uuid; id_b uuid; avatar integer; denied boolean := false;
 begin
   p := public.profile_create('account-test-secret', 'original', 'Original Name', 'legacy-token');
   id_a := (p->>'id')::uuid;
@@ -36,12 +36,26 @@ begin
   assert public.leaderboard_snapshot('account-test-secret', id_a, 'all')->'me'->>'avatarId' = '5';
   assert public.leaderboard_snapshot('account-test-secret', id_a, 'friends')->'me'->>'avatarId' = '5';
   assert public.account_session('account-test-secret', 'session-b')->'profile'->'avatar_id' = 'null'::jsonb, 'One account must not change another head';
+  for avatar in 0..35 loop
+    a := public.account_update('account-test-secret', 'session-a', 'hash-a', null, null, null, null, avatar);
+    assert (a->'profile'->>'avatar_id')::integer = avatar, 'Every style and tone must be selectable';
+  end loop;
+  assert public.profile_by_handle('account-test-secret', 'mylogin')->>'avatar_id' = '35';
+  assert public.social_snapshot_with_requests('account-test-secret', id_b)->'friends'->0->>'avatar_id' = '35';
+  assert public.leaderboard_snapshot('account-test-secret', id_a, 'all')->'me'->>'avatarId' = '35';
+  assert public.account_credentials('account-test-secret', 'mylogin')->>'password_hash' = 'hash-a', 'Tone selection must preserve credentials';
   denied := false;
   begin
-    perform public.account_update('account-test-secret', 'session-a', 'hash-a', null, null, null, null, 6);
+    perform public.account_update('account-test-secret', 'session-a', 'hash-a', null, null, null, null, 36);
   exception when others then denied := true;
   end;
   assert denied, 'Invalid head indices must fail at the database boundary';
+  denied := false;
+  begin
+    update public.profiles set avatar_id = 36 where id = id_a;
+  exception when check_violation then denied := true;
+  end;
+  assert denied, 'The profile constraint must reject invalid combinations independently of the RPC';
   denied := false;
   begin
     perform public.account_update('account-test-secret', 'not-a-session', 'hash-a', null, null, null, null, 1);

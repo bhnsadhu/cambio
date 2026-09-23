@@ -14,16 +14,16 @@ beforeEach(() => {
 });
 
 describe("Account avatar updates", () => {
-  it("saves the first avatar without rotating sessions or overwriting unrelated fields", async () => {
-    const result = await updateAccount(request(), { avatarId: 0 });
+  it.each([0, 5, 6, 17, 30, 35])("saves avatar %i without rotating sessions or overwriting unrelated fields", async (avatarId) => {
+    const result = await updateAccount(request(), { avatarId });
     expect(result.token).toBeNull();
     expect(vi.mocked(rpc)).toHaveBeenCalledWith("account_update", expect.objectContaining({
-      p_avatar_id: 0, p_display_name: null, p_username: null, p_password_hash: null,
+      p_avatar_id: avatarId, p_display_name: null, p_username: null, p_password_hash: null,
       p_next_session_hash: null, p_expected_hash: "current-hash",
     }));
     expect(vi.mocked(rpc)).not.toHaveBeenCalledWith("account_rate_limit", expect.anything());
   });
-  it.each([-1, 6, 0.5, "2", null, false, {}, []])("rejects malformed avatar choice %j before a write", async (avatarId) => {
+  it.each([-1, 36, 0.5, "2", null, false, {}, []])("rejects malformed avatar choice %j before a write", async (avatarId) => {
     await expect(updateAccount(request(), { avatarId })).rejects.toMatchObject({ code: "AVATAR", status: 400 });
     expect(vi.mocked(rpc)).not.toHaveBeenCalledWith("account_update", expect.anything());
   });
