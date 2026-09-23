@@ -199,3 +199,6 @@ body {
 }
 
 ::selection { background: rgb(79 240 168 / 0.3); }
+
+/* Offsuit-style statistics groups: quiet outlines, compact value/label pairs. */
+.stat-group { border: 1px solid var(--color-line-strong); border-radius: 16px; background: #111113; padding: 16px 18px; }

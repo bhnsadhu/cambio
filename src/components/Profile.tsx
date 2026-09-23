@@ -6,70 +6,68 @@ import { type ReactNode } from "react";
 import { standingFor, standingLine, stickRate, winRate } from "@/lib/social/rank";
 import type { Profile } from "@/lib/social/types";
 import { RankBadge } from "./RankBadge";
-import { buttonClass, Chip } from "./ui";
+import { buttonClass } from "./ui";
 
-/**
- * A player's standing, after the way a phone game shows it: the number that
- * matters is enormous and at the top, the rank sits above it as a name rather
- * than a number, and everything else is a quiet row underneath.
- */
+/** Compact outlined metric groups, following Offsuit's statistics screen. */
 export function ProfileCard({ profile, compact = false }: { profile: Profile; compact?: boolean }) {
   const standing = standingFor(profile.points);
   const rate = winRate(profile);
+  const sticks = stickRate(profile);
   return (
-    <section className="rounded-panel bg-surface p-6 hairline" aria-label={`${profile.displayName}'s record`}>
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <Avatar identity={profile.id} size={64} />
-        <div className="min-w-0">
-          <p className="t-caption flex items-center gap-2 text-accent"><RankBadge points={profile.points} decorative />{standing.tier.name}</p>
-          <h1 className="t-title2 mt-1 flex items-center gap-2"><span className="min-w-0 break-words">{profile.displayName}</span><RankBadge points={profile.points} /></h1>
-          <p className="t-footnote mt-0.5 text-ink-3">@{profile.handle}</p>
+    <section aria-label={`${profile.displayName}'s record`}>
+      <header className="flex items-center gap-3 pb-7">
+        <Avatar identity={profile.id} size={68} />
+        <div className="min-w-0 flex-1">
+          <h1 className="flex items-center gap-2 text-[26px] font-medium leading-tight tracking-[-0.025em]"><span className="min-w-0 break-words">{profile.displayName}</span><RankBadge points={profile.points} size={22} /></h1>
+          <p className="mt-1 text-sm text-ink-3">@{profile.handle}</p>
         </div>
-        <Chip tone="neutral">{standingLine(profile)}</Chip>
       </header>
 
-      <div className="mt-6 flex items-end gap-4">
-        <span className="t-money block text-[64px] leading-[0.9] tracking-[-0.03em] text-accent">{profile.roundsWon}</span>
-        <span className="t-caption pb-2 text-ink-3">{profile.roundsWon === 1 ? "win" : "wins"}</span>
-      </div>
-
-      <div className="mt-5">
-        <div className="h-[5px] w-full overflow-hidden rounded-full bg-surface-2">
-          <span className="block h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${Math.round(standing.progress * 100)}%` }} />
+      <div className="rounded-2xl border border-line-strong bg-[#111113] px-5 py-5">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <RankBadge points={profile.points} size={36} decorative />
+            <div><p className="text-base font-medium">{standing.tier.name}</p><p className="mt-0.5 text-xs text-ink-3">{standingLine(profile)}</p></div>
+          </div>
+          <div className="shrink-0 text-right"><p className="tnum text-[24px] font-medium leading-tight">{profile.points.toLocaleString()}</p><p className="mt-0.5 text-xs text-ink-3">Points</p></div>
         </div>
-        <p className="t-footnote mt-2 text-ink-3">
-          {standing.next
-            ? <>{profile.points} points · {standing.toNext} more to {standing.next.name}</>
-            : <>{profile.points} points · top of the ladder</>}
-        </p>
+        <div className="mt-5 h-1 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-label="Progress to next rank" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(standing.progress * 100)}>
+          <span className="block h-full rounded-full bg-accent" style={{ width: `${Math.round(standing.progress * 100)}%` }} />
+        </div>
+        <p className="mt-2 text-xs text-ink-3">{standing.next ? `${standing.toNext} points to ${standing.next.name}` : "Highest rank reached"}</p>
       </div>
 
-      {compact ? null : (
-        <>
-          <dl className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <Stat k="Played" v={profile.roundsPlayed} />
-            <Stat k="Win rate" v={profile.roundsPlayed ? `${Math.round(rate * 100)}%` : "N/A"} />
-            <Stat k="Streak" v={profile.currentStreak} sub={profile.bestStreak ? `Best ${profile.bestStreak}` : undefined} />
-          </dl>
-          <dl className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <Stat k="Tables" v={profile.tablesPlayed} />
-            <Stat k="Cambio" v={`${profile.cambioWins}/${profile.cambioCalls}`} sub="Made / called" />
-            <Stat k="Sticks" v={`${profile.sticksHit}/${profile.sticksHit + profile.sticksMissed}`} sub={stickRate(profile) === null ? "None yet" : `${Math.round(stickRate(profile)! * 100)}% landed`} />
-          </dl>
-        </>
-      )}
+      {compact ? null : <>
+        <h2 className="mt-8 mb-4 text-[18px] font-normal">Statistics</h2>
+        <dl className="grid grid-cols-2 gap-3">
+          <div className="stat-group"><Stat k="Tables played" v={profile.tablesPlayed} /></div>
+          <div className="stat-group"><Stat k="Current streak" v={profile.currentStreak} /></div>
+        </dl>
+        <dl className="stat-group mt-3 grid grid-cols-3 gap-3">
+          <Stat k="Rounds played" v={profile.roundsPlayed} />
+          <Stat k="Rounds won" v={profile.roundsWon} />
+          <Stat k="Win rate" v={profile.roundsPlayed ? `${Math.round(rate * 100)}%` : "N/A"} />
+        </dl>
+        <dl className="stat-group mt-3 grid grid-cols-3 gap-3">
+          <Stat k="Sticks landed" v={profile.sticksHit} />
+          <Stat k="Stick attempts" v={profile.sticksHit + profile.sticksMissed} />
+          <Stat k="Stick rate" v={sticks === null ? "N/A" : `${Math.round(sticks * 100)}%`} />
+        </dl>
+        <dl className="stat-group mt-3 grid grid-cols-3 gap-3">
+          <Stat k="Cambio calls" v={profile.cambioCalls} />
+          <Stat k="Cambio wins" v={profile.cambioWins} />
+          <Stat k="Best streak" v={profile.bestStreak} />
+        </dl>
+      </>}
     </section>
   );
 }
 
-function Stat({ k, v, sub, accent }: { k: string; v: ReactNode; sub?: string; accent?: boolean }) {
-  return (
-    <div className="rounded-[16px] bg-surface-2 px-3.5 py-3">
-      <dt className="t-caption text-ink-3">{k}</dt>
-      <dd className={`t-money mt-1 text-[22px] leading-none ${accent ? "text-accent" : "text-ink"}`}>{v}</dd>
-      {sub ? <p className="t-footnote mt-1 text-ink-3">{sub}</p> : null}
-    </div>
-  );
+function Stat({ k, v }: { k: string; v: ReactNode }) {
+  return <div className="flex min-w-0 flex-col-reverse gap-1">
+    <dt className="text-[11px] leading-snug text-ink-3 sm:text-xs">{k}</dt>
+    <dd className="tnum break-words text-[17px] font-medium leading-tight">{v}</dd>
+  </div>;
 }
 
 /** Account navigation stays the same across screens, without repeating stats. */
