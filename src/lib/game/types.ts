@@ -284,9 +284,9 @@ export type Action =
   | { type: "give"; cardId: string }
   /** at scoring: ask for another round. A full table starts one. */
   | { type: "playAgain" }
-  /** leave a table between rounds; the seats left go back to the lobby */
+  /** Leave a table; a medium bot takes over during a round. */
   | { type: "leaveTable" }
-  /** Host only. Removing a player returns the remaining humans to the lobby. */
+  /** Host only. A medium bot takes over during a round; otherwise open the seat. */
   | { type: "kickPlayer"; playerId: string }
   /** ask the table to pause, or to resume when it is already paused */
   | { type: "pauseRequest" }

@@ -27,7 +27,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ code: s
 
     const { row: after, result } = await runAction(row.id, { actionId: body.actionId, playerId: me, action: body.action });
     spawnBots(after.id);
-    return ok({ view: viewFor(after, me), me, note: result.note ?? null });
+    const seatedMe = after.state.players.some((p) => p.id === me && !p.isBot) ? me : null;
+    return ok({ view: viewFor(after, seatedMe), me: seatedMe, note: result.note ?? null });
   } catch (e) {
     return fail(e);
   }

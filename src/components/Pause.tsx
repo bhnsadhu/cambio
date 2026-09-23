@@ -112,7 +112,7 @@ export function PauseBanner({ view, me, busy, onVote }: Omit<PauseProps, "onRequ
 }
 
 /** The table is dark. Nothing underneath is playable, so this takes the screen. */
-export function PauseOverlay({ view, me, busy, onRequest, onVote, onKick }: PauseProps & { onKick: (playerId: string) => Promise<boolean> }) {
+export function PauseOverlay({ view, me, busy, onRequest, onVote, onKick, onLeave }: PauseProps & { onKick: (playerId: string) => Promise<boolean>; onLeave: () => void }) {
   const dialogRef = useModalFocus(view.paused);
   if (!view.paused) return null;
   const by = view.players.find((p) => p.id === view.pausedBy);
@@ -155,7 +155,10 @@ export function PauseOverlay({ view, me, busy, onRequest, onVote, onKick }: Paus
             ) : null}
           </div>
         )}
-        {me === view.hostId ? <div className="mt-5 border-t border-line pt-4"><TablePlayers view={view} busy={busy} onKick={onKick} /></div> : null}
+        {seated ? <div className="mt-5 flex items-center justify-between border-t border-line pt-4">
+          {me === view.hostId ? <TablePlayers view={view} busy={busy} onKick={onKick} /> : <span />}
+          <Button variant="ghost" size="sm" disabled={busy} onClick={onLeave}>Leave table</Button>
+        </div> : null}
       </div>
     </div>
   );

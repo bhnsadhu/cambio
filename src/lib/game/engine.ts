@@ -37,7 +37,7 @@ import type {
 } from "./types";
 
 export const SEATS = 4;
-export const BOT_NAMES = ["Cameron", "Camila", "Cami"] as const;
+export const BOT_NAMES = ["Cameron", "Camila", "Cami", "Camille"] as const;
 export const DEFAULT_BOT_DIFFICULTY: BotDifficulty = "medium";
 export const OPENING_PEEK_MS = 5_000;
 /**
@@ -256,7 +256,7 @@ export function applyAction(input: GameState, env: ActionEnvelope | IdentityEnve
   // Paused gameplay is frozen; room settings and pause votes remain available.
   // Reveals are not pruned either, so a peek that was running when the table
   // went dark still has its remaining seconds when play resumes.
-  if (state.paused && a.type !== "pauseRequest" && a.type !== "pauseVote" && a.type !== "setDoNotDisturb" && a.type !== "kickPlayer") {
+  if (state.paused && a.type !== "pauseRequest" && a.type !== "pauseVote" && a.type !== "setDoNotDisturb" && a.type !== "kickPlayer" && a.type !== "leaveTable") {
     // The watchdogs (any client, and the bot runner) keep firing these; they
     // are no-ops rather than errors so nothing surfaces as a failure.
     if (a.type === "timeout" || a.type === "advance") return { state: input, changed: false };
@@ -310,8 +310,9 @@ export function applyAction(input: GameState, env: ActionEnvelope | IdentityEnve
       if (actor.id !== state.hostId) throw new GameError("NOT_HOST", "Only the host can remove players.");
       const target = state.players.find((p) => p.id === a.playerId);
       if (!target || target.isBot || target.id === actor.id) throw new GameError("INVALID_TARGET", "Choose another player at this table.");
-      removeFromTable(state, target);
-      addLog(state, ctx, `${actor.name} removed ${target.name} from the table. Back to the lobby.`, {
+      const replacement = replaceDuringRound(state, target, ctx);
+      if (!replacement) removeFromTable(state, target);
+      addLog(state, ctx, `${actor.name} removed ${target.name} from the table. ${replacement ? `${replacement.name} (medium) takes over their seat and cards.` : "Back to the lobby."}`, {
         kind: "kick", actorId: actor.id, subjectIds: [target.id], tone: "bad", weight: "loud",
       });
       break;
@@ -426,17 +427,78 @@ function doPlayAgain(state: GameState, actor: Player, ctx: EngineCtx): boolean {
 }
 
 /**
- * Leaving between rounds takes the table back to the lobby rather than ending
- * it: the seats that stay can invite someone else, or let a bot fill the gap.
- * The bots are stood down on the way, since `start` seats them again.
+ * During a round, a medium bot inherits the exact hand and pending actions.
+ * Between rounds, return to the lobby with an open seat for another player.
  */
 function doLeaveTable(state: GameState, actor: Player, ctx: EngineCtx) {
-  requirePhase(state, ["lobby", "ready", "scoring"]);
+  if (actor.isBot) throw new GameError("INVALID_TARGET", "Only players can leave the table.");
+  const replacement = replaceDuringRound(state, actor, ctx);
+  if (replacement) {
+    addLog(state, ctx, `${actor.name} left. ${replacement.name} (medium) takes over their seat and cards.`,
+      { kind: "table", actorId: actor.id, subjectIds: [replacement.id], weight: "normal" });
+    return;
+  }
   removeFromTable(state, actor);
   addLog(state, ctx, state.players.length
     ? `${actor.name} left the table. Back to the lobby: invite someone, or start and let a bot take the seat.`
     : `${actor.name} left. The table is empty.`,
     { kind: "table", tone: "bad", weight: "loud", actorId: actor.id });
+}
+
+/** Preserve card positions and every live reference while revoking the human's identity. */
+function replaceDuringRound(state: GameState, departing: Player, ctx: EngineCtx): Player | null {
+  if (state.phase === "lobby" || state.phase === "scoring") return null;
+  const name = BOT_NAMES.find((name) => !state.players.some((p) => p.id !== departing.id && p.name === name))!;
+  const bot: Player = {
+    id: ctx.newId(), seat: departing.seat, name, isBot: true, isHost: false,
+    difficulty: "medium", avatarId: botAvatarId(name), hand: departing.hand,
+  };
+  // A new id prevents an already-authorized, in-flight human action from
+  // controlling the replacement after the departure wins the commit race.
+  const replaceId = (id: string) => id === departing.id ? bot.id : id;
+  state.players[state.players.indexOf(departing)] = bot;
+  state.botDifficulty ??= Array.from({ length: SEATS }, () => DEFAULT_BOT_DIFFICULTY);
+  state.botDifficulty[bot.seat] = "medium";
+  if (state.turn) state.turn.playerId = replaceId(state.turn.playerId);
+  if (state.pendingPower) state.pendingPower.playerId = replaceId(state.pendingPower.playerId);
+  for (const give of state.pendingGives) { give.from = replaceId(give.from); give.to = replaceId(give.to); }
+  if (state.cambio) {
+    state.cambio.callerId = replaceId(state.cambio.callerId);
+    state.cambio.remaining = state.cambio.remaining.map(replaceId);
+  }
+  state.readyIds = state.readyIds.map(replaceId);
+  state.replayVotes = state.replayVotes.map(replaceId);
+  if (state.pausedBy) state.pausedBy = replaceId(state.pausedBy);
+  if (state.pauseVote) {
+    state.pauseVote.byId = replaceId(state.pauseVote.byId);
+    state.pauseVote.agreed = [...new Set([...state.pauseVote.agreed.map(replaceId), bot.id])];
+  }
+  if (state.tally[departing.id]) { state.tally[bot.id] = state.tally[departing.id]; delete state.tally[departing.id]; }
+  // Inherit only faces already exposed to that seat, never peek at its hidden hand.
+  const known = state.reveals.filter((r) => r.toPlayerId === departing.id).flatMap((r) => r.cardIds);
+  if (state.turn?.playerId === bot.id && state.turn.drawnCardId) known.push(state.turn.drawnCardId);
+  if (state.pendingPower?.playerId === bot.id && state.pendingPower.looked) {
+    known.push(state.pendingPower.looked.a, state.pendingPower.looked.b);
+  }
+  remember(state, bot.id, known);
+  delete state.botKnown[departing.id];
+  if (state.botMissedTop) delete state.botMissedTop[departing.id];
+  state.reveals = state.reveals.filter((r) => r.toPlayerId !== departing.id);
+  if (state.hostId === departing.id) {
+    const heir = state.players.find((p) => !p.isBot);
+    state.hostId = heir?.id ?? "";
+    for (const p of state.players) p.isHost = p.id === state.hostId;
+  }
+  if (!state.players.some((p) => !p.isBot)) {
+    // The last human cannot leave four bots waiting forever on a paused table.
+    state.pauseVote = state.paused ? { kind: "resume", byId: bot.id, agreed: state.players.map((p) => p.id), at: ctx.now } : null;
+  }
+  if (state.pauseVote) settlePause(state, ctx);
+  if (state.phase === "ready") {
+    if (!state.readyIds.includes(bot.id)) state.readyIds.push(bot.id);
+    if (!state.paused) settleReady(state, ctx);
+  }
+  return bot;
 }
 
 function removeFromTable(state: GameState, actor: Player) {
@@ -1062,6 +1124,7 @@ function settlePause(state: GameState, ctx: EngineCtx) {
   state.pausedAt = null;
   state.pausedBy = null;
   addLog(state, ctx, "Everyone agreed. Play resumes.", { kind: "pause", tone: "accent", weight: "loud" });
+  if (state.phase === "ready") settleReady(state, ctx);
 }
 
 /* ------------------------------------------------------------------ */

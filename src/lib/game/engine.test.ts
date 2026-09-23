@@ -8,6 +8,190 @@ import type { GameState } from "./types";
 
 const topOf = (s: GameState) => s.cards[s.discard[s.discard.length - 1]];
 
+describe("mid-round bot handoff", () => {
+  it("preserves the exact slots, extra cards, drawn card and turn while revoking the old player", () => {
+    const ctx = makeCtx(71);
+    const t = started(ctx, 2);
+    const s = act(t.state, t.hostId, { type: "draw" }, ctx);
+    const human = player(s, t.hostId);
+    human.profileId = "departing-account";
+    s.discard.push(human.hand[1]!);
+    human.hand[1] = null;
+    human.hand.push(s.deck.pop()!);
+    s.botDifficulty![human.seat] = "hard";
+    s.tally[human.id] = { sticks: 2, misses: 1 };
+    const before = structuredClone(s);
+    const env = { actionId: "leave-once", playerId: human.id, action: { type: "leaveTable" as const } };
+    const after = applyAction(s, env, ctx).state;
+    const bot = after.players[0];
+    expect(s).toEqual(before);
+    expect(bot).toMatchObject({ seat: human.seat, hand: human.hand, isBot: true, isHost: false, difficulty: "medium" });
+    expect(bot.id).not.toBe(human.id);
+    expect(bot.token).toBeUndefined();
+    expect(bot.profileId).toBeUndefined();
+    expect(after.botDifficulty![bot.seat]).toBe("medium");
+    expect(after).toMatchObject({ phase: "playing", round: before.round, cards: before.cards, deck: before.deck,
+      discard: before.discard, turn: { ...before.turn!, playerId: bot.id }, results: before.results, hostId: t.ids[1] });
+    expect(after.players.slice(1).map((p) => p.hand)).toEqual(before.players.slice(1).map((p) => p.hand));
+    expect(after.players[1].isHost).toBe(true);
+    expect(after.tally[bot.id]).toEqual({ sticks: 2, misses: 1 });
+    expect(after.tally[human.id]).toBeUndefined();
+    expect(after.botKnown[bot.id]).toEqual([before.turn!.drawnCardId]);
+    expect(projectFor(after, 2, human.id, ctx.now).private).toBeNull();
+    expect(() => act(after, human.id, { type: "place" }, ctx)).toThrow(/not seated/);
+    expect(applyAction(after, env, ctx).changed).toBe(false);
+    const plan = planBots(after, ctx.now, () => 0.5).find((p) => p.playerId === bot.id && ["place", "swap"].includes(p.action.type))!;
+    expect(plan).toBeDefined();
+    const played = act(after, bot.id, plan.action, ctx);
+    expect(played.turn?.drawnCardId).toBeNull();
+  });
+
+  it("preserves the opening peek and gives the replacement only that seat's revealed faces", () => {
+    const ctx = makeCtx(72);
+    const t = table(ctx, 2);
+    const s = readyAll(act(t.state, t.hostId, { type: "start" }, ctx), t.ids, ctx);
+    const after = act(s, t.ids[1], { type: "leaveTable" }, ctx);
+    const bot = after.players[1];
+    expect(after).toMatchObject({ phase: "peek", openingPeekUntil: s.openingPeekUntil, dealingUntil: s.dealingUntil, deck: s.deck });
+    expect(bot.hand).toEqual(s.players[1].hand);
+    expect(after.botKnown[bot.id]).toEqual(bot.hand.slice(2));
+    expect(after.reveals).toEqual(s.reveals.filter((r) => r.toPlayerId !== t.ids[1]));
+  });
+
+  it("lets the replacement finish a king look without losing the chosen cards", () => {
+    const ctx = makeCtx(73);
+    const t = started(ctx, 2);
+    let s = rigDeck(t.state, [card("takeover-king", "K", "S")]);
+    s = act(s, t.hostId, { type: "draw" }, ctx);
+    s = act(s, t.hostId, { type: "place" }, ctx);
+    const a = s.players[0].hand[0]!, b = s.players[1].hand[0]!;
+    s = act(s, t.hostId, { type: "kingLook", cardIdA: a, cardIdB: b }, ctx);
+    const after = act(s, t.hostId, { type: "leaveTable" }, ctx);
+    const bot = after.players[0];
+    expect(after.pendingPower).toEqual({ ...s.pendingPower, playerId: bot.id });
+    expect(after.turn).toEqual({ ...s.turn, playerId: bot.id });
+    expect(after.botKnown[bot.id].sort()).toEqual([a, b].sort());
+    const plan = planBots(after, ctx.now, () => 0.5).find((p) => p.playerId === bot.id && p.action.type === "kingDecide")!;
+    expect(plan).toBeDefined();
+    expect(act(after, bot.id, plan.action, ctx).pendingPower).toBeNull();
+  });
+
+  it("keeps cards owed to and from departing seats and lets their bots give them", () => {
+    const ctx = makeCtx(74);
+    const t = started(ctx, 3);
+    t.state.pendingGives = [
+      { from: t.ids[0], to: t.ids[1], since: ctx.now },
+      { from: t.ids[1], to: t.ids[2], since: ctx.now },
+    ];
+    let s = act(t.state, t.ids[0], { type: "leaveTable" }, ctx);
+    s = act(s, t.ids[1], { type: "leaveTable" }, ctx);
+    expect(s.pendingGives).toEqual([
+      { from: s.players[0].id, to: s.players[1].id, since: ctx.now },
+      { from: s.players[1].id, to: t.ids[2], since: ctx.now },
+    ]);
+    for (const giver of s.players.slice(0, 2)) {
+      const plan = planBots(s, ctx.now, () => 0.5).find((p) => p.playerId === giver.id && p.action.type === "give")!;
+      expect(plan).toBeDefined();
+      s = act(s, giver.id, plan.action, ctx);
+    }
+    expect(s.pendingGives).toEqual([]);
+    expect(s.players.map(cardCount)).toEqual([3, 4, 5, 4]);
+    expect(s.phase).toBe("playing");
+  });
+
+  it("keeps the caller, final turn order, and reaction window until the round scores normally", () => {
+    const ctx = makeCtx(75);
+    const t = started(ctx, 4);
+    let s = act(t.state, t.hostId, { type: "callCambio" }, ctx);
+    const turn = s.turn!, remaining = s.cambio!.remaining;
+    for (const id of t.ids) s = act(s, id, { type: "leaveTable" }, ctx);
+    const replacement = (id: string) => s.players[t.ids.indexOf(id)].id;
+    expect(s.phase).toBe("final");
+    expect(s.cambio).toEqual({ callerId: replacement(t.hostId), reason: "called", remaining: remaining.map(replacement) });
+    expect(s.turn).toEqual({ ...turn, playerId: replacement(turn.playerId) });
+    expect(s.results).toEqual([]);
+    for (let step = 0; step < 100 && s.phase !== "scoring"; step++) {
+      const plan = planBots(s, ctx.now, () => 0.5).sort((a, b) => a.delayMs - b.delayMs)[0];
+      expect(plan).toBeDefined();
+      ctx.tick(plan.delayMs + 1);
+      s = act(s, plan.playerId, plan.action, ctx);
+    }
+    expect(s.phase).toBe("scoring");
+    expect(s.results).toHaveLength(1);
+    expect(s.results[0].callerId).toBe(s.players[0].id);
+    expect(s.results[0].scores.map((r) => r.playerId).sort()).toEqual(s.players.map((p) => p.id).sort());
+  });
+
+  it("does not restart an active final stick window when a player leaves", () => {
+    const ctx = makeCtx(76);
+    const t = started(ctx, 4);
+    let s = act(t.state, t.hostId, { type: "callCambio" }, ctx);
+    s.stickWindowUntil = ctx.now + STICK_WINDOW_MS;
+    s = act(s, t.ids[2], { type: "leaveTable" }, ctx);
+    expect(s.stickWindowUntil).toBe(ctx.now + STICK_WINDOW_MS);
+    expect(s.phase).toBe("final");
+    expect(s.results).toEqual([]);
+  });
+
+  it("agrees to an outstanding pause or resume when its human leaves", () => {
+    const ctx = makeCtx(77);
+    const t = started(ctx, 3);
+    let s = act(t.state, t.hostId, { type: "pauseRequest" }, ctx);
+    s = act(s, t.ids[1], { type: "pauseVote", agree: true }, ctx);
+    s = act(s, t.ids[2], { type: "leaveTable" }, ctx);
+    expect(s.paused).toBe(true);
+    ctx.tick(5_000);
+    s = act(s, t.hostId, { type: "pauseRequest" }, ctx);
+    const turn = s.turn!;
+    s = act(s, t.ids[1], { type: "leaveTable" }, ctx);
+    expect(s.paused).toBe(false);
+    expect(s.pauseVote).toBeNull();
+    expect(s.turn).toEqual({ ...turn, startedAt: turn.startedAt + 5_000 });
+  });
+
+  it("keeps a paused ready check frozen and opens the peek when the remaining host resumes", () => {
+    const ctx = makeCtx(81);
+    const t = table(ctx, 2);
+    let s = act(t.state, t.hostId, { type: "start" }, ctx);
+    s = act(s, t.hostId, { type: "ready" }, ctx);
+    s = act(s, t.hostId, { type: "pauseRequest" }, ctx);
+    s = act(s, t.ids[1], { type: "pauseVote", agree: true }, ctx);
+    ctx.tick(8_000);
+    s = act(s, t.ids[1], { type: "leaveTable" }, ctx);
+    expect(s).toMatchObject({ phase: "ready", paused: true, openingPeekUntil: null });
+    expect(s.readyIds).toContain(s.players[1].id);
+    s = act(s, t.hostId, { type: "pauseRequest" }, ctx);
+    expect(s).toMatchObject({ phase: "peek", paused: false });
+    expect(s.openingPeekUntil).toBe(s.dealingUntil! + OPENING_PEEK_MS);
+    expect(s.reveals.find((r) => r.toPlayerId === t.hostId)?.until).toBe(s.openingPeekUntil);
+  });
+
+  it.each([78, 79, 80])("finishes with four distinct medium bots after the last human leaves a paused game (seed %i)", (seed) => {
+    const ctx = makeCtx(seed);
+    const t = started(ctx, 1);
+    let s = act(t.state, t.hostId, { type: "pauseRequest" }, ctx);
+    expect(s.paused).toBe(true);
+    ctx.tick(10_000);
+    s = act(s, t.hostId, { type: "leaveTable" }, ctx);
+    expect(s.paused).toBe(false);
+    expect(s.hostId).toBe("");
+    expect(s.turn).toEqual({ ...t.state.turn!, playerId: s.players[0].id, startedAt: t.state.turn!.startedAt + 10_000 });
+    expect(new Set(s.players.map((p) => p.name)).size).toBe(4);
+    expect(s.players.every((p) => p.isBot && !p.isHost && p.difficulty === "medium")).toBe(true);
+    for (let step = 0; step < 600 && s.phase !== "scoring"; step++) {
+      const plan = planBots(s, ctx.now, () => 0.5).sort((a, b) => a.delayMs - b.delayMs)[0];
+      expect(plan).toBeDefined();
+      ctx.tick(plan.delayMs + 1);
+      s = act(s, plan.playerId, plan.action, ctx);
+      const cards = [...s.deck, ...s.discard, ...s.players.flatMap((p) => p.hand.filter(Boolean)), ...(s.turn?.drawnCardId ? [s.turn.drawnCardId] : [])];
+      expect(cards).toHaveLength(54);
+      expect(new Set(cards).size).toBe(54);
+    }
+    expect(s.phase).toBe("scoring");
+    expect(s.results).toHaveLength(1);
+  });
+});
+
 describe("room settings", () => {
   it("lets only the host set Do not disturb and preserves it across rounds and host changes", () => {
     const ctx = makeCtx();
@@ -1142,18 +1326,24 @@ describe("ready check", () => {
     expect(playing.turn).not.toBeNull();
   });
 
-  it("a seat leaving the ready check stands the table back down", () => {
+  it("a seat leaving the ready check hands its dealt cards to a ready medium bot", () => {
     const ctx = makeCtx(44);
     const t = table(ctx, 2);
     let s = act(t.state, t.hostId, { type: "start" }, ctx);
     expect(s.players).toHaveLength(4);
+    const hand = player(s, t.ids[1]).hand;
+    const deadline = s.readyDeadline;
     s = act(s, t.ids[1], { type: "leaveTable" }, ctx);
-    expect(s.phase).toBe("lobby");
-    expect(s.players.map((p) => p.id)).toEqual([t.hostId]);
-    expect(s.readyIds).toEqual([]);
-    expect(s.readyDeadline).toBeNull();
-    // the host can set the table again
-    expect(act(s, t.hostId, { type: "start" }, ctx).phase).toBe("ready");
+    expect(s.phase).toBe("ready");
+    expect(s.players).toHaveLength(4);
+    const bot = s.players[1];
+    expect(bot).toMatchObject({ seat: 1, isBot: true, difficulty: "medium", hand });
+    expect(s.readyIds).toContain(bot.id);
+    expect(s.readyIds).not.toContain(t.ids[1]);
+    expect(s.readyDeadline).toBe(deadline);
+    const peeking = act(s, t.hostId, { type: "ready" }, ctx);
+    expect(peeking.phase).toBe("peek");
+    expect(peeking.botKnown[bot.id]).toEqual(hand.slice(2));
   });
 
   it("the ready check is projected to every seat", () => {

@@ -1,5 +1,5 @@
 /**
- * House bots: Cameron, Camila and Cami.
+ * House bots: Cameron, Camila, Cami and Camille.
  *
  * Bots play from knowledge, never from the hidden state as a whole: they only
  * "know" cards they have legitimately seen (their opening peek, cards they drew

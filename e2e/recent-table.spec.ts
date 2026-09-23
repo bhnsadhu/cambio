@@ -70,7 +70,7 @@ test("leaving a lobby releases the old seat but keeps a return path while a frie
   expect(state.view.public.players.map((seat: { name: string }) => seat.name).sort()).toEqual(["Returning Guest", "Still Here"]);
 });
 
-test("a guest can leave during a round and return to the same seat and hand", async ({ page }) => {
+test("navigating home during a round preserves the guest seat until they explicitly leave", async ({ page }) => {
   const fixture = started(makeCtx(17, Date.now() - 10_001));
   const state = fixture.state;
   const me = player(state, fixture.hostId);
@@ -93,7 +93,8 @@ test("a guest can leave during a round and return to the same seat and hand", as
   await page.goto(`/g/${state.code}`);
   await expect(page.getByRole("region", { name: "Host's hand", exact: true })).toBeVisible();
   await expect.poll(async () => (await pointer(page))?.code).toBe(state.code);
-  await leave(page);
+  await page.getByRole("link", { name: "Cambio home", exact: true }).click();
+  await expect(page).toHaveURL(`${origin}/`);
   expect(await page.evaluate((code) => JSON.parse(localStorage.getItem(`cambio:seat:${code}`)!), state.code)).toEqual(seat);
   await expect(returned(page)).toHaveAttribute("href", `/g/${state.code}`);
   await returned(page).click();

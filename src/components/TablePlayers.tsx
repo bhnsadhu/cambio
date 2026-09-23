@@ -37,7 +37,7 @@ function PlayersDialog({ view, busy, onKick, onClose }: Props & { onClose: () =>
       <h2 id="table-players-title" className="t-title2">{target ? `Remove ${target.name}?` : "Table players"}</h2>
       {target ? <>
         <p className="t-body mt-3 text-ink-2">{activeRound
-          ? "This ends the current round without scoring. The remaining players return to the lobby."
+          ? "A medium bot will take over their seat and exact cards. The round will continue."
           : "Their seat will be opened and the remaining players will be in the lobby."}</p>
         <div className="mt-6 flex justify-end gap-3">
           <Button variant="secondary" disabled={busy} onClick={() => setSelected(null)}>Cancel</Button>

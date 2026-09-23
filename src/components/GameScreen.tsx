@@ -8,7 +8,7 @@ import { loginHref } from "@/lib/account/navigation";
 import { useGame } from "@/lib/client/useGame";
 import { api, RequestError } from "@/lib/client/api";
 import { useSocial } from "@/lib/client/social";
-import { saveSession, storeName } from "@/lib/client/session";
+import { forgetRecentTable, saveSession, storeName } from "@/lib/client/session";
 import { useStoredName } from "@/lib/client/useStoredName";
 import { useModalFocus } from "@/lib/client/useModalFocus";
 import { PositionsProvider } from "@/lib/client/positions";
@@ -46,23 +46,16 @@ function GameShell({ code }: { code: string }) {
   // left. Watching a table is not sitting at one, so it lights nothing up.
   const [watching, setWatching] = useState(false);
   const [leaving, setLeaving] = useState(false);
-  /**
-   * Leaving between rounds is told to the table: the seat is given up, the
-   * bots stand down and everyone else lands back in the lobby with a gap to
-   * fill. Mid round there is nothing to tell — the seat plays on without you
-   * until the turn clock gives up on it.
-   */
   const leave = useCallback(async () => {
     const phase = game.view?.public.phase;
-    if (game.session && (phase === "lobby" || phase === "ready" || phase === "scoring")) {
+    if (game.session) {
       const result = await game.send({ type: "leaveTable" });
       if (!result) return;
       game.setSession(null);
+      if (phase !== "lobby" && phase !== "scoring") forgetRecentTable(code);
     }
-    // During a round the server still holds this seat. Keep its credential
-    // so a guest can return to the same hand after stepping away.
     router.push("/");
-  }, [game, router]);
+  }, [code, game, router]);
 
   const seated = !!game.session;
   // Who is actually in a chair here, by profile: the table's own word on it,
@@ -93,7 +86,7 @@ function GameShell({ code }: { code: string }) {
   } else if (!view) {
     body = <TableSkeleton />;
   } else if (game.removed) {
-    body = <Empty title="You were removed from the table." body="The host opened your seat. You can open a new table from the play screen." />;
+    body = <Empty title="You were removed from the table." body="The host removed you. You can open a new table from the play screen." />;
   } else if (!seated && view.public.phase === "lobby") {
     body = <JoinForm code={code} onJoined={(s) => { game.setSession(s); void game.refresh(); }} />;
   } else if (!seated && !watching) {
@@ -159,7 +152,8 @@ function GameShell({ code }: { code: string }) {
         {body}
 
         <FlightLayer specs={flights.specs} onLanded={flights.onLanded} />
-        {view ? <PauseOverlay view={view.public} {...pause} onKick={async (playerId) => !!await game.send({ type: "kickPlayer", playerId })} /> : null}
+        {view && !game.removed && (seated || watching) ? <PauseOverlay view={view.public} {...pause}
+          onLeave={() => setLeaving(true)} onKick={async (playerId) => !!await game.send({ type: "kickPlayer", playerId })} /> : null}
         {leaving && game.session ? <LeaveTableDialog
           phase={view?.public.phase ?? "lobby"}
           busy={game.busy}
@@ -186,8 +180,8 @@ function LeaveTableDialog({ phase, busy, onCancel, onLeave }: { phase: string; b
         <h2 id="leave-table-title" className="t-title2">Leave this table?</h2>
         <p className="t-body mt-3 text-ink-2">
           {phase === "lobby" ? "Your seat will be opened for another player."
-            : phase === "scoring" || phase === "ready" ? "The other players will return to the lobby with your seat open."
-              : "The round keeps going after you leave. Any remaining turns in your seat will run out on the turn timer. You can return to your seat from this browser."}
+            : phase === "scoring" ? "The other players will return to the lobby with your seat open."
+              : "A medium bot will take over your seat and exact cards. The round will continue with the bot in your place."}
         </p>
         <div className="mt-6 flex justify-end gap-3">
           <Button variant="secondary" disabled={busy} onClick={onCancel}>Stay</Button>

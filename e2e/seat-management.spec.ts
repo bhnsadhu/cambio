@@ -104,6 +104,8 @@ test("host removes players with confirmation, and a removed account loses its se
     await page.getByRole("button", { name: "Skip", exact: true }).click();
     await page.getByRole("button", { name: "Start round", exact: true }).click();
     await expect(page.getByRole("region", { name: "Table Friend's hand", exact: true })).toBeVisible();
+    const before = (await (await context.request.get(`/api/games/${table.code}/state`)).json()).view.public;
+    const original = before.players.find((p: { id: string }) => p.id === joined.playerId);
     await page.getByRole("button", { name: "Players", exact: true }).click();
     let dialog = page.getByRole("dialog", { name: "Table players", exact: true });
     for (const width of [390, 1440]) {
@@ -113,20 +115,25 @@ test("host removes players with confirmation, and a removed account loses its se
     }
     await dialog.getByRole("button", { name: "Remove Table Friend", exact: true }).click();
     dialog = page.getByRole("dialog", { name: "Remove Table Friend?", exact: true });
-    await expect(dialog).toContainText("ends the current round without scoring");
+    await expect(dialog).toContainText("A medium bot will take over their seat and exact cards.");
     await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
     expect((await (await context.request.get(`/api/games/${table.code}/state`)).json()).view.public.players).toHaveLength(4);
     await page.getByRole("button", { name: "Remove Table Friend", exact: true }).click();
     await page.getByRole("button", { name: "Remove player", exact: true }).click();
     await expect(page.getByRole("dialog")).toContainText("No other players are seated.");
     await page.getByRole("button", { name: "Done", exact: true }).click();
-    await expect(page.getByRole("button", { name: "Start round", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Start round", exact: true })).toHaveCount(0);
     await expect(friendPage.getByRole("heading", { name: "You were removed from the table.", exact: true })).toBeVisible({ timeout: 15_000 });
     const state = await (await friend.request.get(`/api/games/${table.code}/state`, { headers: { "x-cambio-token": joined.token } })).json();
     expect(state.me).toBeNull();
     expect(state.view.private).toBeNull();
     expect(state.view.public.results).toHaveLength(0);
-    expect(state.view.public.players.map((p: { id: string }) => p.id)).toEqual([table.playerId]);
+    expect(state.view.public.phase).toBe("ready");
+    expect(state.view.public.players).toHaveLength(4);
+    const replacement = state.view.public.players.find((p: { seat: number }) => p.seat === original.seat);
+    expect(replacement).toMatchObject({ isBot: true, difficulty: "medium", hand: original.hand });
+    expect(replacement.id).not.toBe(joined.playerId);
+    expect(state.view.public.readyIds).toContain(replacement.id);
     expect((await action(friend, table.code, { type: "ready" }, joined.token)).status()).toBe(401);
   } finally { await friend.close(); await stranger.close(); }
 });
@@ -147,11 +154,68 @@ test("guest hosts can remove guests and saved guest joins resume instead of dupl
   await expect.poll(async () => (await (await context.request.get(`/api/games/${host.code}/state`)).json()).view.public.phase, { timeout: 20_000 }).toBe("playing");
   await action(context, host.code, { type: "pauseRequest" }, host.token);
   await action(context, host.code, { type: "pauseVote", agree: true }, guest.token);
+  const before = (await (await context.request.get(`/api/games/${host.code}/state`)).json()).view.public;
   await expect(page.getByRole("dialog", { name: "Table paused", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Players", exact: true }).click();
   await page.getByRole("button", { name: "Remove Guest Friend", exact: true }).click();
   await page.getByRole("button", { name: "Remove player", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Start round", exact: true })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Table players", exact: true })).toContainText("No other players are seated.");
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Table paused", exact: true })).toBeVisible();
+  const after = (await (await context.request.get(`/api/games/${host.code}/state`)).json()).view.public;
+  expect(after).toMatchObject({ phase: "playing", paused: true, turn: before.turn });
+  expect(after.players[1]).toMatchObject({ seat: 1, isBot: true, difficulty: "medium", hand: before.players[1].hand });
+  await page.getByRole("button", { name: "Ask to resume", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Table paused", exact: true })).toHaveCount(0);
   expect((await action(context, host.code, { type: "start" }, guest.token)).status()).toBe(401);
+});
+
+test("leaving a paused round transfers the host's exact hand and drawn card to a medium bot that carries on", async ({ page, context }) => {
+  const host = await (await post(context, "/api/games", { name: "Leaving Host" })).json();
+  const guest = await (await post(context, `/api/games/${host.code}/join`, { name: "Next Host" })).json();
+  await action(context, host.code, { type: "start" }, host.token);
+  await action(context, host.code, { type: "ready" }, host.token);
+  await action(context, host.code, { type: "ready" }, guest.token);
+  await expect.poll(async () => (await (await context.request.get(`/api/games/${host.code}/state`)).json()).view.public.phase, { timeout: 20_000 }).toBe("playing");
+  expect((await action(context, host.code, { type: "draw" }, host.token)).ok()).toBe(true);
+  await action(context, host.code, { type: "pauseRequest" }, host.token);
+  await action(context, host.code, { type: "pauseVote", agree: true }, guest.token);
+  const before = (await (await context.request.get(`/api/games/${host.code}/state`, { headers: { "x-cambio-token": host.token } })).json()).view;
+  await page.addInitScript(({ code, playerId, token }) => {
+    if (!sessionStorage.getItem("seeded")) {
+      localStorage.setItem(`cambio:seat:${code}`, JSON.stringify({ playerId, token, name: "Leaving Host" }));
+      sessionStorage.setItem("seeded", "true");
+    }
+    localStorage.setItem("cambio:prefs", JSON.stringify({ onboarded: true, sawPeekHint: true, sawPowerHint: true }));
+  }, host);
+  await page.goto(`/g/${host.code}`);
+  await page.getByRole("dialog", { name: "Table paused", exact: true }).getByRole("button", { name: "Leave table", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Leave this table?", exact: true });
+  await expect(dialog).toContainText("A medium bot will take over your seat and exact cards.");
+  const response = page.waitForResponse((r) => r.url().endsWith(`/api/games/${host.code}/actions`) && r.request().postDataJSON().action.type === "leaveTable");
+  await dialog.getByRole("button", { name: "Leave", exact: true }).click();
+  const left = await (await response).json();
+  expect(left.me).toBeNull();
+  expect(left.view.private).toBeNull();
+  await expect(page).toHaveURL(`${origin}/`);
+  expect(await page.evaluate((code) => localStorage.getItem(`cambio:seat:${code}`), host.code)).toBeNull();
+  await expect(page.getByRole("region", { name: "Recent table", exact: true })).toHaveCount(0);
+  const after = (await (await context.request.get(`/api/games/${host.code}/state`)).json()).view.public;
+  const bot = after.players[0];
+  expect(bot).toMatchObject({ seat: 0, isBot: true, difficulty: "medium", hand: before.public.players[0].hand });
+  expect(after).toMatchObject({ phase: "playing", paused: true, hostId: guest.playerId,
+    turn: { ...before.public.turn, playerId: bot.id }, deckCount: before.public.deckCount, discardCount: before.public.discardCount });
+  expect(after.players[1]).toMatchObject({ id: guest.playerId, isHost: true });
+  expect((await action(context, host.code, { type: "place" }, host.token)).status()).toBe(401);
+  // The existing runner must notice the new bot and finish the card already drawn.
+  expect((await action(context, host.code, { type: "pauseRequest" }, guest.token)).ok()).toBe(true);
+  await expect.poll(async () => {
+    const view = (await (await context.request.get(`/api/games/${host.code}/state`)).json()).view.public;
+    return view.log.some((entry: { actorId: string; kind: string }) => entry.actorId === bot.id && ["place", "swap"].includes(entry.kind));
+  }, { timeout: 20_000 }).toBe(true);
+  const continued = (await (await context.request.get(`/api/games/${host.code}/state`)).json()).view.public;
+  expect(continued.players.map((p: { id: string }) => p.id)).not.toContain(host.playerId);
+  expect(continued.results).toEqual([]);
+  await page.goto(`/g/${host.code}`);
+  await expect(page.getByRole("button", { name: "Watch", exact: true })).toBeVisible();
 });
