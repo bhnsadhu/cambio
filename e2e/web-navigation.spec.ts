@@ -102,6 +102,8 @@ test("signing in through settings preserves the return link and recovers the sam
   await login.getByLabel("Password", { exact: true }).fill(password);
   await login.getByRole("button", { name: "Log in", exact: true }).click();
   await expect(page).toHaveURL(`${origin}${settings}`);
+  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Account settings", exact: true }).click();
+  await expect(page.getByRole("link", { name: "Back to the table", exact: true })).toHaveAttribute("href", `/g/${seat.code}`);
   await page.getByRole("link", { name: "Back to the table", exact: true }).click();
   await expect(page.getByRole("button", { name: "Start round", exact: true })).toBeVisible();
   const returned = await (await context.request.get(`/api/games/${seat.code}/state`)).json();
