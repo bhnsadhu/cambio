@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { type ReactNode } from "react";
-import { averageScore, standingFor, standingLine, stickRate, winRate } from "@/lib/social/rank";
+import { standingFor, standingLine, stickRate, winRate } from "@/lib/social/rank";
 import type { Profile } from "@/lib/social/types";
 import { buttonClass, Chip } from "./ui";
 
@@ -14,7 +14,6 @@ import { buttonClass, Chip } from "./ui";
 export function ProfileCard({ profile, compact = false }: { profile: Profile; compact?: boolean }) {
   const standing = standingFor(profile.points);
   const rate = winRate(profile);
-  const avg = averageScore(profile);
   return (
     <section className="rounded-panel bg-surface p-6 hairline" aria-label={`${profile.displayName}'s record`}>
       <header className="flex flex-wrap items-start justify-between gap-4">
@@ -44,15 +43,13 @@ export function ProfileCard({ profile, compact = false }: { profile: Profile; co
 
       {compact ? null : (
         <>
-          <dl className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <dl className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-3">
             <Stat k="Played" v={profile.roundsPlayed} />
             <Stat k="Win rate" v={profile.roundsPlayed ? `${Math.round(rate * 100)}%` : "N/A"} />
-            <Stat k="Best hand" v={profile.bestScore ?? "N/A"} accent={profile.bestScore !== null} />
             <Stat k="Streak" v={profile.currentStreak} sub={profile.bestStreak ? `Best ${profile.bestStreak}` : undefined} />
           </dl>
-          <dl className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <dl className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
             <Stat k="Tables" v={profile.tablesPlayed} />
-            <Stat k="Avg hand" v={avg === null ? "N/A" : avg.toFixed(1)} />
             <Stat k="Cambio" v={`${profile.cambioWins}/${profile.cambioCalls}`} sub="Made / called" />
             <Stat k="Sticks" v={`${profile.sticksHit}/${profile.sticksHit + profile.sticksMissed}`} sub={stickRate(profile) === null ? "None yet" : `${Math.round(stickRate(profile)! * 100)}% landed`} />
           </dl>
