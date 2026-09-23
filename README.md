@@ -128,13 +128,13 @@ Passwords use salted scrypt hashes. Random session tokens live in HttpOnly cooki
 
 Presence tracks each open browser tab across the site. Leaving sends an offline update; other open tabs keep the account online. Friends refresh every 10 seconds, and missing heartbeats expire after 75 seconds if a browser crashes or loses its connection. Apply `0010_browser_presence.sql` before deploying the presence update.
 
-The account page provides display name, username, and password changes, plus separate sign out and permanent deletion controls. Password changes revoke other sessions. Deletion requires the current password and an explicit confirmation, removes all account and social records, and anonymizes retained game seats. Game actions check the live account session as well as any saved seat token.
+The account page provides avatar, display name, username, and password changes, plus separate sign out and permanent deletion controls. The avatar editor offers six styles and a separate skin-tone selector: the original default plus five shades. Both choices preview together and save across devices, profiles, friends, standings, and active tables; Cancel restores the saved appearance. Existing avatars keep their original appearance until edited. Password changes revoke other sessions. Deletion requires the current password and an explicit confirmation, removes all account and social records, and anonymizes retained game seats. Game actions check the live account session as well as any saved seat token.
 
 Existing browser profiles can add credentials without changing their profile ID. After upgrading, the old browser key no longer grants access. A profile whose original browser key was already lost cannot be claimed by name alone.
 
 The play screen offers a new table or joining by code, using a saved display name or a guest name. Friends sit beside the table setup panels and can be invited from the lobby. A single “Back to your table” shortcut remembers the most recently used table in this browser for 30 minutes after foreground use. Home checks that the table still has players and that the player can resume their seat or join its lobby; empty, missing, expired, and unavailable tables stay hidden. Visiting another table replaces the shortcut, and switching accounts clears it. Leaving during a round preserves the guest's seat so they can return; leaving the lobby, ready check, or results releases it. The full record lives on the public profile page. Account settings contain only account details and session controls.
 
-Login and signup share `/login`. A validated `next` destination returns players to the table, profile, or account screen they came from. A guest name and a complete table code carry into signup from table setup. Account settings preserve a link back to the originating screen. Successful sign out and deletion return to the play screen with a dismissible confirmation. The walkthrough appears automatically only on the first table visit in that browser and can be reopened from How to play.
+Login and signup share `/login`. A validated `next` destination returns players to the table, profile, or account screen they came from. A guest name and a complete table code carry into signup from table setup. Account settings preserve a link back to the originating screen. Successful sign out and deletion return to the play screen with a dismissible confirmation. How to play is available in every main website header and all table states. The first opening shows the interactive walkthrough; later openings show scrollable written rules with Show walkthrough again at the bottom. A first confirmed table seat introduces the walkthrough automatically if it has not already been seen in that browser.
 
 | Piece | What it does |
 | --- | --- |
@@ -183,7 +183,7 @@ A burst of moves shortens each hold rather than dropping any of them, and hoveri
 
 The look is deliberately spare: a black background, white cards, one mint accent for the numbers that matter, and Plus Jakarta Sans for headlines.
 
-First time players get a short walkthrough and a **How to play** sheet that opens beside the table.
+First time players get a short walkthrough. **How to play** then opens a desktop rules reference, with the option to replay the walkthrough at the bottom.
 
 ---
 
@@ -268,6 +268,7 @@ supabase/migrations/0008_room_do_not_disturb.sql
 supabase/migrations/0009_leaderboard.sql
 supabase/migrations/0010_browser_presence.sql
 supabase/migrations/0011_profile_avatars.sql
+supabase/migrations/0012_avatar_skin_tones.sql
 ```
 
 Then store a server secret:

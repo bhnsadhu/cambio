@@ -45,8 +45,10 @@ try {
   query('create role anon; create role authenticated; create publication supabase_realtime;');
   for (const file of readdirSync('supabase/migrations').filter((name) => name.endsWith('.sql')).sort()) {
     if (file === '0005_usernames.sql') query(readFileSync('supabase/tests/username_migration_before.sql', 'utf8'));
+    if (file === '0012_avatar_skin_tones.sql') query(readFileSync('supabase/tests/avatar_tones_before.sql', 'utf8'));
     query(readFileSync(`supabase/migrations/${file}`, 'utf8'));
     if (file === '0005_usernames.sql') query(readFileSync('supabase/tests/username_migration_after.sql', 'utf8'));
+    if (file === '0012_avatar_skin_tones.sql') query(readFileSync('supabase/tests/avatar_tones_after.sql', 'utf8'));
   }
   query("insert into private.server_config(key,value) values ('server_secret','account-test-secret'); grant select on public.game_views to anon;");
   query(readFileSync('supabase/tests/accounts.sql', 'utf8'));
