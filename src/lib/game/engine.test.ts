@@ -982,6 +982,100 @@ describe("cambio and round end", () => {
   });
 });
 
+describe("hosting follows human join order", () => {
+  function withEarlierSeatFilled() {
+    const ctx = makeCtx(83);
+    const t = started(ctx, 4);
+    let state = act(t.state, t.hostId, { type: "leaveTable" }, ctx);
+    expect(state.hostId).toBe(t.ids[1]);
+    const bot = state.players[0];
+    state = act(state, bot.id, { type: "draw" }, ctx);
+    state = act(state, bot.id, { type: "swap", cardId: bot.hand[0]! }, ctx);
+    state = act(state, state.hostId, { type: "callCambio" }, ctx);
+    while (state.turn) {
+      const id = state.turn.playerId;
+      state = act(state, id, { type: "draw" }, ctx);
+      state = act(state, id, { type: "swap", cardId: player(state, id).hand[0]! }, ctx);
+    }
+    state = settleFinalTurns(state, ctx);
+    state = act(state, state.hostId, { type: "returnToLobby" }, ctx);
+    const joined = joinGame(state, "Late arrival", ctx);
+    expect(player(joined.state, joined.playerId).seat).toBe(0);
+    return { ...t, state: joined.state, newcomer: joined.playerId, ctx };
+  }
+
+  it.each(["lobby", "ready", "peek", "playing", "final", "scoring"] as const)("promotes the earliest remaining human instead of a newer lower seat in %s", (phase) => {
+    const t = withEarlierSeatFilled();
+    let state = t.state;
+    if (phase !== "lobby") state = act(state, state.hostId, { type: "start" }, t.ctx);
+    // The departure rule is shared across all active stages and results.
+    state.phase = phase;
+    const host = player(state, t.ids[1]);
+    const before = structuredClone(state);
+    const after = act(state, host.id, { type: "leaveTable" }, t.ctx);
+    expect(state).toEqual(before);
+    expect(after.hostId).toBe(t.ids[2]);
+    expect(after.players.filter((p) => p.isHost).map((p) => p.id)).toEqual([t.ids[2]]);
+    expect(player(after, t.newcomer).isHost).toBe(false);
+    expect(after.humanJoinOrder).toEqual([t.ids[2], t.ids[3], t.newcomer]);
+    if (phase !== "lobby" && phase !== "scoring") {
+      expect(after.phase).toBe(phase);
+      expect(after.players.find((p) => p.seat === host.seat)).toMatchObject({ isBot: true, isHost: false, difficulty: "medium", hand: host.hand });
+    }
+    expect(act(after, t.ids[2], { type: "setDoNotDisturb", enabled: true }, t.ctx).doNotDisturb).toBe(true);
+    expect(() => act(after, t.newcomer, { type: "setDoNotDisturb", enabled: true }, t.ctx)).toThrow(/Only the host/);
+  });
+
+  it("keeps arrival order across departures, signup, compaction and later returns", () => {
+    const t = withEarlierSeatFilled();
+    const token = player(t.state, t.ids[2]).token!;
+    let state = applyAction(t.state, { actionId: "join-order-signup", playerId: null,
+      action: { type: "claimIdentity", token, profileId: "early-account", displayName: "New identity", avatarId: 25 } }, t.ctx).state;
+    const departed = t.ids[1];
+    state = act(state, departed, { type: "leaveTable" }, t.ctx);
+    expect(state.hostId).toBe(t.ids[2]);
+    const returning = joinGame(state, "Returning host", t.ctx);
+    expect(returning.state.hostId).toBe(t.ids[2]);
+    state = act(returning.state, t.ids[2], { type: "leaveTable" }, t.ctx);
+    expect(state.hostId).toBe(t.ids[3]);
+    state = act(state, t.ids[3], { type: "leaveTable" }, t.ctx);
+    expect(state.hostId).toBe(t.newcomer);
+    expect(state.humanJoinOrder).toEqual([t.newcomer, returning.playerId]);
+  });
+
+  it("skips a departed nonhost without changing the current host", () => {
+    const t = withEarlierSeatFilled();
+    let state = act(t.state, t.ids[2], { type: "leaveTable" }, t.ctx);
+    expect(state.hostId).toBe(t.ids[1]);
+    expect(state.humanJoinOrder).toEqual([t.ids[1], t.ids[3], t.newcomer]);
+    state = act(state, t.ids[1], { type: "leaveTable" }, t.ctx);
+    expect(state.hostId).toBe(t.ids[3]);
+  });
+
+  it.each([false, true])("recovers legacy join order with trimmed history=%s", (trimmed) => {
+    const t = withEarlierSeatFilled();
+    delete t.state.humanJoinOrder;
+    if (trimmed) t.state.log = t.state.log.filter((entry) => entry.actorId === t.newcomer);
+    const after = act(t.state, t.ids[1], { type: "leaveTable" }, t.ctx);
+    expect(after.hostId).toBe(t.ids[2]);
+    expect(after.humanJoinOrder).toEqual([t.ids[2], t.ids[3], t.newcomer]);
+    expect(t.state.humanJoinOrder).toBeUndefined();
+  });
+
+  it("records old seats before a newcomer even if no legacy log survives", () => {
+    const ctx = makeCtx(84);
+    const t = table(ctx, 3);
+    delete t.state.humanJoinOrder;
+    t.state.log = [];
+    t.state.players.forEach((p) => { p.seat++; });
+    const joined = joinGame(t.state, "New in seat zero", ctx);
+    expect(player(joined.state, joined.playerId).seat).toBe(0);
+    const after = act(joined.state, t.hostId, { type: "leaveTable" }, ctx);
+    expect(after.hostId).toBe(t.ids[1]);
+    expect(after.humanJoinOrder).toEqual([t.ids[1], t.ids[2], joined.playerId]);
+  });
+});
+
 describe("returning to the table after scoring", () => {
   function scored(humans = 4, hostLeft = false) {
     const ctx = makeCtx(82);

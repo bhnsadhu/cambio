@@ -128,6 +128,7 @@ export function createGame(
     phase: "lobby",
     round: 0,
     players: [host],
+    humanJoinOrder: [hostId],
     cards: {},
     deck: [],
     discard: [],
@@ -177,6 +178,7 @@ export function joinGame(
   if (humans.length >= SEATS) throw new GameError("GAME_FULL", "All four seats are taken.");
   const name = cleanName(rawName);
   const seat = nextOpenSeat(state);
+  const joinOrder = rememberHumanJoinOrder(state);
   const playerId = ctx.newId();
   const token = ctx.newId() + ctx.newId();
   // A table whose last seat walked out has no host left to start it, so
@@ -184,6 +186,7 @@ export function joinGame(
   const orphaned = !state.players.some((p) => p.id === state.hostId);
   if (orphaned) state.hostId = playerId;
   state.players.push({ id: playerId, seat, name, isBot: false, isHost: orphaned, token, profileId: profileId ?? null, avatarId: avatarId ?? null, hand: [null, null, null, null] });
+  joinOrder.push(playerId);
   state.players.sort((a, b) => a.seat - b.seat);
   addLog(state, ctx, `${name} took seat ${seat + 1}.`, { kind: "table", actorId: playerId, weight: "normal" });
   state.updatedAt = ctx.now;
@@ -494,11 +497,7 @@ function replaceDuringRound(state: GameState, departing: Player, ctx: EngineCtx)
   delete state.botKnown[departing.id];
   if (state.botMissedTop) delete state.botMissedTop[departing.id];
   state.reveals = state.reveals.filter((r) => r.toPlayerId !== departing.id);
-  if (state.hostId === departing.id) {
-    const heir = state.players.find((p) => !p.isBot);
-    state.hostId = heir?.id ?? "";
-    for (const p of state.players) p.isHost = p.id === state.hostId;
-  }
+  passHostingAfterDeparture(state, departing.id);
   if (!state.players.some((p) => !p.isBot)) {
     // The last human cannot leave four bots waiting forever on a paused table.
     state.pauseVote = state.paused ? { kind: "resume", byId: bot.id, agreed: state.players.map((p) => p.id), at: ctx.now } : null;
@@ -550,11 +549,31 @@ function removeFromTable(state: GameState, actor: Player) {
   state.players.sort((a, b) => a.seat - b.seat);
   state.players.forEach((p, i) => { p.seat = i; });
   state.leadSeat = 0;
-  if (actor.id === state.hostId) {
-    const heir = state.players[0] ?? null;
-    for (const p of state.players) p.isHost = !!heir && p.id === heir.id;
-    state.hostId = heir ? heir.id : "";
+  passHostingAfterDeparture(state, actor.id);
+}
+
+/** Retain arrival order even when a later player fills an earlier open seat. */
+function rememberHumanJoinOrder(state: GameState): string[] {
+  const humans = state.players.filter((p) => !p.isBot);
+  let order = state.humanJoinOrder;
+  if (!order) {
+    // Older saves have no roster order. Retained join events recover it;
+    // joins already trimmed from the log happened before those still present.
+    const joins = new Map(state.log
+      .filter((entry) => entry.kind === "table" && entry.actorId && / (opened the table|took seat [1-4])\.$/.test(entry.text))
+      .map((entry) => [entry.actorId!, entry.seq]));
+    order = [...humans].sort((a, b) => (joins.get(a.id) ?? -1) - (joins.get(b.id) ?? -1) || a.seat - b.seat).map((p) => p.id);
   }
+  const ids = humans.map((p) => p.id);
+  state.humanJoinOrder = [...new Set([...order.filter((id) => ids.includes(id)), ...ids])];
+  return state.humanJoinOrder;
+}
+
+function passHostingAfterDeparture(state: GameState, departedId: string) {
+  const order = rememberHumanJoinOrder(state);
+  if (state.hostId !== departedId) return;
+  state.hostId = order[0] ?? "";
+  for (const p of state.players) p.isHost = p.id === state.hostId;
 }
 
 function lowestSeat(state: GameState): number {

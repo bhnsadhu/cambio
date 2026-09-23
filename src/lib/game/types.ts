@@ -187,6 +187,8 @@ export interface GameState {
   phase: Phase;
   round: number;
   players: Player[];
+  /** Human seat ids in join order, independent of seat position. Optional on older tables. */
+  humanJoinOrder?: string[];
   /** every card in the game keyed by id (secret) */
   cards: Record<string, Card>;
   /** draw pile; top of the deck is the LAST element */
