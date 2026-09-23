@@ -7,11 +7,11 @@ import { loginHref } from "@/lib/account/navigation";
 import { callProfile, profileGeneration, useAccountReady, useStoredProfile } from "@/lib/client/profile";
 import { useSocial } from "@/lib/client/social";
 import type { LeaderboardScope, LeaderboardSnapshot } from "@/lib/social/leaderboard";
-import { ordinal } from "@/lib/social/rank";
+import { ordinal, standingFor } from "@/lib/social/rank";
 import { RankBadge } from "./RankBadge";
 import { Notifications } from "./Friends";
-import { AccountLink } from "./Profile";
-import { Button, buttonClass, Wordmark } from "./ui";
+import { AppHeader } from "./AppHeader";
+import { Button, buttonClass } from "./ui";
 
 export function Leaderboard({ initialScope }: { initialScope: LeaderboardScope | null }) {
   const ready = useAccountReady();
@@ -20,25 +20,22 @@ export function Leaderboard({ initialScope }: { initialScope: LeaderboardScope |
   const scope = initialScope ?? (stored ? "friends" : "all");
   const path = `/leaderboard?scope=${scope}`;
   return (
-    <main className="mx-auto min-h-screen w-full max-w-[620px] px-5 pb-16 sm:px-8">
-      <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 py-3">
-        <Link href="/" aria-label="Cambio home"><Wordmark /></Link>
-        <nav aria-label="Main navigation" className="flex flex-wrap items-center gap-3">
-          <Link href="/" className="t-sub text-ink-2 hover:text-ink">Back to play</Link>
-          {ready ? stored ? <AccountLink from={path} /> : <Link href={loginHref(path)} className="t-sub text-ink-2 hover:text-ink">Log in</Link> : null}
+    <main className="site-shell min-h-screen pb-16">
+      <AppHeader active="leaderboard" accountFrom={path} loginNext={path} />
+      <div className="flex flex-wrap items-end justify-between gap-6 pt-8 pb-8 lg:pt-12">
+        <div>
+          <h1 className="text-[32px] font-medium leading-tight tracking-tight">Leaderboard</h1>
+          <p className="t-body mt-3 text-ink-2">Every round counts. See where you stand.</p>
+        </div>
+        <nav className="flex gap-2" aria-label="Leaderboard views">
+          {(["friends", "all"] as const).map((value) => (
+            <Link key={value} href={`/leaderboard?scope=${value}`} aria-current={scope === value ? "page" : undefined}
+              className={buttonClass({ variant: scope === value ? "primary" : "secondary" })}>
+              {value === "friends" ? "Friends" : "All players"}
+            </Link>
+          ))}
         </nav>
-      </header>
-      <div className="pt-10 pb-7">
-        <h1 className="text-[30px] font-normal leading-tight tracking-[-0.025em] text-ink-2">Leaderboard</h1>
       </div>
-      <nav className="mb-6 flex gap-2" aria-label="Leaderboard views">
-        {(["friends", "all"] as const).map((value) => (
-          <Link key={value} href={`/leaderboard?scope=${value}`} aria-current={scope === value ? "page" : undefined}
-            className={buttonClass({ variant: scope === value ? "primary" : "secondary" })}>
-            {value === "friends" ? "Friends" : "All players"}
-          </Link>
-        ))}
-      </nav>
       {!ready ? <p role="status" className="t-sub text-ink-2">Loading the leaderboard</p>
         : scope === "friends" && !stored ? <section className="rounded-panel bg-surface p-6 hairline">
           <h2 className="t-headline">Compare scores with your friends</h2>
@@ -85,7 +82,7 @@ function Standings({ scope }: { scope: LeaderboardScope }) {
         <Button size="sm" onClick={() => { setError(null); setAttempt((value) => value + 1); }}>Try again</Button>
       </div> : null}
       {!data ? !error ? <p role="status" className="t-sub text-ink-2">Loading the leaderboard</p> : null : <>
-        {data.me ? <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-line px-1 pb-5" aria-label="Your standing">
+        {data.me ? <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-panel bg-surface px-5 py-5 hairline sm:px-6" aria-label="Your standing">
           <div>
             <p className="text-xs text-ink-3">Your rank {scope === "friends" ? "among friends" : "among all players"}</p>
             <p className="mt-1 text-xl font-medium">{ordinal(data.me.rank)} <span className="t-body text-ink-2">of {data.total}</span></p>
@@ -94,21 +91,30 @@ function Standings({ scope }: { scope: LeaderboardScope }) {
         </div> : <p className="t-sub mb-5 text-ink-2"><Link href={loginHref(`/leaderboard?scope=${scope}`, "register")} className="font-medium text-ink hover:text-accent">Create an account</Link> to appear here and save your results.</p>}
         <table className="w-full table-fixed border-separate border-spacing-x-0 border-spacing-y-1 text-left">
           <caption className="sr-only">{scope === "friends" ? "You and your friends" : "All players"}, ranked by points</caption>
-          <colgroup><col className="w-12 sm:w-16" /><col /></colgroup>
-          <thead className="sr-only"><tr><th scope="col">Rank</th><th scope="col">Player and points</th></tr></thead>
-          <tbody>{data.entries.map((entry) => <tr key={entry.id} aria-label={entry.id === data.me?.id ? "Your leaderboard row" : undefined} className={entry.id === data.me?.id ? "bg-surface-2" : ""}>
+          <colgroup><col className="w-12 sm:w-16" /><col /><col className="hidden w-[170px] lg:table-column" /><col className="hidden w-[110px] lg:table-column" /><col className="hidden w-[110px] lg:table-column" /><col className="hidden w-[116px] lg:table-column" /></colgroup>
+          <thead className="text-xs font-medium text-ink-3"><tr>
+            <th scope="col" className="px-3 pb-3 text-center">Rank</th><th scope="col" className="pl-2 pb-3">Player</th>
+            <th scope="col" className="hidden px-5 pb-3 lg:table-cell">Tier</th><th scope="col" className="hidden px-5 pb-3 text-right lg:table-cell">Points</th>
+            <th scope="col" className="hidden px-5 pb-3 text-right lg:table-cell">Rounds</th><th scope="col" className="hidden px-6 pb-3 text-right lg:table-cell">Win rate</th>
+          </tr></thead>
+          <tbody>{data.entries.map((entry) => <tr key={entry.id} aria-label={entry.id === data.me?.id ? "Your leaderboard row" : undefined} className={entry.id === data.me?.id ? "bg-surface-2" : "hover:bg-surface/60"}>
             <td className="w-12 rounded-l-2xl py-4 pl-3 pr-2 align-middle text-center sm:w-16 sm:pl-5">
               {entry.rank <= 3 ? <Placement rank={entry.rank} /> : <span className="tnum text-lg text-ink-2">{entry.rank}</span>}
             </td>
-            <th scope="row" className="rounded-r-2xl py-4 pl-2 pr-5 font-normal sm:pr-6">
+            <th scope="row" className="rounded-r-2xl py-4 pl-2 pr-5 font-normal sm:pr-6 lg:rounded-none">
               <Link href={`/p/${entry.handle}`} className="flex min-w-0 items-center gap-3 hover:text-accent sm:gap-4">
                 <Avatar identity={entry.id} avatarId={entry.avatarId} size={52} />
                 <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-2 text-[17px] font-medium leading-snug"><span className="min-w-0 break-words">{entry.displayName}</span><RankBadge points={entry.points} size={18} /></span>
-                  <span className="tnum mt-1 block text-[14px] text-ink-3">{entry.points.toLocaleString()} points{entry.id === data.me?.id ? " · You" : ""}</span>
+                  <span className="flex items-center gap-2 text-[17px] font-medium leading-snug"><span className="min-w-0 break-words">{entry.displayName}</span><span className="lg:hidden"><RankBadge points={entry.points} size={18} /></span></span>
+                  <span className="tnum mt-1 block text-[14px] text-ink-3 lg:hidden">{entry.points.toLocaleString()} points{entry.id === data.me?.id ? " · You" : ""}</span>
+                  <span className="mt-1 hidden text-sm text-ink-3 lg:block">@{entry.handle}{entry.id === data.me?.id ? " · You" : ""}</span>
                 </span>
               </Link>
             </th>
+            <td className="hidden px-5 py-4 align-middle lg:table-cell"><span className="flex items-center gap-2 text-sm"><RankBadge points={entry.points} size={22} /><span>{standingFor(entry.points).tier.name}</span></span></td>
+            <td className="tnum hidden px-5 py-4 text-right font-medium lg:table-cell">{entry.points.toLocaleString()}</td>
+            <td className="tnum hidden px-5 py-4 text-right text-ink-2 lg:table-cell">{entry.roundsPlayed.toLocaleString()}</td>
+            <td className="tnum hidden rounded-r-2xl px-6 py-4 text-right text-ink-2 lg:table-cell">{entry.roundsPlayed ? `${Math.round(entry.roundsWon / entry.roundsPlayed * 100)}%` : "N/A"}</td>
           </tr>)}</tbody>
         </table>
         {!data.entries.length ? <p className="t-body px-3 py-6 text-ink-2">{offset ? "No more players on this page." : "No players yet. Be the first to join."}</p> : null}
