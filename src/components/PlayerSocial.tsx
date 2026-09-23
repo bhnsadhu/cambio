@@ -31,6 +31,19 @@ export function TableSocialProvider({ code, view, social, children }: {
   return <TableSocialContext.Provider value={value}>{children}</TableSocialContext.Provider>;
 }
 
+function profileForPlayer(table: TableSocial, profileId: string) {
+  return (table.social.profile?.id === profileId ? table.social.profile : null)
+    ?? table.social.social.friends.find((friend) => friend.id === profileId)
+    ?? table.profiles[profileId];
+}
+
+export function PlayerRankBadge({ player }: { player: PlayerPublic }) {
+  const table = useContext(TableSocialContext);
+  if (!table || player.isBot || !player.profileId) return null;
+  const profile = profileForPlayer(table, player.profileId);
+  return profile ? <RankBadge points={profile.points} size={20} /> : null;
+}
+
 export function PlayerSocial({ player, isMe = false }: { player: PlayerPublic; isMe?: boolean }) {
   const table = useContext(TableSocialContext);
   if (!table || player.isBot || !player.profileId) return null;
@@ -40,17 +53,16 @@ export function PlayerSocial({ player, isMe = false }: { player: PlayerPublic; i
 const actionClass = "h-7! max-w-full px-2.5! text-[11.5px]!";
 
 function AccountSocial({ table, player, profileId, isMe }: { table: TableSocial; player: PlayerPublic; profileId: string; isMe: boolean }) {
-  const { code, profiles, social } = table;
+  const { code, social } = table;
   const [busy, setBusy] = useState(false);
   const working = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ status: "friend" | "outgoing"; snapshot: SocialHook["social"] } | null>(null);
   const self = isMe || social.profile?.id === profileId;
-  const ownProfile = social.profile?.id === profileId ? social.profile : null;
   const friend = social.social.friends.find((p) => p.id === profileId);
   const incoming = social.social.incoming.find((p) => p.id === profileId);
   const outgoing = social.social.outgoing.find((p) => p.id === profileId);
-  const profile = ownProfile ?? friend ?? profiles[profileId];
+  const profile = profileForPlayer(table, profileId);
   const standing = profile ? standingFor(profile.points) : null;
   // If the write succeeds but refreshing fails, retain its confirmed outcome
   // until the next social snapshot arrives instead of offering a second send.
@@ -81,10 +93,7 @@ function AccountSocial({ table, player, profileId, isMe }: { table: TableSocial;
   return (
     <div role="group" aria-label={`${player.name}'s social details`} className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5">
       {profile && standing ? (
-        <span className="inline-flex min-w-0 max-w-full items-center gap-1.5 text-[11.5px] leading-4 text-ink-2">
-          <RankBadge points={profile.points} size={17} decorative />
-          <span className="break-words">{standing.tier.name}</span>
-        </span>
+        <span className="min-w-0 break-words text-[11.5px] leading-4 text-ink-2">{standing.tier.name}</span>
       ) : null}
       {!self ? (
         !social.profile ? (

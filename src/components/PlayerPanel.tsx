@@ -4,7 +4,7 @@ import { Avatar } from "./Avatar";
 import type { Card, PlayerPublic } from "@/lib/game/types";
 import type { LocKey, Positions } from "@/lib/client/positions";
 import { CardBack, CardTile } from "./cards";
-import { PlayerSocial } from "./PlayerSocial";
+import { PlayerRankBadge, PlayerSocial } from "./PlayerSocial";
 import { Chip, DIFFICULTY_LABEL, Pip, PlayerName } from "./ui";
 
 export interface PanelProps {
@@ -51,8 +51,9 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
           <div className="flex min-h-10 items-center gap-2">
             <Avatar identity={player.profileId ?? player.name} avatarId={player.avatarId} size={36} />
             {isTurn || ready === true ? <Pip /> : null}
-            <h3 className="t-headline min-w-0 break-words text-[15px]! sm:text-[17px]!">
-              <span><PlayerName name={player.name} isBot={player.isBot} /></span>
+            <h3 className="t-headline flex min-w-0 items-center gap-1.5 text-[15px]! sm:text-[17px]!">
+              <span className="min-w-0 [overflow-wrap:anywhere]"><PlayerName name={player.name} isBot={player.isBot} /></span>
+              <PlayerRankBadge player={player} />
             </h3>
           </div>
           <p className="t-footnote mt-0.5 text-ink-3">
