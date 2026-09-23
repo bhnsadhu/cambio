@@ -256,7 +256,7 @@ export function applyAction(input: GameState, env: ActionEnvelope | IdentityEnve
   // Paused gameplay is frozen; room settings and pause votes remain available.
   // Reveals are not pruned either, so a peek that was running when the table
   // went dark still has its remaining seconds when play resumes.
-  if (state.paused && a.type !== "pauseRequest" && a.type !== "pauseVote" && a.type !== "setDoNotDisturb") {
+  if (state.paused && a.type !== "pauseRequest" && a.type !== "pauseVote" && a.type !== "setDoNotDisturb" && a.type !== "kickPlayer") {
     // The watchdogs (any client, and the bot runner) keep firing these; they
     // are no-ops rather than errors so nothing surfaces as a failure.
     if (a.type === "timeout" || a.type === "advance") return { state: input, changed: false };
@@ -306,6 +306,16 @@ export function applyAction(input: GameState, env: ActionEnvelope | IdentityEnve
       break;
     }
     case "leaveTable": doLeaveTable(state, actor, ctx); break;
+    case "kickPlayer": {
+      if (actor.id !== state.hostId) throw new GameError("NOT_HOST", "Only the host can remove players.");
+      const target = state.players.find((p) => p.id === a.playerId);
+      if (!target || target.isBot || target.id === actor.id) throw new GameError("INVALID_TARGET", "Choose another player at this table.");
+      removeFromTable(state, target);
+      addLog(state, ctx, `${actor.name} removed ${target.name} from the table. Back to the lobby.`, {
+        kind: "kick", actorId: actor.id, subjectIds: [target.id], tone: "bad", weight: "loud",
+      });
+      break;
+    }
     case "pauseRequest": doPauseRequest(state, actor, ctx); break;
     case "pauseVote": {
       if (!doPauseVote(state, actor, a.agree, ctx)) return { state: input, changed: false };
@@ -422,13 +432,28 @@ function doPlayAgain(state: GameState, actor: Player, ctx: EngineCtx): boolean {
  */
 function doLeaveTable(state: GameState, actor: Player, ctx: EngineCtx) {
   requirePhase(state, ["lobby", "ready", "scoring"]);
+  removeFromTable(state, actor);
+  addLog(state, ctx, state.players.length
+    ? `${actor.name} left the table. Back to the lobby: invite someone, or start and let a bot take the seat.`
+    : `${actor.name} left. The table is empty.`,
+    { kind: "table", tone: "bad", weight: "loud", actorId: actor.id });
+}
+
+function removeFromTable(state: GameState, actor: Player) {
   // A seat leaving a set table takes it apart: the bots stand down so the
   // seats can close up, and `start` seats them again.
-  const wasPlaying = state.phase === "scoring" || state.phase === "ready";
+  const wasPlaying = state.phase !== "lobby";
   state.players = state.players.filter((p) => p.id !== actor.id && (!wasPlaying || !p.isBot));
   state.replayVotes = [];
   state.readyIds = [];
   state.readyDeadline = null;
+  state.paused = false;
+  state.pausedAt = null;
+  state.pausedBy = null;
+  state.pauseVote = null;
+  state.stickWindowUntil = null;
+  state.tally = {};
+  state.turnsTaken = 0;
   if (wasPlaying) {
     state.phase = "lobby";
     state.turn = null;
@@ -455,10 +480,6 @@ function doLeaveTable(state: GameState, actor: Player, ctx: EngineCtx) {
     for (const p of state.players) p.isHost = !!heir && p.id === heir.id;
     state.hostId = heir ? heir.id : "";
   }
-  addLog(state, ctx, state.players.length
-    ? `${actor.name} left the table. Back to the lobby: invite someone, or start and let a bot take the seat.`
-    : `${actor.name} left. The table is empty.`,
-    { kind: "table", tone: "bad", weight: "loud", actorId: actor.id });
 }
 
 function lowestSeat(state: GameState): number {

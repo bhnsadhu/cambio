@@ -20,6 +20,7 @@ import { HowToPlayButton } from "./HowToPlayButton";
 import { FlightLayer, useFlights } from "./FlightLayer";
 import { PauseButton, PauseOverlay } from "./Pause";
 import { RoomSettings } from "./RoomSettings";
+import { TablePlayers } from "./TablePlayers";
 import { Button, buttonClass, Chip, DotOff, Field, inputClass, Pip, Wordmark } from "./ui";
 
 /**
@@ -91,6 +92,8 @@ function GameShell({ code }: { code: string }) {
     </section>;
   } else if (!view) {
     body = <TableSkeleton />;
+  } else if (game.removed) {
+    body = <Empty title="You were removed from the table." body="The host opened your seat. You can open a new table from the play screen." />;
   } else if (!seated && view.public.phase === "lobby") {
     body = <JoinForm code={code} onJoined={(s) => { game.setSession(s); void game.refresh(); }} />;
   } else if (!seated && !watching) {
@@ -131,6 +134,8 @@ function GameShell({ code }: { code: string }) {
           </div>
           <nav aria-label="Table controls" className="flex max-w-full flex-wrap items-center gap-1 sm:gap-2">
             {social.profile ? <AccountLink from={`/g/${code}`} /> : null}
+            {view && !view.public.paused && game.me === view.public.hostId ? <TablePlayers view={view.public} busy={game.busy}
+              onKick={async (playerId) => !!await game.send({ type: "kickPlayer", playerId })} /> : null}
             {social.profile && seated && view ? <RoomSettings view={view.public} me={game.me} busy={game.busy}
               onChange={(enabled) => { void game.send({ type: "setDoNotDisturb", enabled }).then(() => social.refresh()); }} /> : null}
             {view ? <PauseButton view={view.public} {...pause} /> : null}
@@ -154,7 +159,7 @@ function GameShell({ code }: { code: string }) {
         {body}
 
         <FlightLayer specs={flights.specs} onLanded={flights.onLanded} />
-        {view ? <PauseOverlay view={view.public} {...pause} /> : null}
+        {view ? <PauseOverlay view={view.public} {...pause} onKick={async (playerId) => !!await game.send({ type: "kickPlayer", playerId })} /> : null}
         {leaving && game.session ? <LeaveTableDialog
           phase={view?.public.phase ?? "lobby"}
           busy={game.busy}

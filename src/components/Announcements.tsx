@@ -22,6 +22,7 @@ const MIN_HOLD = 1200;
 /** The kind of move, named. This is the label a player reads first. */
 export const KICKER: Record<EventKind, string> = {
   table: "Table",
+  kick: "Player removed",
   deal: "Shuffle and deal",
   draw: "Draw",
   place: "Placed",

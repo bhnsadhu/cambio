@@ -77,6 +77,7 @@ If two players act in the same few milliseconds, one commit loses the race, relo
 | **Ready checks** | Every round deals first and asks after: four cards land face down in front of each seat, and the peek only opens once every seat has said it is ready. Bots answer at once, and a seat that never answers is carried after 45 seconds. |
 | **Between rounds** | Another round is the table's call, not the host's. Every seat asks for one and the last yes deals, with bots agreeing the moment the round is scored. |
 | **Leaving** | Anyone who leaves instead sends the rest back to the lobby with the seats closed up, so they can invite someone or let a bot sit down. |
+| **Removing players** | The host can use Players to remove another human, including while paused. Removing someone during a round cancels that round without scoring and returns the remaining humans to the lobby. It releases the seat; it is not a permanent ban from joining by code. |
 | **Narration** | Every rule that fires writes a structured event: the kind of move, who made it, whose cards it touched, and which cards to light up. Card IDs travel with it and ranks never do. |
 
 ### Power Cards
@@ -126,6 +127,10 @@ Existing browser profiles can add credentials without changing their profile ID.
 The play screen offers a new table or joining by code, using a saved display name or a guest name. Friends sit beside the table setup panels and can be invited from the lobby. A single “Back to your table” shortcut remembers the most recently used table in this browser for 30 minutes after foreground use. Home checks that the table still has players and that the player can resume their seat or join its lobby; empty, missing, expired, and unavailable tables stay hidden. Visiting another table replaces the shortcut, and switching accounts clears it. Leaving during a round preserves the guest's seat so they can return; leaving the lobby, ready check, or results releases it. The full record lives on the public profile page. Account settings contain only account details and session controls.
 
 Login and signup share `/login`. A validated `next` destination returns players to the table, profile, or account screen they came from. A guest name and a complete table code carry into signup from table setup. Account settings preserve a link back to the originating screen. Successful sign out and deletion return to the play screen with a dismissible confirmation. How to play is available in every main website header and all table states. The first opening shows the interactive walkthrough; later openings show scrollable written rules with Show walkthrough again at the bottom. A first confirmed table seat introduces the walkthrough automatically if it has not already been seen in that browser.
+
+Creating an account after joining as a guest attaches the account to that existing seat using its saved credential. The player's seat, hand, and host status stay intact, including mid round and while paused. Avatar edits update that same seat. Rejoining with a saved guest credential also resumes the seat instead of adding another player.
+
+Friends at another table can receive and accept invitations, including during a round or with Do not disturb enabled. Accepting opens the invited table without cancelling the previous round. The destination must still have an open seat in its lobby; invitations to someone already seated there remain unavailable.
 
 | Piece | What it does |
 | --- | --- |

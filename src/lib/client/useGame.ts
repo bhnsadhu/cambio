@@ -5,7 +5,7 @@ import type { Action, PlayerView, PublicView } from "@/lib/game/types";
 import { profileGeneration, useStoredProfile } from "./profile";
 import { api, RequestError, type ActionResponse } from "./api";
 import { subscribeGame, type ConnectionStatus } from "./realtime";
-import { getServerSessionSnapshot, getSessionSnapshot, recentTable, rememberTable, setSessionValue, subscribeSession, type Session } from "./session";
+import { forgetRecentTable, getServerSessionSnapshot, getSessionSnapshot, recentTable, rememberTable, setSessionValue, subscribeSession, type Session } from "./session";
 
 export interface Toast { id: number; text: string; tone: "neutral" | "good" | "bad" }
 
@@ -16,6 +16,7 @@ export interface GameHook {
   session: Session | null;
   connection: ConnectionStatus;
   busy: boolean;
+  removed: boolean;
   toasts: Toast[];
   /** milliseconds to add to Date.now() to get the server's clock */
   skew: number;
@@ -39,6 +40,7 @@ export function useGame(code: string): GameHook {
   const [status, setStatus] = useState<GameHook["status"]>("loading");
   const [connection, setConnection] = useState<ConnectionStatus>("connecting");
   const [busy, setBusy] = useState(false);
+  const [removed, setRemoved] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [skewState, setSkewState] = useState(0);
   const skew = useRef(0);
@@ -51,6 +53,7 @@ export function useGame(code: string): GameHook {
   useEffect(() => { sessionRef.current = session; }, [session]);
 
   const setSession = useCallback((s: Session | null) => {
+    if (s) setRemoved(false);
     sessionRef.current = s;
     setSessionValue(code, s);
   }, [code]);
@@ -67,7 +70,8 @@ export function useGame(code: string): GameHook {
       if (cur && cur.public.version >= pub.version) return cur;
       lastChange.current = Date.now();
       // Private data can only change through our own actions or a new deal; keep it.
-      return { public: pub, private: cur?.private ?? null };
+      const privateView = cur?.private;
+      return { public: pub, private: privateView && pub.players.some((p) => p.id === privateView.playerId) ? privateView : null };
     });
   }, []);
 
@@ -91,8 +95,9 @@ export function useGame(code: string): GameHook {
       // (hydration fires one fetch before the stored seat is known).
       if (gen !== profileGeneration() || (sessionRef.current?.token ?? null) !== token) return;
       acceptFull(res.view, res.me);
+      if (!res.me && sessionRef.current && res.view.public.log.some((entry) => entry.kind === "kick" && entry.subjectIds?.includes(sessionRef.current!.playerId))) setRemoved(true);
       if (res.seat && (sessionRef.current?.playerId !== res.seat.playerId || sessionRef.current?.token !== res.seat.token || sessionRef.current?.name !== res.seat.name)) setSession(res.seat);
-      else if (token && !res.me) setSession(null);
+      else if (token && !res.me) { setSession(null); forgetRecentTable(code); }
       setStatus("ready");
     } catch (e) {
       if (gen !== profileGeneration() || (sessionRef.current?.token ?? null) !== token) return;
@@ -136,7 +141,8 @@ export function useGame(code: string): GameHook {
         acceptPublic(pub);
         // A fresh deal is the one private change that comes from someone
         // else's action (the host's): fetch our opening peek right away.
-        if (sessionRef.current && prev && (pub.round !== prev.round || (pub.phase === "peek" && prev.phase !== "peek"))) {
+        if (sessionRef.current && prev && (pub.round !== prev.round || (pub.phase === "peek" && prev.phase !== "peek")
+          || !pub.players.some((p) => p.id === sessionRef.current!.playerId))) {
           void refresh();
         }
       },
@@ -244,7 +250,7 @@ export function useGame(code: string): GameHook {
   }, [code, send]);
 
   return useMemo(
-    () => ({ status, view, me, session, connection, busy, toasts, skew: skewState, send, refresh, setSession, toast }),
-    [status, view, me, session, connection, busy, toasts, skewState, send, refresh, setSession, toast],
+    () => ({ status, view, me, session, connection, busy, removed, toasts, skew: skewState, send, refresh, setSession, toast }),
+    [status, view, me, session, connection, busy, removed, toasts, skewState, send, refresh, setSession, toast],
   );
 }

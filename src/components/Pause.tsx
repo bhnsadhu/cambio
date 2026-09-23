@@ -3,6 +3,7 @@
 import type { PlayerPublic, PublicView } from "@/lib/game/types";
 import { useModalFocus } from "@/lib/client/useModalFocus";
 import { Button, Chip, Pip, PlayerName } from "./ui";
+import { TablePlayers } from "./TablePlayers";
 
 /**
  * Pausing is unanimous, so the interesting part is always the same: who has
@@ -111,7 +112,7 @@ export function PauseBanner({ view, me, busy, onVote }: Omit<PauseProps, "onRequ
 }
 
 /** The table is dark. Nothing underneath is playable, so this takes the screen. */
-export function PauseOverlay({ view, me, busy, onRequest, onVote }: PauseProps) {
+export function PauseOverlay({ view, me, busy, onRequest, onVote, onKick }: PauseProps & { onKick: (playerId: string) => Promise<boolean> }) {
   const dialogRef = useModalFocus(view.paused);
   if (!view.paused) return null;
   const by = view.players.find((p) => p.id === view.pausedBy);
@@ -154,6 +155,7 @@ export function PauseOverlay({ view, me, busy, onRequest, onVote }: PauseProps) 
             ) : null}
           </div>
         )}
+        {me === view.hostId ? <div className="mt-5 border-t border-line pt-4"><TablePlayers view={view} busy={busy} onKick={onKick} /></div> : null}
       </div>
     </div>
   );

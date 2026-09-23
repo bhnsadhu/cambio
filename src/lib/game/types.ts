@@ -110,6 +110,7 @@ export interface CambioState {
  */
 export type EventKind =
   | "table"      // seats, hosting, housekeeping
+  | "kick"
   | "deal"
   | "draw"
   | "place"
@@ -285,6 +286,8 @@ export type Action =
   | { type: "playAgain" }
   /** leave a table between rounds; the seats left go back to the lobby */
   | { type: "leaveTable" }
+  /** Host only. Removing a player returns the remaining humans to the lobby. */
+  | { type: "kickPlayer"; playerId: string }
   /** ask the table to pause, or to resume when it is already paused */
   | { type: "pauseRequest" }
   | { type: "pauseVote"; agree: boolean }
