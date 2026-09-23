@@ -129,9 +129,9 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
             <fieldset disabled={!!busy}>
               <legend className="t-sub mb-3 text-ink-2">Choose your avatar. Change it whenever you like.</legend>
               <div className="grid grid-cols-3 gap-2">
-                {AVATAR_OPTIONS.map((option) => <label key={option.id} className="min-w-0 cursor-pointer">
-                  <input className="peer sr-only" type="radio" name="avatarId" value={option.id} checked={selectedAvatar === option.id} onChange={() => setAvatarDraft(option.id)} autoFocus={selectedAvatar === option.id} />
-                  <span className="flex min-w-0 flex-col items-center gap-1 rounded-2xl border border-line-strong px-1 py-3 transition-colors hover:bg-ink/5 peer-checked:border-accent peer-checked:bg-accent/10 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent peer-disabled:cursor-wait peer-disabled:opacity-60">
+                {AVATAR_OPTIONS.map((option) => <label key={option.id} className="group relative min-w-0 cursor-pointer">
+                  <input className="peer absolute inset-0 z-10 size-full cursor-pointer opacity-0 disabled:cursor-wait" type="radio" name="avatarId" value={option.id} checked={selectedAvatar === option.id} onChange={() => setAvatarDraft(option.id)} autoFocus={selectedAvatar === option.id} />
+                  <span className="flex min-w-0 flex-col items-center gap-1 rounded-2xl border border-line-strong px-1 py-3 transition-colors group-hover:bg-ink/5 peer-checked:border-accent peer-checked:bg-accent/10 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent peer-disabled:cursor-wait peer-disabled:opacity-60">
                     <Avatar identity={stored.profile.id} avatarId={option.id} size={56} />
                     <span className="text-center text-[11px] leading-snug text-ink-2">{option.label}</span>
                   </span>
