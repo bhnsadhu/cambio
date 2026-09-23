@@ -10,7 +10,7 @@ These public screenshots establish the layout and visual treatment. They are not
 
 ## Avatars
 
-`public/avatars/heads.png` is original artwork generated with the built-in image generation tool. It is a six-head, three-column by two-row atlas. It uses simplified expressive 3D heads, as requested, rather than realistic portraits. `Avatar.tsx` selects a stable head from the profile identity and uses Next Image optimization at its displayed size.
+`public/avatars/heads.png` is original artwork generated with the built-in image generation tool. It is a six-head, three-column by two-row atlas. It uses simplified expressive 3D heads, as requested, rather than realistic portraits. Players can choose any of the six heads in Account settings → Avatar → Change. Their choice is saved with the account and displayed across profiles, friends, standings, and tables. Until a player makes a choice, `Avatar.tsx` selects a stable head from their identity. It uses Next Image optimization at its displayed size.
 
 Final generation prompt (the two official screenshots were style references):
 
