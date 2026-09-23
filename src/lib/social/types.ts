@@ -130,9 +130,9 @@ export interface Social {
 /** How an attempt to invite someone to a table turned out. */
 export type InviteOutcome =
   | { ok: true }
-  | { ok: false; reason: "not-friends" | "table-gone" | "table-started" | "table-full" | "not-seated" | "busy" | "here" | "cooldown"; message: string };
+  | { ok: false; reason: "not-friends" | "table-gone" | "table-started" | "table-full" | "not-seated" | "here" | "cooldown"; message: string };
 
 /** How answering an invite turned out. */
 export type InviteAnswer =
   | { ok: true; code: string; seat: { playerId: string; token: string; name: string } | null }
-  | { ok: false; reason: "gone" | "started" | "full" | "busy" | "expired"; message: string };
+  | { ok: false; reason: "gone" | "started" | "full" | "expired"; message: string };

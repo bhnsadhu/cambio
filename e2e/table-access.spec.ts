@@ -43,6 +43,69 @@ async function setup(browser: Browser) {
 
 test.beforeEach(() => sql("delete from private.auth_limits;"));
 
+for (const playing of [false, true]) test(`invite and accept while a friend is at another ${playing ? "active round" : "lobby"}`, async ({ browser }) => {
+  const { host, friend, seat } = await setup(browser);
+  try {
+    const other = await (await post(friend.context, "/api/games", {})).json();
+    const friendPage = await friend.context.newPage();
+    await friendPage.goto(`/g/${other.code}`);
+    await friendPage.getByRole("button", { name: "Skip", exact: true }).click();
+    if (playing) {
+      // Do not disturb disables requests, but still permits invitations.
+      await post(friend.context, `/api/games/${other.code}/actions`, { actionId: crypto.randomUUID(), action: { type: "setDoNotDisturb", enabled: true } });
+      await friendPage.getByRole("button", { name: "Start round", exact: true }).click();
+      await friendPage.getByRole("button", { name: "I'm ready", exact: true }).click();
+      await expect.poll(async () => (await (await friend.context.request.get(`/api/games/${other.code}/state`)).json()).view.public.phase, { timeout: 20_000 }).toBe("playing");
+    }
+    await post(friend.context, "/api/presence", { code: other.code });
+    const hostPage = await host.context.newPage();
+    await hostPage.goto(`/g/${seat.code}`);
+    await hostPage.getByRole("button", { name: "Skip", exact: true }).click();
+    const friendRow = hostPage.getByRole("region", { name: "Friends", exact: true }).getByRole("listitem").filter({ has: hostPage.getByRole("link", { name: "Joining Friend", exact: true }) });
+    await expect(friendRow).toContainText(playing ? "Do not disturb" : "At a table");
+    const invite = friendRow.getByRole("button", { name: "Invite", exact: true });
+    await expect(invite).toBeEnabled();
+    for (const width of [390, 1440]) {
+      await hostPage.setViewportSize({ width, height: 900 });
+      expect(await hostPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    }
+    await invite.click();
+    await expect(friendRow.getByRole("button", { name: "Invited", exact: true })).toBeDisabled();
+    const notification = friendPage.getByRole("region", { name: "Table invitation from Table Host" });
+    await expect(notification).toBeVisible({ timeout: 15_000 });
+    await notification.getByRole("button", { name: "Join", exact: true }).click();
+    await expect(friendPage).toHaveURL(`${origin}/g/${seat.code}`);
+    await expect(friendPage.getByRole("form", { name: "Join table", exact: true })).toHaveCount(0);
+    const joined = await (await friend.context.request.get(`/api/games/${seat.code}/state`)).json();
+    expect(joined.me).toBeTruthy();
+    expect(joined.view.public.players.filter((p: { profileId: string }) => p.profileId === friend.profile.id)).toHaveLength(1);
+    await expect(friendRow.getByRole("button", { name: /^Invite/ })).toHaveCount(0);
+    expect((await (await post(host.context, "/api/social/invites", { profileId: friend.profile.id, code: seat.code })).json()).outcome.reason).toBe("here");
+    const previous = await (await friend.context.request.get(`/api/games/${other.code}/state`)).json();
+    expect(previous.me).toBe(other.playerId);
+    expect(previous.view.public.phase).toBe(playing ? "playing" : "lobby");
+  } finally { await host.context.close(); await friend.context.close(); }
+});
+
+test("an invitation from another table still rejects a destination that filled up", async ({ browser }) => {
+  const { host, friend, seat } = await setup(browser);
+  try {
+    const other = await (await post(friend.context, "/api/games", {})).json();
+    await post(friend.context, "/api/presence", { code: other.code });
+    expect((await (await post(host.context, "/api/social/invites", { profileId: friend.profile.id, code: seat.code })).json()).outcome.ok).toBe(true);
+    const invite = (await snapshot(friend.context)).invites[0];
+    for (let i = 0; i < 3; i++) {
+      const guest = await browser.newContext({ baseURL: origin });
+      try { expect((await post(guest, `/api/games/${seat.code}/join`, { name: `Guest ${i}` })).ok()).toBe(true); }
+      finally { await guest.close(); }
+    }
+    const answer = (await (await post(friend.context, "/api/social/invites/respond", { inviteId: invite.id, accept: true })).json()).answer;
+    expect(answer).toMatchObject({ ok: false, reason: "full" });
+    expect((await (await friend.context.request.get(`/api/games/${other.code}/state`)).json()).me).toBe(other.playerId);
+    expect((await (await friend.context.request.get(`/api/games/${seat.code}/state`)).json()).me).toBeNull();
+  } finally { await host.context.close(); await friend.context.close(); }
+});
+
 test("friends request a seat, receive a decision, and join only after approval", async ({ browser }) => {
   const { host, friend, seat, tableId } = await setup(browser);
   const hostPage = await host.context.newPage();

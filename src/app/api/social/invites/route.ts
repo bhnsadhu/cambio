@@ -1,4 +1,4 @@
-import { createInvite, presenceOf, profileByToken, socialFor } from "@/lib/server/social";
+import { createInvite, profileByToken, socialFor } from "@/lib/server/social";
 import { loadByCode } from "@/lib/server/store";
 import { normaliseCode } from "@/lib/server/ids";
 import { fail, ok, requireProfileToken } from "@/lib/server/http";
@@ -10,7 +10,7 @@ import type { InviteOutcome } from "@/lib/social/types";
  *
  * Every reason an invite would be pointless is checked here rather than left
  * for the other side to discover: the table has to still exist, still be open
- * and still have a seat, and the friend has to be free to take it.
+ * and still have a seat. Friends at other tables can choose whether to join.
  */
 export async function POST(req: Request) {
   try {
@@ -42,12 +42,6 @@ export async function POST(req: Request) {
     }
     const humans = row.state.players.filter((p) => !p.isBot).length;
     if (humans >= SEATS) return refuse("table-full", "Every seat at this table is taken.");
-
-    // Somebody already sitting somewhere else is not free to be asked.
-    const where = await presenceOf(friend.id);
-    if (where.code && where.code !== code) {
-      return refuse("busy", `${friend.displayName} is already in a game.`);
-    }
 
     return ok({ outcome: await createInvite(me.id, friend.id, code) });
   } catch (e) {

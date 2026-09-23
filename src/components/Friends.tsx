@@ -172,12 +172,11 @@ function FriendRow({ friend, social, inviteCode, atThisTable = false }: { friend
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const live = friend.playing;
-  const here = friend.online && (atThisTable || !!live?.together);
+  const here = inviteCode ? atThisTable : friend.online && !!live?.together;
   const sent = social.social.sent.find((s) => s.toId === friend.id && s.code === inviteCode);
   const cooldown = useResendCooldown(sent?.at);
-  // You can only ask someone who is free to be asked: not already at this
-  // table, not sitting at another one.
-  const invitable = !!inviteCode && !live && !here;
+  // A friend at another table can still choose to accept an invitation here.
+  const invitable = !!inviteCode && !here;
 
   const invite = async () => {
     if (!inviteCode) return;

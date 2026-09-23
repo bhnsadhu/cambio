@@ -1,4 +1,4 @@
-import { peekInvite, presenceOf, profileByToken, respondToInvite } from "@/lib/server/social";
+import { peekInvite, profileByToken, respondToInvite } from "@/lib/server/social";
 import { joinGame, loadByCode } from "@/lib/server/store";
 import { fail, ok, requireProfileToken } from "@/lib/server/http";
 import { GameError, SEATS } from "@/lib/game/engine";
@@ -44,12 +44,6 @@ export async function POST(req: Request) {
     if (!row.state.players.some((p) => p.profileId === invite.from.id && !p.isBot)) {
       await respondToInvite(me.id, body.inviteId, false);
       return refuse("expired", "Your friend has left that table. Ask for a new invitation.");
-    }
-
-    // One seat at a time: leave the table you are at before taking another.
-    const where = await presenceOf(me.id);
-    if (where.code && where.code !== invite.code) {
-      return refuse("busy", `Leave table ${where.code} first, then accept.`);
     }
 
     if (row.state.phase !== "lobby") return refuse("started", "That round has already started.");
