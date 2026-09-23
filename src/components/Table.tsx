@@ -259,9 +259,9 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
   const drawn = view.private?.drawnCard ?? null;
 
   return (
-    <div className="grid gap-5 pb-6 xl:h-[calc(100dvh-80px)] xl:min-h-[650px] xl:grid-cols-[minmax(0,1fr)_240px]">
-      <div className="flex min-h-0 min-w-0 flex-col gap-5">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-[repeat(4,minmax(0,1fr))_auto] xl:gap-4">
+    <div className="flex flex-col gap-4 pb-4 lg:grid lg:h-[calc(100dvh-96px)] lg:min-h-[600px] lg:grid-cols-[minmax(0,1fr)_240px]">
+      <div className="contents min-h-0 min-w-0 lg:flex lg:flex-col lg:gap-4">
+        <div className="order-1 grid grid-cols-2 gap-3 md:grid-cols-4 lg:shrink-0 xl:gap-4">
           {pub.players.map((p) => (
             <PlayerPanel
               key={p.id}
@@ -283,20 +283,12 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
               positions={positions}
             />
           ))}
-          <Piles
-            deckCount={pub.deckCount}
-            discardTop={pub.discardTop}
-            discardCount={pub.discardCount}
-            canDraw={myTurn && pub.turn?.stage === "draw" && !game.busy}
-            onDraw={() => void fire({ type: "draw" })}
-            hideDiscard={hidden.has("discard")}
-            positions={positions}
-          />
+
         </div>
 
         {/* The middle of the table: timed reveals and an open pause request
             live here, between the hands and the actions. */}
-        <div className="relative flex min-h-20 flex-1 flex-col items-center justify-center gap-3 xl:min-h-0">
+        <div className="relative order-3 flex min-h-20 flex-1 flex-col items-center justify-center gap-3">
           <BigMoment announcement={announcement} players={pub.players} me={me} />
           <PauseBanner view={pub} me={me} busy={game.busy} onVote={(agree) => void game.send({ type: "pauseVote", agree })} />
           <Announcer announcement={announcement} players={pub.players} me={me} />
@@ -312,7 +304,7 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
         </div>
 
         {/* Action bar */}
-        <section aria-label="Round actions" className="flex min-h-[92px] flex-col items-start justify-between gap-4 rounded-panel bg-surface px-4 py-4 hairline sm:px-5 xl:flex-row xl:items-center xl:gap-6">
+        <section aria-label="Round actions" className="order-4 flex min-h-[92px] shrink-0 flex-col items-start justify-between gap-4 rounded-panel bg-surface px-4 py-4 hairline sm:px-5 xl:flex-row xl:items-center xl:gap-6">
           <div className="flex min-w-0 items-center gap-4 xl:gap-5">
             {showDrawnSlot ? (
               <div ref={positions.register("drawn")} className="h-[var(--tile-h)] w-[var(--tile-w)] shrink-0">
@@ -390,7 +382,18 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
         </section>
       </div>
 
-      <EventFeed log={pub.log} players={pub.players} me={me} onTrace={setTraced} />
+      <div className="contents min-h-0 min-w-0 lg:flex lg:flex-col lg:gap-4">
+          <Piles
+            deckCount={pub.deckCount}
+            discardTop={pub.discardTop}
+            discardCount={pub.discardCount}
+            canDraw={myTurn && pub.turn?.stage === "draw" && !game.busy}
+            onDraw={() => void fire({ type: "draw" })}
+            hideDiscard={hidden.has("discard")}
+            positions={positions}
+          />
+        <EventFeed log={pub.log} players={pub.players} me={me} onTrace={setTraced} />
+      </div>
 
       {pub.phase === "scoring" ? (
         <Scoreboard
