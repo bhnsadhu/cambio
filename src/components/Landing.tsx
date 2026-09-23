@@ -6,14 +6,11 @@ import { useState, type FormEvent } from "react";
 import { loginHref } from "@/lib/account/navigation";
 import { api, RequestError } from "@/lib/client/api";
 import { dismissAccountNotice, useAccountNotice, useAccountReady } from "@/lib/client/profile";
-import { setPref, usePrefs } from "@/lib/client/prefs";
 import { saveSession, storeName } from "@/lib/client/session";
 import { useSocial } from "@/lib/client/social";
 import { useStoredName } from "@/lib/client/useStoredName";
 import { CardBack, FaceCard } from "./cards";
-import { Explainer } from "./Explainer";
 import { FriendsPanel, Notifications } from "./Friends";
-import { HowToPlay } from "./HowToPlay";
 import { AppHeader } from "./AppHeader";
 import { RecentTable } from "./RecentTable";
 import { Button, Field, inputClass, PlayerName } from "./ui";
@@ -23,14 +20,10 @@ export function Landing() {
   const social = useSocial();
   const accountReady = useAccountReady();
   const notice = useAccountNotice();
-  const prefs = usePrefs();
   const [name, setName] = useStoredName();
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState<"create" | "join" | null>(null);
   const [error, setError] = useState<{ mode: "create" | "join"; message: string } | null>(null);
-  const [help, setHelp] = useState(false);
-  const [walkthrough, setWalkthrough] = useState(false);
-  const openHelp = () => prefs.onboarded ? setHelp(true) : setWalkthrough(true);
   const profile = social.profile;
   const next = code.length === 5 ? `/g/${code}` : "/";
   const rememberGuest = () => storeName(name.trim());
@@ -86,7 +79,7 @@ export function Landing() {
 
   return (
     <main className="site-shell">
-      <AppHeader active="tables" loginNext={next} onLogin={rememberGuest} trailing={<Button variant="ghost" size="sm" onClick={openHelp}>How to play</Button>} />
+      <AppHeader active="tables" loginNext={next} onLogin={rememberGuest} />
       {notice ? <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-panel bg-accent-soft p-4">
         <p role="status" className="t-sub min-w-0 flex-1 basis-40 text-accent">{notice}</p>
         <Button type="button" variant="ghost" size="sm" className="shrink-0" aria-label="Dismiss message" onClick={dismissAccountNotice}>Dismiss</Button>
@@ -116,8 +109,6 @@ export function Landing() {
         {play}
       </section>}
       <Notifications social={social} />
-      <HowToPlay open={help} onClose={() => setHelp(false)} onReplay={() => { setHelp(false); setWalkthrough(true); }} />
-      {walkthrough ? <Explainer onDone={() => { setPref("onboarded", true); setWalkthrough(false); }} onRules={() => { setPref("onboarded", true); setWalkthrough(false); setHelp(true); }} /> : null}
     </main>
   );
 }

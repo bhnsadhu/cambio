@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { loginHref } from "@/lib/account/navigation";
 import { useAccountReady, useStoredProfile } from "@/lib/client/profile";
+import { HowToPlayButton } from "./HowToPlayButton";
 import { buttonClass, Wordmark } from "./ui";
 
 /** Shared website navigation; table controls remain local to the game. */
@@ -27,6 +28,9 @@ export function AppHeader({ active, accountFrom = "/", loginNext = "/", onLogin,
         <Link href={accountFrom === "/" ? "/me" : `/me?${new URLSearchParams({ from: accountFrom })}`} aria-label="Account settings" aria-current={active === "account" ? "page" : undefined} className={`${navClass} sm:ml-auto`}>Account</Link>
       </> : ready ? <Link href={loginHref(loginNext)} onClick={onLogin} aria-current={active === "login" ? "page" : undefined} className={buttonClass({ size: "sm", className: "ml-auto" })}>Log in</Link> : null}
     </nav>
-    {trailing ? <div className="ml-auto flex max-w-full flex-wrap items-center gap-3 sm:ml-0">{trailing}</div> : null}
+    <div className="ml-auto flex max-w-full flex-wrap items-center gap-3 sm:ml-0">
+      <HowToPlayButton />
+      {trailing}
+    </div>
   </header>;
 }

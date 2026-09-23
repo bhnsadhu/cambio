@@ -12,13 +12,11 @@ import { saveSession, storeName } from "@/lib/client/session";
 import { useStoredName } from "@/lib/client/useStoredName";
 import { useModalFocus } from "@/lib/client/useModalFocus";
 import { PositionsProvider } from "@/lib/client/positions";
-import { setPref, usePrefs } from "@/lib/client/prefs";
 import { Lobby } from "./Lobby";
 import { FriendsPanel, Notifications } from "./Friends";
 import { AccountLink } from "./Profile";
 import { Table } from "./Table";
-import { Explainer } from "./Explainer";
-import { HowToPlay } from "./HowToPlay";
+import { HowToPlayButton } from "./HowToPlayButton";
 import { FlightLayer, useFlights } from "./FlightLayer";
 import { PauseButton, PauseOverlay } from "./Pause";
 import { RoomSettings } from "./RoomSettings";
@@ -41,13 +39,10 @@ export function GameScreen({ code }: { code: string }) {
 function GameShell({ code }: { code: string }) {
   const game = useGame(code);
   const social = useSocial();
-  const prefs = usePrefs();
   const router = useRouter();
   const view = game.view;
   // Friends can see the table you are sitting at, and whether it has a seat
   // left. Watching a table is not sitting at one, so it lights nothing up.
-  const [help, setHelp] = useState(false);
-  const [replay, setReplay] = useState(false);
   const [watching, setWatching] = useState(false);
   const [leaving, setLeaving] = useState(false);
   /**
@@ -74,8 +69,6 @@ function GameShell({ code }: { code: string }) {
   const seatedProfiles = (view?.public.players ?? [])
     .map((p) => p.profileId)
     .filter((id): id is string => !!id);
-  const showExplainer = replay || (seated && !!view && prefs.onboarded !== true);
-  const closeExplainer = useCallback(() => { setPref("onboarded", true); setReplay(false); }, []);
   const flights = useFlights(view, game.me);
   const pause = {
     me: game.me,
@@ -141,7 +134,7 @@ function GameShell({ code }: { code: string }) {
             {social.profile && seated && view ? <RoomSettings view={view.public} me={game.me} busy={game.busy}
               onChange={(enabled) => { void game.send({ type: "setDoNotDisturb", enabled }).then(() => social.refresh()); }} /> : null}
             {view ? <PauseButton view={view.public} {...pause} /> : null}
-            <Button variant="ghost" size="sm" onClick={() => prefs.onboarded ? setHelp(true) : setReplay(true)}>How to play</Button>
+            <HowToPlayButton introduce={seated && !!view && !!game.me} />
             {game.session ? (
               leaving ? (
                 <span className="t-sub px-3.5 text-ink-3">Leaving table</span>
@@ -170,8 +163,6 @@ function GameShell({ code }: { code: string }) {
         /> : null}
         <Toasts toasts={game.toasts} />
         <Notifications social={social} atCode={code} acceptsJoinRequests={!seated || !view?.public.doNotDisturb} />
-        {showExplainer ? <Explainer onDone={closeExplainer} onRules={() => { closeExplainer(); setHelp(true); }} /> : null}
-        <HowToPlay open={help} onClose={() => setHelp(false)} onReplay={() => { setHelp(false); setReplay(true); }} />
       </main>
     </>
   );
