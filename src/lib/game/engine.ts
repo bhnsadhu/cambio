@@ -8,6 +8,7 @@
  */
 
 import { botAvatarId } from "../bot-identity";
+import { assessCambio } from "./bot-beliefs";
 import {
   buildDeck,
   cardValue,
@@ -629,6 +630,11 @@ function doSwap(state: GameState, actor: Player, cardId: string, ctx: EngineCtx)
 function doCallCambio(state: GameState, actor: Player, ctx: EngineCtx) {
   requirePhase(state, ["playing"]);
   requireTurn(state, actor, "draw");
+  // A human stick can change the table while the runner waits, or between
+  // load and commit. Recheck on every authoritative reducer/CAS attempt.
+  if (actor.isBot && !assessCambio(state, actor.id).call) {
+    throw new GameError("STALE_BOT_PLAN", "The table changed. Reconsider Cambio before calling.");
+  }
   addLog(state, ctx, `${actor.name} called Cambio. Everyone else gets one last turn.`, { kind: "cambio", actorId: actor.id, tone: "accent", weight: "loud" });
   startCambio(state, actor.id, "called", actor.id);
   endTurn(state, ctx);

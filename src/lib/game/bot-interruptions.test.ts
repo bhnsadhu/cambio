@@ -55,3 +55,36 @@ describe("sticks are independent of turn powers", () => {
     expect(planBots(state, ctx.now, () => 0.5).some((plan) => plan.playerId === bot.id && plan.action.type === "stick")).toBe(false);
   });
 });
+
+
+describe("authoritative Cambio revalidation", () => {
+  for (const difficulty of ["easy", "medium", "hard"] as const) {
+    it(`${difficulty} cancels an otherwise legal planned call if a stick removes its lead`, () => {
+      const ctx = makeCtx(23);
+      const t = started(ctx, 4);
+      let state = t.state;
+      const caller = state.players[0];
+      caller.isBot = true;
+      caller.difficulty = difficulty;
+      state = rig(state, caller.id, [card("caller-five", "5")]);
+      state = rig(state, t.ids[1], [card("opponent-eight", "8"), card("opponent-nine", "9")]);
+      state = rig(state, t.ids[2], [card("third-ten", "10"), card("third-jack", "J"), card("third-queen", "Q")]);
+      state = rig(state, t.ids[3], [card("fourth-ten", "10"), card("fourth-jack", "J"), card("fourth-queen", "Q")]);
+      state.cards["top-eight"] = card("top-eight", "8");
+      state.discard.push("top-eight");
+      state.turnsTaken = 8;
+      state.botKnown[caller.id] = state.players.flatMap((p) => p.hand.filter((id): id is string => !!id));
+      const call = planBots(state, ctx.now, () => 0.5).find((plan) => plan.playerId === caller.id && plan.action.type === "callCambio")!;
+      expect(call).toBeDefined();
+      expect(act(state, caller.id, call.action, ctx).phase).toBe("final");
+      state = act(state, t.ids[1], { type: "stick", cardId: "opponent-eight" }, ctx);
+      expect(state.phase).toBe("playing");
+      expect(state.turn?.playerId).toBe(caller.id);
+      expect(() => act(state, caller.id, call.action, ctx)).toThrow(/Reconsider Cambio/);
+      expect(planBots(state, ctx.now, () => 0.5).some((plan) => plan.playerId === caller.id && plan.action.type === "draw")).toBe(true);
+      // Humans retain the right to call according to their own judgment.
+      state.players[0].isBot = false;
+      expect(act(state, caller.id, call.action, ctx).phase).toBe("final");
+    });
+  }
+});
