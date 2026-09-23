@@ -7,6 +7,7 @@
  * can serialize actions with optimistic concurrency (see server/store.ts).
  */
 
+import { botAvatarId } from "../bot-identity";
 import {
   buildDeck,
   cardValue,
@@ -457,6 +458,7 @@ function fillBots(state: GameState, ctx: EngineCtx) {
       name,
       isBot: true,
       isHost: false,
+      avatarId: botAvatarId(name),
       difficulty: difficultyForSeat(state, seat),
       hand: [null, null, null, null],
     });

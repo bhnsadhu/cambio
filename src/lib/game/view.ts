@@ -6,6 +6,7 @@
  * the requesting player's drawn card and their unexpired reveals.
  */
 
+import { botAvatarId } from "../bot-identity";
 import { TURN_TIMEOUT_MS } from "./engine";
 import type { GameState, PlayerView, PrivateView, PublicView } from "./types";
 
@@ -26,7 +27,8 @@ export function projectPublic(state: GameState, version: number, now: number): P
       isHost: p.isHost,
       ...(p.isBot ? { difficulty: p.difficulty ?? "medium" } : {}),
       profileId: p.profileId ?? null,
-      avatarId: p.avatarId ?? null,
+      // Normalize older saved tables too, before avatars were stored on bots.
+      avatarId: (p.isBot ? botAvatarId(p.name) : null) ?? p.avatarId ?? null,
       hand: p.hand.slice(),
       cardCount: p.hand.filter((c) => c !== null).length,
     })),
