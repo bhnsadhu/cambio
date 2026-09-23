@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { backLabel } from "@/lib/account/navigation";
+import { backLabel, settingsReturnPath } from "@/lib/account/navigation";
 import { useAccountReady, useStoredProfile } from "@/lib/client/profile";
 import { useStoredName } from "@/lib/client/useStoredName";
 import { AuthForm } from "./Account";
@@ -17,7 +17,7 @@ export function AccountAccess({ next, initialMode }: { next: string; initialMode
   useEffect(() => {
     if (ready && stored?.username) router.replace(next);
   }, [ready, stored?.username, next, router]);
-  const back = next === "/me" ? "/" : next;
+  const back = settingsReturnPath(next);
   return (
     <main className="site-shell min-h-screen pb-16">
       <AppHeader active="login" loginNext={next} trailing={<Link href={back} className="t-sub text-ink-2 hover:text-ink">{backLabel(back)}</Link>} />

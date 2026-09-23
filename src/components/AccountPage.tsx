@@ -13,9 +13,10 @@ export function AccountPage({ back }: { back: string }) {
   const stored = useStoredProfile();
   const ready = useAccountReady();
   const exited = useRef(false);
+  const loginReturn = back === "/" ? "/me" : `/me?${new URLSearchParams({ from: back })}`;
   useEffect(() => {
-    if (ready && !stored?.username && !exited.current) router.replace(loginHref("/me"));
-  }, [ready, stored?.username, router]);
+    if (ready && !stored?.username && !exited.current) router.replace(loginHref(loginReturn));
+  }, [ready, stored?.username, router, loginReturn]);
   useEffect(() => {
     if (!stored?.username) return;
     const timer = window.setInterval(() => { void refreshProfile().catch(() => {}); }, 10_000);
