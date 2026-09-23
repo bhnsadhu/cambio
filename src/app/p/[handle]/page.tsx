@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
 import { AskToJoin, Notifications } from "@/components/Friends";
-import { AccountLink, ProfileCard } from "@/components/Profile";
-import { Button, buttonClass, Wordmark } from "@/components/ui";
+import { ProfileCard } from "@/components/Profile";
+import { Button, buttonClass } from "@/components/ui";
 import { callProfile, useAccountReady } from "@/lib/client/profile";
 import { loginHref } from "@/lib/account/navigation";
 import { useSocial } from "@/lib/client/social";
+import { AppHeader } from "@/components/AppHeader";
 import type { Profile } from "@/lib/social/types";
 
 type Relation = "self" | "friends" | "incoming" | "outgoing" | "none";
@@ -47,28 +48,24 @@ export default function PlayerPage({ params }: { params: Promise<{ handle: strin
   const friend = state ? social.social.friends.find((f) => f.id === state.profile.id) ?? null : null;
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-[620px] px-5 pb-20 sm:px-8">
-      <header className="flex min-h-14 flex-wrap items-center justify-between gap-3 py-3">
-        <Link href="/" aria-label="Cambio home"><Wordmark /></Link>
-        <nav aria-label="Main navigation" className="flex flex-wrap items-center gap-4">
-        <Link href="/leaderboard" className="t-sub text-ink-2 hover:text-ink">Leaderboard</Link>
-        {social.profile ? <AccountLink from={state?.relation === "self" ? "record" : `/p/${handle}`} /> : <Link href="/" className="t-sub text-ink-2 hover:text-ink">Back to play</Link>}
-        </nav>
-      </header>
+    <main className="site-shell min-h-screen pb-20">
+      <AppHeader active="profile" accountFrom={state?.relation === "self" ? "record" : `/p/${handle}`} loginNext={`/p/${handle}`} />
 
       {error ? (
         <div className="pt-16 animate-rise">
           <h1 className="t-title">{error}</h1>
           <p className="t-body mt-2 text-ink-2">Check the username with whoever sent it.</p>
+          <div className="mt-5 flex flex-wrap gap-3"><Button onClick={() => void load()}>Try again</Button><Link href="/" className={buttonClass({ variant: "ghost" })}>Back to play</Link></div>
         </div>
       ) : !state ? (
         <div className="skeleton mt-8 h-[320px] rounded-panel" aria-busy />
       ) : (
-        <div className="flex flex-col gap-4 pt-8 animate-rise">
-          <ProfileCard profile={state.profile} />
+        <div className="pt-8 animate-rise lg:pt-12">
+          <p className="t-overline mb-6 text-ink-3">Player record</p>
+          <ProfileCard profile={state.profile} actions={<>
           {actionError ? <p role="alert" className="t-sub text-red">{actionError}</p> : null}
           {friend?.playing ? (
-            <div className="flex items-center justify-between gap-3 rounded-panel bg-surface-2 px-5 py-4 hairline">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-panel bg-surface-2 px-5 py-4 hairline">
               <p className="t-sub">
                 {friend.playing.doNotDisturb ? "Do not disturb. Join requests are off."
                   : friend.playing.together ? "At your table" : "Playing at a table"}
@@ -100,6 +97,7 @@ export default function PlayerPage({ params }: { params: Promise<{ handle: strin
               </span>
             ) : null}
           </div>
+          </>} />
         </div>
       )}
       <Notifications social={social} />

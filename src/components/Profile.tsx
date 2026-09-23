@@ -8,17 +8,18 @@ import type { Profile } from "@/lib/social/types";
 import { RankBadge } from "./RankBadge";
 import { buttonClass } from "./ui";
 
-/** Compact outlined metric groups, following Offsuit's statistics screen. */
-export function ProfileCard({ profile, compact = false }: { profile: Profile; compact?: boolean }) {
+/** Player identity stays beside the record in a full browser window. */
+export function ProfileCard({ profile, compact = false, actions }: { profile: Profile; compact?: boolean; actions?: ReactNode }) {
   const standing = standingFor(profile.points);
   const rate = winRate(profile);
   const sticks = stickRate(profile);
   return (
-    <section aria-label={`${profile.displayName}'s record`}>
+    <section aria-label={`${profile.displayName}'s record`} className={compact ? undefined : "grid items-start gap-8 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-12"}>
+      <div className="min-w-0">
       <header className="flex items-center gap-3 pb-7">
-        <Avatar identity={profile.id} avatarId={profile.avatarId} size={68} />
+        <Avatar identity={profile.id} avatarId={profile.avatarId} size={76} />
         <div className="min-w-0 flex-1">
-          <h1 className="flex items-center gap-2 text-[26px] font-medium leading-tight tracking-[-0.025em]"><span className="min-w-0 break-words">{profile.displayName}</span><RankBadge points={profile.points} size={22} decorative /></h1>
+          <h1 className="flex items-center gap-2 text-[28px] font-medium leading-tight tracking-[-0.025em]"><span className="min-w-0 break-words">{profile.displayName}</span><RankBadge points={profile.points} size={22} decorative /></h1>
           <p className="mt-1 text-sm text-ink-3">@{profile.handle}</p>
         </div>
       </header>
@@ -37,8 +38,11 @@ export function ProfileCard({ profile, compact = false }: { profile: Profile; co
         <p className="mt-2 text-xs text-ink-3">{standing.next ? `${standing.toNext} points to ${standing.next.name}` : "Highest rank reached"}</p>
       </div>
 
-      {compact ? null : <>
-        <h2 className="mt-8 mb-4 text-[18px] font-normal">Statistics</h2>
+      {actions ? <div className="mt-6 flex flex-col gap-4">{actions}</div> : null}
+      </div>
+
+      {compact ? null : <div className="min-w-0 border-t border-line pt-7 lg:border-t-0 lg:border-l lg:pl-10 lg:pt-0">
+        <div className="mb-5 flex flex-wrap items-baseline justify-between gap-2"><h2 className="text-2xl font-medium tracking-tight">Statistics</h2><p className="t-sub text-ink-3">Lifetime record</p></div>
         <dl className="grid grid-cols-2 gap-3">
           <div className="stat-group"><Stat k="Tables played" v={profile.tablesPlayed} /></div>
           <div className="stat-group"><Stat k="Current streak" v={profile.currentStreak} /></div>
@@ -58,7 +62,7 @@ export function ProfileCard({ profile, compact = false }: { profile: Profile; co
           <Stat k="Cambio wins" v={profile.cambioWins} />
           <Stat k="Best streak" v={profile.bestStreak} />
         </dl>
-      </>}
+      </div>}
     </section>
   );
 }
@@ -66,7 +70,7 @@ export function ProfileCard({ profile, compact = false }: { profile: Profile; co
 function Stat({ k, v }: { k: string; v: ReactNode }) {
   return <div className="flex min-w-0 flex-col-reverse gap-1">
     <dt className="text-[11px] leading-snug text-ink-3 sm:text-xs">{k}</dt>
-    <dd className="tnum break-words text-[17px] font-medium leading-tight">{v}</dd>
+    <dd className="tnum break-words text-[22px] font-medium leading-tight lg:text-[26px]">{v}</dd>
   </div>;
 }
 
