@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { use, useCallback, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useRef, useState } from "react";
 import { AskToJoin, Notifications } from "@/components/Friends";
 import { ProfileCard } from "@/components/Profile";
 import { Button, buttonClass } from "@/components/ui";
-import { callProfile, useAccountReady } from "@/lib/client/profile";
+import { callProfile, profileGeneration, useAccountReady, useStoredProfile } from "@/lib/client/profile";
 import { loginHref } from "@/lib/account/navigation";
 import { useSocial } from "@/lib/client/social";
 import { AppHeader } from "@/components/AppHeader";
@@ -16,19 +16,31 @@ type Relation = "self" | "friends" | "incoming" | "outgoing" | "none";
 /** Anyone's record, and the one button that matters on it. */
 export default function PlayerPage({ params }: { params: Promise<{ handle: string }> }) {
   const { handle } = use(params);
+  const stored = useStoredProfile();
+  // Friendship and shared-round information belong to this viewer. Changing
+  // account or profile route discards the previous viewer's loaded details.
+  return <PlayerRecord key={`${handle}:${stored?.token ?? "guest"}`} handle={handle} />;
+}
+
+function PlayerRecord({ handle }: { handle: string }) {
   const social = useSocial();
   const accountReady = useAccountReady();
   const [state, setState] = useState<{ profile: Profile; relation: Relation; playedTogether: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const requestId = useRef(0);
 
   const load = useCallback(async () => {
+    const id = ++requestId.current;
+    const generation = profileGeneration();
     try {
       const res = await callProfile<{ profile: Profile; relation: Relation; playedTogether: number }>(`/api/profile/${handle}`);
+      if (id !== requestId.current || generation !== profileGeneration()) return;
       setState(res);
       setError(null);
     } catch (e) {
+      if (id !== requestId.current || generation !== profileGeneration()) return;
       setError(e instanceof Error ? e.message : "Could not find that player.");
     }
   }, [handle]);
@@ -89,7 +101,7 @@ export default function PlayerPage({ params }: { params: Promise<{ handle: strin
             ) : state.relation === "outgoing" ? (
               <Button variant="secondary" disabled>Request sent</Button>
             ) : (
-              <Button variant="primary" disabled={busy} onClick={() => void perform(() => social.addFriend(state.profile.handle))}>Add friend</Button>
+              <Button variant="primary" disabled={busy} onClick={() => void perform(() => social.addFriend(state.profile.handle, state.profile.id))}>Add friend</Button>
             )}
             {state.playedTogether > 0 ? (
               <span className="t-footnote text-ink-3">

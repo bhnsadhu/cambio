@@ -130,7 +130,7 @@ function GameShell({ code }: { code: string }) {
     // The ready check happens at the dealt table, not on a screen of its own:
     // your four cards are already in front of you, face down, while the table
     // waits on the last seat to say it is in.
-    body = <Table game={game} flights={flights} onLeave={() => void leave()} />;
+    body = <Table key={`table:${game.me ?? "spectator"}`} game={game} flights={flights} onLeave={() => void leave()} />;
   }
 
   return (

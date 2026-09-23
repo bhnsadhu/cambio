@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Action, PlayerView, PublicView } from "@/lib/game/types";
-import { profileGeneration, useStoredProfile } from "./profile";
+import { profileGeneration, storedProfile, useStoredProfile } from "./profile";
 import { api, RequestError, type ActionResponse } from "./api";
 import { subscribeGame, type ConnectionStatus } from "./realtime";
 import { forgetRecentTable, getServerSessionSnapshot, getSessionSnapshot, recentTable, rememberTable, setSessionValue, subscribeSession, type Session } from "./session";
@@ -32,11 +32,20 @@ const POLL_MS = 5000;
 const PLAY_POLL_MS = 1000;
 const NUDGE_AFTER_MS = 6000;
 
+interface ViewerIdentity { accountToken: string | null; seatToken: string | null }
+interface ViewSnapshot { view: PlayerView; me: string | null; identity: ViewerIdentity | null }
+const sameViewer = (a: ViewerIdentity | null | undefined, b: ViewerIdentity) =>
+  !!a && a.accountToken === b.accountToken && a.seatToken === b.seatToken;
+
 export function useGame(code: string): GameHook {
   const account = useStoredProfile();
   const session = useSyncExternalStore(subscribeSession, () => getSessionSnapshot(code), getServerSessionSnapshot);
-  const [view, setView] = useState<PlayerView | null>(null);
-  const [me, setMe] = useState<string | null>(null);
+  const [snapshot, setSnapshot] = useState<ViewSnapshot | null>(null);
+  const authorised = sameViewer(snapshot?.identity, { accountToken: account?.token ?? null, seatToken: session?.token ?? null });
+  // Already-rendered private cards belong to the identity that fetched them.
+  // Revoke them immediately on logout/seat changes, even while offline.
+  const view = useMemo(() => snapshot ? { ...snapshot.view, private: authorised ? snapshot.view.private : null } : null, [snapshot, authorised]);
+  const me = authorised ? snapshot?.me ?? null : null;
   const [status, setStatus] = useState<GameHook["status"]>("loading");
   const [connection, setConnection] = useState<ConnectionStatus>("connecting");
   const [busy, setBusy] = useState(false);
@@ -66,35 +75,46 @@ export function useGame(code: string): GameHook {
 
   /** Merge a public view if it is newer than what we have. */
   const acceptPublic = useCallback((pub: PublicView) => {
-    setView((cur) => {
-      if (cur && cur.public.version >= pub.version) return cur;
+    setSnapshot((cur) => {
+      if (cur && cur.view.public.version >= pub.version) return cur;
       lastChange.current = Date.now();
       // Private data can only change through our own actions or a new deal; keep it.
-      const privateView = cur?.private;
-      return { public: pub, private: privateView && pub.players.some((p) => p.id === privateView.playerId) ? privateView : null };
+      const privateView = cur?.view.private;
+      return {
+        view: { public: pub, private: privateView && pub.players.some((p) => p.id === privateView.playerId) ? privateView : null },
+        me: cur?.me ?? null, identity: cur?.identity ?? null,
+      };
     });
   }, []);
 
-  const acceptFull = useCallback((full: PlayerView, who: string | null) => {
+  const acceptFull = useCallback((full: PlayerView, who: string | null, identity: ViewerIdentity) => {
     skew.current = full.public.serverNow - Date.now();
     setSkewState((cur) => (Math.abs(cur - skew.current) > 250 ? skew.current : cur));
-    setMe(who);
-    setView((cur) => {
-      if (cur && cur.public.version > full.public.version) return cur;
-      if (!cur || cur.public.version !== full.public.version) lastChange.current = Date.now();
-      return full;
+    setSnapshot((cur) => {
+      const newerPublic = cur && cur.view.public.version > full.public.version;
+      const pub = newerPublic ? cur.view.public : full.public;
+      // A newer public update may outlive an account switch. Never tag the
+      // previous account's retained private view as belonging to the new one.
+      const privateView = newerPublic && sameViewer(cur.identity, identity) ? cur.view.private : full.private;
+      if (!cur || cur.view.public.version < full.public.version) lastChange.current = Date.now();
+      return {
+        view: { public: pub, private: privateView && pub.players.some((p) => p.id === privateView.playerId) ? privateView : null },
+        me: who && pub.players.some((p) => p.id === who && !p.isBot) ? who : null,
+        identity,
+      };
     });
   }, []);
 
   const refresh = useCallback(async () => {
     const gen = profileGeneration();
+    const accountToken = storedProfile()?.token ?? null;
     const token = sessionRef.current?.token ?? null;
     try {
       const res = await api.state(code, token);
       // A response for a different seat than the one we hold now is stale
       // (hydration fires one fetch before the stored seat is known).
       if (gen !== profileGeneration() || (sessionRef.current?.token ?? null) !== token) return;
-      acceptFull(res.view, res.me);
+      acceptFull(res.view, res.me, { accountToken, seatToken: res.seat?.token ?? (res.me ? token : null) });
       if (!res.me && sessionRef.current && res.view.public.log.some((entry) => entry.kind === "kick" && entry.subjectIds?.includes(sessionRef.current!.playerId))) setRemoved(true);
       if (res.seat && (sessionRef.current?.playerId !== res.seat.playerId || sessionRef.current?.token !== res.seat.token || sessionRef.current?.name !== res.seat.name)) setSession(res.seat);
       else if (token && !res.me) { setSession(null); forgetRecentTable(code); }
@@ -169,6 +189,7 @@ export function useGame(code: string): GameHook {
     const s = sessionRef.current;
     if (!s) return null;
     const gen = profileGeneration();
+    const accountToken = storedProfile()?.token ?? null;
     const actionId = crypto.randomUUID();
     setBusy(true);
     try {
@@ -180,11 +201,11 @@ export function useGame(code: string): GameHook {
         // Network hiccup: the action id makes a retry safe.
         res = await api.action(code, s.token, actionId, action);
       }
-      if (gen !== profileGeneration()) return null;
-      acceptFull(res.view, res.me);
+      if (gen !== profileGeneration() || sessionRef.current?.token !== s.token) return null;
+      acceptFull(res.view, res.me, { accountToken, seatToken: res.me ? s.token : null });
       return res;
     } catch (e) {
-      if (gen !== profileGeneration()) return null;
+      if (gen !== profileGeneration() || sessionRef.current?.token !== s.token) return null;
       if (e instanceof RequestError) {
         if (e.status === 401) setSession(null);
         toast(e.message, "bad");
