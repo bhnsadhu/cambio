@@ -94,7 +94,7 @@ test("account and social screens retain aligned panels, readable rows, and safe 
     await audit(page, "leaderboard", async () => {
       const cell = page.getByRole("row", { name: "Your leaderboard row" }).locator('th[scope="row"]');
       expect((await cell.boundingBox())!.width).toBeGreaterThan(180);
-      expect((await cell.locator("a > span").boundingBox())!.width).toBeGreaterThanOrEqual(100);
+      expect((await cell.locator("a > span").last().boundingBox())!.width).toBeGreaterThanOrEqual(100);
       expect(await cell.evaluate((element) => Number.parseFloat(getComputedStyle(element).paddingRight))).toBeGreaterThanOrEqual(20);
     });
 

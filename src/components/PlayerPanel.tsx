@@ -45,9 +45,9 @@ export function PlayerPanel({ player, isMe, isTurn, turnStage, isCaller, owesCar
       className={`relative flex min-w-0 flex-col gap-3 rounded-panel px-3 pt-3 pb-4 transition-[box-shadow,background-color] duration-300 ease-out xl:gap-4 xl:px-4 xl:pt-4 xl:pb-5 ${surface} ${ring}`}
       aria-label={`${player.name}'s hand`}
     >
-      <header className="flex flex-wrap items-start justify-between gap-2">
+      <header className="flex min-h-24 flex-wrap items-start justify-between gap-2 sm:min-h-20 xl:min-h-16">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex min-h-10 items-center gap-2">
             <Avatar identity={player.profileId ?? player.name} size={36} />
             {isTurn || ready === true ? <Pip /> : null}
             <h3 className="t-headline min-w-0 break-words text-[15px]! sm:text-[17px]!">
