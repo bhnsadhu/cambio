@@ -43,7 +43,8 @@ export function useSocial(): SocialHook {
   const alive = useRef(true);
   const streaming = useRef(false);
   const lastRead = useRef(0);
-  const readSequence = useRef(0);
+  const reading = useRef<Promise<void> | null>(null);
+  const readAgain = useRef(false);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
 
   // Everything is derived from the stored profile and the last read, so
@@ -54,26 +55,35 @@ export function useSocial(): SocialHook {
   const loading = !!stored && !fresh && error === null;
 
   const refresh = useCallback(async () => {
-    const held = storedProfile();
-    if (!held) return;
-    const gen = profileGeneration();
-    const request = ++readSequence.current;
-    try {
-      const res = await callProfile<{ profile: Profile | null; social: Social | null; channel?: string | null }>("/api/social");
-      // Whoever is signed in now may not be who this read was for: a sign-out
-      // or a switch while it was in flight makes the answer somebody else's.
-      const still = storedProfile();
-      if (!alive.current || request !== readSequence.current || gen !== profileGeneration() || still?.token !== held.token) return;
-      lastRead.current = Date.now();
-      setFetched({ token: held.token, profile: res.profile, social: res.social ?? EMPTY_SOCIAL, channel: res.channel ?? null });
-      // The record moves while you play; keep the cached copy in step. The
-      // generation keeps a read that outlived a sign-out from bringing the
-      // profile back.
-      if (res.profile) saveStoredProfile({ ...held, profile: res.profile, ...(held.username ? { username: res.profile.handle } : {}) }, gen);
-      else saveStoredProfile(null, gen);
-      setError(null);
-    } catch (e) {
-      if (alive.current && request === readSequence.current && gen === profileGeneration()) setError(e instanceof Error ? e.message : "Could not reach the friends list.");
+    // Coalesce polling and stream events. Slow connections must still display
+    // completed reads instead of being superseded by another poll every 2s.
+    if (reading.current) { readAgain.current = true; return reading.current; }
+    const run = async () => {
+      do {
+        readAgain.current = false;
+        const held = storedProfile();
+        if (!held) return;
+        const gen = profileGeneration();
+        try {
+          const res = await callProfile<{ profile: Profile | null; social: Social | null; channel?: string | null }>("/api/social");
+          // A response that outlived logout or an account switch cannot bring
+          // the previous identity or its friends back into the page.
+          const still = storedProfile();
+          if (!alive.current || gen !== profileGeneration() || still?.token !== held.token) continue;
+          lastRead.current = Date.now();
+          setFetched({ token: held.token, profile: res.profile, social: res.social ?? EMPTY_SOCIAL, channel: res.channel ?? null });
+          if (res.profile) saveStoredProfile({ ...held, profile: res.profile, ...(held.username ? { username: res.profile.handle } : {}) }, gen);
+          else saveStoredProfile(null, gen);
+          setError(null);
+        } catch (e) {
+          if (alive.current && gen === profileGeneration()) setError(e instanceof Error ? e.message : "Could not reach the friends list.");
+        }
+      } while (alive.current && readAgain.current);
+    };
+    const pending = run();
+    reading.current = pending;
+    try { await pending; } finally {
+      if (reading.current === pending) reading.current = null;
     }
   }, []);
 

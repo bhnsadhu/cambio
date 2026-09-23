@@ -155,3 +155,31 @@ test("account switching rejects delayed heartbeats from the previous identity wi
     await status(watching, false, "Next Account");
   } finally { await actor.context.close(); await observer.context.close(); await next.context.close(); }
 });
+
+test("slow social responses finish without overlapping polls or starving the visible friend list", async ({ browser }) => {
+  const { actor, observer } = await friends(browser);
+  const watching = await observer.context.newPage();
+  let inFlight = 0;
+  let maximum = 0;
+  try {
+    await watching.routeWebSocket(/\/realtime\/v1\/websocket/, (socket) => socket.close());
+    await watching.route("**/api/social", async (route) => {
+      maximum = Math.max(maximum, ++inFlight);
+      try {
+        const response = await route.fetch();
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+        await route.fulfill({ response });
+      } finally { inFlight--; }
+    });
+    await watching.goto("/");
+    await status(watching, false);
+    expect(maximum).toBe(1);
+    // A queued read is allowed to finish too; it must not erase a valid row.
+    await watching.waitForResponse((response) => response.url().endsWith("/api/social"));
+    await status(watching, false);
+    expect(maximum).toBe(1);
+  } finally {
+    await watching.unrouteAll({ behavior: "wait" });
+    await actor.context.close(); await observer.context.close();
+  }
+});
