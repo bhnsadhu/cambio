@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { authenticate, deleteAccount, signOut, updateAccount, type StoredProfile } from "@/lib/client/profile";
-import { AVATAR_OPTIONS, avatarIndex } from "@/lib/avatars";
+import { AVATAR_OPTIONS, SKIN_TONE_OPTIONS, avatarChoice, avatarIndex, avatarStyle, avatarTone } from "@/lib/avatars";
 import { Avatar } from "./Avatar";
 import { Button, Field, inputClass } from "./ui";
 
@@ -70,6 +70,8 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
   const changeButtons = useRef<Partial<Record<Editor, HTMLButtonElement | null>>>({});
   const [avatarDraft, setAvatarDraft] = useState<number | null>(null);
   const selectedAvatar = avatarDraft ?? avatarIndex(stored.profile.id, stored.profile.avatarId);
+  const selectedStyle = avatarStyle(selectedAvatar);
+  const selectedTone = avatarTone(selectedAvatar);
   const [nameDraft, setDisplayName] = useState<string | null>(null);
   const displayName = nameDraft ?? stored.profile.displayName;
   const [usernameDraft, setUsername] = useState<string | null>(null);
@@ -120,7 +122,7 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
           <div className={row}>
             <div className="flex min-w-0 items-center gap-3">
               <Avatar identity={stored.profile.id} avatarId={selectedAvatar} size={64} />
-              <div className="min-w-0"><h3 id="avatar-heading" className="t-headline">Avatar</h3><p className="t-sub mt-1 text-ink-2">Your look at the table.</p></div>
+              <div className="min-w-0"><h3 id="avatar-heading" className="t-headline">Avatar</h3><p className="t-sub mt-1 text-ink-2" aria-live="polite">{editing === "avatar" ? `${AVATAR_OPTIONS[selectedStyle].label} · ${SKIN_TONE_OPTIONS[selectedTone].label}` : "Your look at the table."}</p></div>
             </div>
             {change("avatar", "avatar")}
           </div>
@@ -132,10 +134,22 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
               <legend className="t-sub mb-3 text-ink-2">Choose your avatar. Change it whenever you like.</legend>
               <div className="grid grid-cols-3 gap-2">
                 {AVATAR_OPTIONS.map((option) => <label key={option.id} className="group relative min-w-0 cursor-pointer">
-                  <input className="peer absolute inset-0 z-10 size-full cursor-pointer opacity-0 disabled:cursor-wait" type="radio" name="avatarId" value={option.id} checked={selectedAvatar === option.id} onChange={() => setAvatarDraft(option.id)} autoFocus={selectedAvatar === option.id} />
+                  <input className="peer absolute inset-0 z-10 size-full cursor-pointer opacity-0 disabled:cursor-wait" type="radio" name="avatarId" value={option.id} checked={selectedStyle === option.id} onChange={() => setAvatarDraft(avatarChoice(option.id, selectedTone))} autoFocus={selectedStyle === option.id} />
                   <span className="flex min-w-0 flex-col items-center gap-1 rounded-2xl border border-line-strong px-1 py-3 transition-colors group-hover:bg-ink/5 peer-checked:border-accent peer-checked:bg-accent/10 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent peer-disabled:cursor-wait peer-disabled:opacity-60">
-                    <Avatar identity={stored.profile.id} avatarId={option.id} size={56} />
+                    <Avatar identity={stored.profile.id} avatarId={avatarChoice(option.id, selectedTone)} size={56} />
                     <span className="text-center text-[11px] leading-snug text-ink-2">{option.label}</span>
+                  </span>
+                </label>)}
+              </div>
+            </fieldset>
+            <fieldset disabled={!!busy}>
+              <legend className="t-sub mb-3 text-ink-2">Skin tone</legend>
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                {SKIN_TONE_OPTIONS.map((option) => <label key={option.id} className="group relative min-w-0 cursor-pointer">
+                  <input className="peer absolute inset-0 z-10 size-full cursor-pointer opacity-0 disabled:cursor-wait" type="radio" name="skinTone" value={option.id} checked={selectedTone === option.id} onChange={() => setAvatarDraft(avatarChoice(selectedStyle, option.id))} />
+                  <span className="flex min-w-0 flex-col items-center gap-2 rounded-xl border border-line-strong px-1 pt-3 pb-2 transition-colors group-hover:bg-ink/5 peer-checked:border-accent peer-checked:bg-accent/10 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent peer-disabled:cursor-wait peer-disabled:opacity-60">
+                    <span aria-hidden="true" className="size-6 shrink-0 rounded-full ring-1 ring-white/15" style={{ background: option.color ?? "conic-gradient(#f1c6a7, #dca27b, #ba7b53, #895337, #593725, #f1c6a7)" }} />
+                    <span className="flex min-h-7 items-center justify-center text-center text-[11px] leading-tight text-ink-2">{option.label}</span>
                   </span>
                 </label>)}
               </div>
