@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { backLabel, loginHref } from "@/lib/account/navigation";
@@ -27,7 +26,7 @@ export function AccountPage({ back }: { back: string }) {
   const destination = back === "record" ? stored ? `/p/${stored.profile.handle}` : "/" : back === "/me" ? "/" : back;
   return (
     <main className="site-shell min-h-screen pb-16">
-      <AppHeader active="account" accountFrom={back} trailing={<Link href={destination} className="t-sub text-ink-2 hover:text-ink">{backLabel(destination)}</Link>} />
+      <AppHeader active="account" accountFrom={back} back={{ href: destination, label: backLabel(destination) }} />
       <div className="pt-8 lg:pt-12">
         {!ready || !stored?.username ? <p role="status" className="t-sub text-ink-2">Checking your account</p> : <>
           <div className="mb-8"><h1 className="t-title">Account settings</h1><p className="t-body mt-3 text-ink-2">Manage your player profile and account access.</p></div>

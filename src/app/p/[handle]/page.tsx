@@ -49,7 +49,7 @@ export default function PlayerPage({ params }: { params: Promise<{ handle: strin
 
   return (
     <main className="site-shell min-h-screen pb-20">
-      <AppHeader active="profile" accountFrom={state?.relation === "self" ? "record" : `/p/${handle}`} loginNext={`/p/${handle}`} />
+      <AppHeader active={state?.relation === "self" ? "profile" : undefined} accountFrom={state?.relation === "self" ? "record" : `/p/${handle}`} loginNext={`/p/${handle}`} />
 
       {error ? (
         <div className="pt-16 animate-rise">

@@ -1,12 +1,11 @@
 "use client";
 
 import { Avatar } from "./Avatar";
-import Link from "next/link";
 import { type ReactNode } from "react";
 import { standingFor, standingLine, stickRate, winRate } from "@/lib/social/rank";
 import type { Profile } from "@/lib/social/types";
 import { RankBadge } from "./RankBadge";
-import { buttonClass } from "./ui";
+import { HeaderLink } from "./Header";
 
 /** Player identity stays beside the record in a full browser window. */
 export function ProfileCard({ profile, compact = false, actions }: { profile: Profile; compact?: boolean; actions?: ReactNode }) {
@@ -77,6 +76,6 @@ function Stat({ k, v }: { k: string; v: ReactNode }) {
 /** Account navigation stays the same across screens, without repeating stats. */
 export function AccountLink({ from = "/" }: { from?: string }) {
   return (
-    <Link href={from === "/" ? "/me" : `/me?${new URLSearchParams({ from })}`} aria-label="Account settings" className={buttonClass({ size: "sm" })}>Account</Link>
+    <HeaderLink href={from === "/" ? "/me" : `/me?${new URLSearchParams({ from })}`} aria-label="Account settings">Account</HeaderLink>
   );
 }

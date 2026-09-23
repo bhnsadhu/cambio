@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import { setPref, usePrefs } from "@/lib/client/prefs";
 import { Explainer } from "./Explainer";
 import { HowToPlay } from "./HowToPlay";
-import { Button } from "./ui";
+import { HeaderButton } from "./Header";
 
 /** The same introduction and rules, wherever someone needs a reminder. */
 export function HowToPlayButton({ introduce = false }: { introduce?: boolean }) {
@@ -23,13 +23,11 @@ export function HowToPlayButton({ introduce = false }: { introduce?: boolean }) 
   const replay = useCallback(() => setScreen("walkthrough"), []);
 
   return <>
-    <Button
-      variant="ghost"
-      size="sm"
+    <HeaderButton
       aria-haspopup="dialog"
       aria-expanded={walkthrough || screen === "rules"}
       onClick={() => setScreen(prefs.onboarded === true ? "rules" : "walkthrough")}
-    >How to play</Button>
+    >How to play</HeaderButton>
     {walkthrough ? <Explainer onDone={closeWalkthrough} onRules={readRules} /> : null}
     <HowToPlay open={screen === "rules"} onClose={closeRules} onReplay={replay} />
   </>;

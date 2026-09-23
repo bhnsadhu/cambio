@@ -5,6 +5,7 @@ import type { PublicView } from "@/lib/game/types";
 import { useModalFocus } from "@/lib/client/useModalFocus";
 import { Avatar } from "./Avatar";
 import { Button } from "./ui";
+import { HeaderButton } from "./Header";
 
 interface Props {
   view: PublicView;
@@ -15,7 +16,7 @@ interface Props {
 export function TablePlayers(props: Props) {
   const [open, setOpen] = useState(false);
   return <>
-    <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>Players</Button>
+    <HeaderButton onClick={() => setOpen(true)}>Players</HeaderButton>
     {open ? <PlayersDialog {...props} onClose={() => setOpen(false)} /> : null}
   </>;
 }

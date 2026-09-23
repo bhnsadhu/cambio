@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { backLabel, settingsReturnPath } from "@/lib/account/navigation";
@@ -20,7 +19,7 @@ export function AccountAccess({ next, initialMode }: { next: string; initialMode
   const back = settingsReturnPath(next);
   return (
     <main className="site-shell min-h-screen pb-16">
-      <AppHeader active="login" loginNext={next} trailing={<Link href={back} className="t-sub text-ink-2 hover:text-ink">{backLabel(back)}</Link>} />
+      <AppHeader active="login" loginNext={next} back={{ href: back, label: backLabel(back) }} />
       <div className="grid items-start gap-8 pt-8 lg:grid-cols-[minmax(0,1fr)_480px] lg:gap-12 lg:py-12">
         <aside className="hidden min-w-0 py-6 lg:block" aria-label="Your Cambio account">
           <p className="t-overline text-accent">Your Cambio account</p>

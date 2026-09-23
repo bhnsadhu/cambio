@@ -56,7 +56,7 @@ for (const mode of ["guest", "account"] as const) {
       const toggle = page.getByRole("switch", { name: "Do not disturb" });
       expect(await toggle.evaluate((element) => element.closest('nav[aria-label="Table controls"]') !== null)).toBe(true);
       await toggle.click(); await expect(toggle).toBeChecked();
-      expect((await toggle.boundingBox())!.height).toBeLessThanOrEqual(32);
+      expect((await toggle.boundingBox())!.height).toBe(40);
       await toggle.click(); await expect(toggle).not.toBeChecked();
     }
     await actions.getByRole("button", { name: "I'm ready", exact: true }).click();

@@ -25,7 +25,8 @@ import { RoomSettings } from "./RoomSettings";
 import { TablePlayers } from "./TablePlayers";
 import { TableSocialProvider } from "./PlayerSocial";
 import { GuestPlayerButton, GuestPlayerDialog, GuestSetup } from "./GuestPlayer";
-import { Button, buttonClass, Chip, DotOff, Pip, Wordmark } from "./ui";
+import { HeaderBar, HeaderButton, HeaderLink } from "./Header";
+import { Button, buttonClass, DotOff, Pip } from "./ui";
 
 /**
  * Card flights are tracked here rather than inside the table so that the
@@ -134,19 +135,17 @@ function GameShell({ code }: { code: string }) {
 
   return (
     <TableSocialProvider code={code} view={view?.public ?? null} social={social}>
-      <main className="mx-auto min-h-screen w-full max-w-[1600px] px-5 sm:px-8">
-        <header className="mb-4 flex min-h-20 flex-wrap items-center justify-between gap-x-5 gap-y-2 border-b border-line py-3">
-          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 sm:gap-x-5">
-            <Link href="/" aria-label="Cambio home"><Wordmark /></Link>
-            {view ? (
-              <div className="t-sub flex flex-wrap items-center gap-x-2 gap-y-1 text-ink-2 sm:border-l sm:border-line-strong sm:pl-5">
-                <span className="text-ink-3">Table</span>
+      <main className="mx-auto min-h-screen w-full max-w-[1600px] px-5 sm:px-8 lg:flex lg:h-dvh lg:flex-col">
+        <HeaderBar label="Table controls" className="mb-4" context={view ? (
+              <div className="t-sub flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-l border-line-strong pl-4 text-ink-2">
+                <span className="sr-only text-ink-3 sm:not-sr-only">Table</span>
                 <span className="tnum font-semibold tracking-[0.08em] text-ink">{view.public.code}</span>
                 {view.public.round > 0 ? <span className="text-ink-3">· Round {view.public.round}</span> : null}
               </div>
-            ) : null}
-          </div>
-          <nav aria-label="Table controls" className="flex max-w-full flex-wrap items-center gap-1 sm:gap-2">
+            ) : null} status={<span role="status" aria-label="Table connection" title={game.connection === "live" ? "Live" : game.connection === "connecting" ? "Connecting" : "Reconnecting"} className="inline-flex h-10 w-4 shrink-0 items-center gap-2 px-1 text-[11px] text-ink-3 sm:w-[108px]">
+              {game.connection === "live" ? <Pip /> : <DotOff />}
+              <span className="sr-only sm:not-sr-only">{game.connection === "live" ? "Live" : game.connection === "connecting" ? "Connecting" : "Reconnecting"}</span>
+            </span>}>
             {social.profile ? <AccountLink from={`/g/${code}`} /> : null}
             {!view?.public.paused ? guestPlayerControl : null}
             {view && !view.public.paused && game.me === view.public.hostId ? <TablePlayers view={view.public} busy={game.busy}
@@ -157,21 +156,16 @@ function GameShell({ code }: { code: string }) {
             <HowToPlayButton introduce={seated && !!view && !!game.me} />
             {game.session ? (
               leaving ? (
-                <span className="t-sub px-3.5 text-ink-3">Leaving table</span>
+                <HeaderButton disabled>Leaving table</HeaderButton>
               ) : (
-                <Button variant="ghost" size="sm" onClick={() => setLeaving(true)}>Leave</Button>
+                <HeaderButton onClick={() => setLeaving(true)}>Leave</HeaderButton>
               )
             ) : (
-              <Link href="/" className={buttonClass({ variant: "ghost", size: "sm" })}>Home</Link>
+              <HeaderLink href="/">Home</HeaderLink>
             )}
-            <Chip tone="neutral">
-              {game.connection === "live" ? <Pip /> : <DotOff />}
-              {game.connection === "live" ? "Live" : game.connection === "connecting" ? "Connecting" : "Reconnecting"}
-            </Chip>
-          </nav>
-        </header>
+        </HeaderBar>
 
-        {accountNotice ? <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-panel bg-accent-soft p-4">
+        {accountNotice ? <div className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-panel bg-accent-soft p-4">
           <p role="status" className="t-sub min-w-0 flex-1 basis-40 text-accent">{accountNotice}</p>
           <Button type="button" variant="ghost" size="sm" className="shrink-0" aria-label="Dismiss message" onClick={dismissAccountNotice}>Dismiss</Button>
         </div> : null}

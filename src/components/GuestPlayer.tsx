@@ -12,6 +12,7 @@ import type { PlayerPublic, PublicView } from "@/lib/game/types";
 import { Avatar } from "./Avatar";
 import { AvatarPicker } from "./AvatarPicker";
 import { GuestTableStats } from "./GuestTableStats";
+import { HeaderButton } from "./Header";
 import { Button, Chip, Field, inputClass } from "./ui";
 
 /** The same guest identity controls on the home page and a shared table link. */
@@ -47,9 +48,9 @@ export function GuestPlayerButton({ player, busy, onOpen, buttonRef }: {
   buttonRef?: RefObject<HTMLButtonElement | null>;
 }) {
   return (
-    <Button ref={buttonRef} type="button" size="sm" variant="ghost" disabled={busy} onClick={onOpen} aria-label="Your guest player">
+    <HeaderButton ref={buttonRef} disabled={busy} onClick={onOpen} aria-label="Your guest player">
       <Avatar identity={player.name} avatarId={player.avatarId} size={24} />Your player
-    </Button>
+    </HeaderButton>
   );
 }
 

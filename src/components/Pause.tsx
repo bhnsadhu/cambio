@@ -6,6 +6,7 @@ import type { PlayerPublic, PublicView } from "@/lib/game/types";
 import { useModalFocus } from "@/lib/client/useModalFocus";
 import { Button, buttonClass, Pip, PlayerName } from "./ui";
 import { TablePlayers } from "./TablePlayers";
+import { HeaderButton } from "./Header";
 
 /**
  * Pausing is unanimous, so the interesting part is always the same: who has
@@ -176,5 +177,5 @@ export function PauseButton({ view, me, busy, onRequest }: Omit<PauseProps, "onV
   const pausable = view.phase === "peek" || view.phase === "playing" || view.phase === "final";
   const seated = !!me && view.players.some((p) => p.id === me);
   if (!pausable || !seated || view.paused || view.pauseVote) return null;
-  return <Button variant="ghost" size="sm" disabled={busy} onClick={onRequest}>Pause</Button>;
+  return <HeaderButton disabled={busy} onClick={onRequest}>Pause</HeaderButton>;
 }
