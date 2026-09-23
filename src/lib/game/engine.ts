@@ -52,13 +52,11 @@ export const TURN_TIMEOUT_MS = 30_000;
  */
 export const READY_TIMEOUT_MS = 45_000;
 /**
- * Once the final turns are otherwise spent, how long a card still matching
- * the pile holds the score back. A stick during the window reopens it fresh,
- * so a run of several matching cards is never cut off partway through; a
- * timeout past the deadline closes it regardless, so one unclaimed match
- * cannot hold a round open forever.
+ * Every final turn gets this much time for the table to react before scoring.
+ * Successful sticks restart the clock, and owed cards suspend it. The window
+ * never depends on hidden ranks: everyone gets the same chance to act.
  */
-export const STICK_WINDOW_MS = 3_000;
+export const STICK_WINDOW_MS = 4_000;
 export const PEEK_REVEAL_MS = 6_000;
 export const KING_LOOK_MS = 120_000;
 export const MAX_LOG = 40;
@@ -802,6 +800,10 @@ function doStick(state: GameState, actor: Player, cardId: string, ctx: EngineCtx
   let note: ApplyResult["note"];
 
   if (ranksMatch(card, top)) {
+    // Refresh before any zero-card transition can check whether to score.
+    // A valid stick accepted against the live round earns a full new window,
+    // including when the old deadline passed before its timeout was applied.
+    state.stickWindowUntil = null;
     const where = placeOf(owner.player, owner.slot, actor);
     owner.player.hand[owner.slot] = null;
     trimHand(owner.player);
@@ -833,12 +835,8 @@ function doStick(state: GameState, actor: Player, cardId: string, ctx: EngineCtx
     note = { kind: "stick", correct: false };
   }
 
-  // Sticking is anytime and can land after the final turns are otherwise all
-  // spent. Recheck here rather than leaving that to whatever happened to call
-  // `maybeEndRound` last: a fresh, full window reopens if another card still
-  // matches, so a run of several correct sticks is never cut off partway
-  // through by the moment the last turn happened to end.
-  state.stickWindowUntil = null;
+  // Recheck only after the entire action is settled. Misses do not restart
+  // the clock, so repeated guesses cannot postpone scoring indefinitely.
   maybeEndRound(state, ctx);
   return note;
 }
@@ -928,10 +926,7 @@ function doTimeout(state: GameState, ctx: EngineCtx): boolean {
     }
   }
 
-  // A card was still sitting on the table matching the pile when the final
-  // turns finished, and the grace window given for it has now run out with
-  // nobody claiming it: close the round anyway rather than holding it open
-  // forever on one unclaimed match.
+  // Only a settled round whose full reaction window elapsed can score.
   if (state.phase === "final" && state.stickWindowUntil !== null && ctx.now >= state.stickWindowUntil) {
     acted = true;
   }
@@ -1005,7 +1000,7 @@ function settlePause(state: GameState, ctx: EngineCtx) {
   if (state.dealingUntil !== null) state.dealingUntil += held;
   if (state.openingPeekUntil !== null) state.openingPeekUntil += held;
   if (state.readyDeadline !== null) state.readyDeadline += held;
-  if (state.stickWindowUntil !== null) state.stickWindowUntil += held;
+  if (state.stickWindowUntil != null) state.stickWindowUntil += held;
   for (const r of state.reveals) r.until += held;
   state.paused = false;
   state.pausedAt = null;
@@ -1040,7 +1035,8 @@ function handleZero(state: GameState, player: Player, ctx: EngineCtx) {
     const anchorId = state.turn ? state.turn.playerId : player.id;
     startCambio(state, player.id, "zero", anchorId);
   }
-  if (!state.turn) maybeEndRound(state, ctx);
+  // The action that emptied this hand settles its remaining work before
+  // checking the round. Scoring here could interrupt a stick or owed-card give.
 }
 
 function endTurn(state: GameState, ctx: EngineCtx) {
@@ -1073,29 +1069,22 @@ function maybeEndRound(state: GameState, ctx: EngineCtx) {
   if (state.phase !== "final") return;
   if (state.turn) return;
   if (state.cambio && state.cambio.remaining.length > 0) return;
-  if (state.pendingGives.length > 0) return;
-
-  // Every turn is spent and nothing is owed: the round is otherwise ready to
-  // score. But a card still sitting in some hand may match the pile, and
-  // sticking is anytime — it must not be cut off by the very moment the last
-  // turn ends. Hold the round open for a beat instead. `doStick` clears the
-  // deadline before calling back in here, so a fresh stick reopens a full
-  // window rather than racing an old one; only a `timeout` past an
-  // already-set deadline is allowed to close it with a match still unclaimed.
-  const expired = state.stickWindowUntil !== null && ctx.now >= state.stickWindowUntil;
-  if (!expired && stickAvailable(state)) {
-    if (state.stickWindowUntil === null) state.stickWindowUntil = ctx.now + STICK_WINDOW_MS;
+  if (state.pendingGives.length > 0) {
+    state.stickWindowUntil = null;
     return;
   }
+
+  // Give every final placement a full reaction window, even if the server
+  // cannot see a matching card. Apart from consistent timing, this avoids
+  // revealing whether a face-down matching rank remains. Successful sticks
+  // and debt settlement reopen a full window for the next anytime action.
+  if (state.stickWindowUntil == null) {
+    state.stickWindowUntil = ctx.now + STICK_WINDOW_MS;
+    return;
+  }
+  if (ctx.now < state.stickWindowUntil) return;
   state.stickWindowUntil = null;
   scoreRound(state, ctx);
-}
-
-/** Does any card still on the table match the rank on top of the discard? */
-function stickAvailable(state: GameState): boolean {
-  if (state.discard.length === 0) return false;
-  const rank = state.cards[state.discard[state.discard.length - 1]].rank;
-  return state.players.some((p) => cardCount(p) > 0 && p.hand.some((id) => id !== null && state.cards[id].rank === rank));
 }
 
 function scoreRound(state: GameState, ctx: EngineCtx) {

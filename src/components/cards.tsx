@@ -98,7 +98,7 @@ export function CardTile({ position, empty, selectable, selected, cue, onClick, 
       />
     );
   }
-  const interactive = !!(selectable && onClick && !face);
+  const interactive = !!(selectable && onClick && (!face || cue === "Stick"));
   return (
     <button
       type="button"
@@ -112,7 +112,7 @@ export function CardTile({ position, empty, selectable, selected, cue, onClick, 
         selected ? "-translate-y-1.5" : "",
       ].join(" ")}
       data-face={face ? "up" : "down"}
-      aria-label={`${face ? `revealed ${face.rank}` : cue ? `${cue} this card` : "face down card"}${position ? `, position ${position}` : ""}`}
+      aria-label={`${cue ? `${cue} this card` : face ? `revealed ${face.rank}` : "face down card"}${position ? `, position ${position}` : ""}`}
     >
       {spotlit ? <span aria-hidden className="spotlight pointer-events-none absolute -inset-[3px] z-20" /> : null}
       <span className="flip-inner block">

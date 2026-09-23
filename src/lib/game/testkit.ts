@@ -33,11 +33,9 @@ export function act(state: GameState, playerId: string, action: Action, ctx: Eng
 }
 
 /**
- * The final turns can end with a card still on the table matching the pile,
- * which holds the round open for a beat rather than scoring out from under a
- * stick in flight (see `STICK_WINDOW_MS`). Tests that are not themselves
- * about sticking use this to settle straight through to scoring, exactly as
- * a timeout would once nobody claims the match.
+ * Every final turn has a reaction window before scoring. Tests that are not
+ * about sticking use this to settle through it just as the server timeout
+ * would when no more sticks arrive.
  */
 export function settleFinalTurns(state: GameState, ctx: EngineCtx & { tick: (ms: number) => void }): GameState {
   if (state.phase !== "final" || state.stickWindowUntil === null) return state;

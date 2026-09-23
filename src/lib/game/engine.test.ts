@@ -505,6 +505,7 @@ describe("cambio and round end", () => {
     expect(s.turn?.playerId).toBe(ids[0]);
     s = act(s, ids[0], { type: "draw" }, ctx);
     s = act(s, ids[0], { type: "place" }, ctx);
+    s = settleFinalTurns(s, ctx);
     expect(s.phase).toBe("scoring");
     const r = s.results[0];
     expect(r.scores.find((x) => x.playerId === ids[2])!.score).toBe(0);
@@ -544,6 +545,7 @@ describe("cambio and round end", () => {
     s = rigDeck(s, [card("n1", "3")]);
     s = act(s, ids[2], { type: "draw" }, ctx);
     s = act(s, ids[2], { type: "place" }, ctx);
+    s = settleFinalTurns(s, ctx);
     expect(s.phase).toBe("scoring");
   });
 
@@ -605,11 +607,12 @@ describe("cambio and round end", () => {
     expect(s.phase).toBe("final");
     expect(s.stickWindowUntil).not.toBeNull();
 
-    // Second stick of the same player's second matching card: not blocked,
-    // not capped at one, and the round closes right away now that nothing
-    // else on the table matches.
+    // The second stick is accepted too. Even with no matches left, the same
+    // final window is preserved so its timing never leaks hidden ranks.
     s = act(s, ids[3], { type: "stick", cardId: "e2" }, ctx);
     expect(player(s, ids[3]).hand).toEqual([null, null, "e3", "e4"]);
+    expect(s.phase).toBe("final");
+    s = settleFinalTurns(s, ctx);
     expect(s.phase).toBe("scoring");
     expect(s.results).toHaveLength(1);
     expect(s.results[0].tally?.[ids[3]]).toMatchObject({ sticks: 2, misses: 0 });
@@ -696,6 +699,7 @@ describe("cambio and round end", () => {
       s = act(s, id, { type: "draw" }, ctx);
       s = act(s, id, { type: "place" }, ctx);
     }
+    s = settleFinalTurns(s, ctx);
     expect(s.results[0].winnerIds).toEqual([ids[2]]);
     expect(s.results[0].nextLeadSeat).toBe(2);
     // Every seat has to ask, not just the host, and asking twice is a no-op.
@@ -731,6 +735,7 @@ describe("cambio and round end", () => {
       s = act(s, p.id, { type: "place" }, ctx);
       if (s.pendingPower) s = act(s, p.id, { type: "skipPower" }, ctx);
     }
+    s = settleFinalTurns(s, ctx);
     expect(s.phase).toBe("scoring");
     const bots = s.players.filter((p) => p.isBot).map((p) => p.id);
     expect(s.replayVotes.sort()).toEqual(bots.sort());
@@ -755,6 +760,7 @@ describe("cambio and round end", () => {
       s = act(s, p.id, { type: "place" }, ctx);
       if (s.pendingPower) s = act(s, p.id, { type: "skipPower" }, ctx);
     }
+    s = settleFinalTurns(s, ctx);
     expect(s.phase).toBe("scoring");
     s = act(s, ids[1], { type: "leaveTable" }, ctx);
     expect(s.phase).toBe("lobby");
@@ -866,6 +872,7 @@ describe("winner determination", () => {
       s = act(s, id, { type: "draw" }, ctx);
       s = act(s, id, { type: "place" }, ctx);
     }
+    s = settleFinalTurns(s, ctx);
     expect(s.phase).toBe("scoring");
     const r = s.results[0];
     expect(r.scores.find((x) => x.playerId === ids[2])!.score).toBe(0);

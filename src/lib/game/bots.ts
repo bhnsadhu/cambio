@@ -119,9 +119,8 @@ export function planBots(state: GameState, now: number, jitter: Jitter): BotPlan
     const from = state.players.find((p) => p.id === g.from);
     if (from && !from.isBot && g.since !== undefined) due = due === null ? g.since + TURN_TIMEOUT_MS : Math.min(due, g.since + TURN_TIMEOUT_MS);
   }
-  // A card still on the table matching the pile holds the final round open
-  // for a beat; if nobody (human or bot) claims it, someone still has to
-  // close the window out once it lapses.
+  // Every final placement gets a sticking window. The runner closes it even
+  // at all-human tables, so scoring does not depend on a browser watchdog.
   if (state.phase === "final" && state.stickWindowUntil !== null) {
     due = due === null ? state.stickWindowUntil : Math.min(due, state.stickWindowUntil);
   }

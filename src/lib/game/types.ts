@@ -222,11 +222,10 @@ export interface GameState {
   dealingUntil: number | null;
   openingPeekUntil: number | null;
   /**
-   * During final turns, once every turn is spent and nothing is owed: the
-   * moment past which the round scores even if a card on the table still
-   * matches the pile. Held open, and pushed back out, by every stick that
-   * still finds a match, so a run of several correct sticks is never cut
-   * short partway through. Null whenever nothing is waiting to close.
+   * Once every final turn is spent and nothing is owed, the earliest moment
+   * the round may score. Every round gets the full window, independent of
+   * hidden ranks. Successful sticks restart it; owed cards suspend it until
+   * the give resolves. Null whenever nothing is waiting to close.
    */
   stickWindowUntil: number | null;
   /** at scoring time: who has asked for another round (bots agree at once) */

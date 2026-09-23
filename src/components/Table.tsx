@@ -329,6 +329,7 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
             </div>
           </div>
           <div className="flex max-w-full flex-wrap items-center gap-3 xl:justify-end xl:gap-4">
+            {pub.phase === "final" && !pub.turn && pub.stickWindowUntil !== null ? <FinalStickTimer deadline={pub.stickWindowUntil} skew={game.skew} frozenAt={pub.paused ? pub.pausedAt : null} /> : null}
             {pub.turnDeadline !== null ? <TurnTimer deadline={pub.turnDeadline} skew={game.skew} mine={myTurn} frozenAt={pub.paused ? pub.pausedAt : null} /> : null}
             {readyCheck && mine ? (
               <>
@@ -405,6 +406,15 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
 }
 
 /** Thirty seconds per human turn. Quiet until the last ten, stopped when the table is. */
+function FinalStickTimer({ deadline, skew, frozenAt }: { deadline: number; skew: number; frozenAt: number | null }) {
+  const tick = useClock(100, frozenAt === null);
+  const remaining = Math.max(0, deadline - (frozenAt ?? tick + skew));
+  return <div className="flex items-center gap-3 rounded-full bg-accent-soft px-4 py-2.5 text-accent" aria-label="Final sticking window">
+    <span className="t-sub font-medium">Time to stick</span>
+    <span className="tnum min-w-[3ch] text-right text-lg font-medium">{tick || frozenAt !== null ? `${(remaining / 1000).toFixed(1)}s` : "…"}</span>
+  </div>;
+}
+
 function TurnTimer({ deadline, skew, mine, frozenAt }: { deadline: number; skew: number; mine: boolean; frozenAt: number | null }) {
   const tick = useClock(250, frozenAt === null);
   if (frozenAt === null && tick === 0) return null;
@@ -495,8 +505,8 @@ function describeStatus(
       ? { title: "Your last turn.", detail: "Draw from the deck, then keep or place the card." }
       : { title: "Your turn.", detail: "Draw from the deck, or call Cambio to make this the final round." };
   }
-  // Every final turn is spent, but a card on the table still matches the
-  // pile: the round holds for a beat rather than closing out from under it.
+  // Every final turn is spent. Keep every card available for the final
+  // sticking window before revealing the scored hands.
   if (pub.phase === "final" && !pub.turn) {
     return { title: "Last call for sticks.", detail: stickHint ?? "Every turn is in. The round is closing." };
   }
