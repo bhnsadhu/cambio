@@ -71,16 +71,35 @@ export async function registerAccount(req: Request, body: Record<string, unknown
   const username = usernameValue(body.username);
   const name = displayNameValue(body.displayName);
   const password = passwordValue(body.password);
+  if (body.avatarId !== undefined && !isAvatarId(body.avatarId)) {
+    throw new AccountError("AVATAR", "Choose one of the available avatars.");
+  }
   await limitAccountRequests(req, username);
   if (await accountFor(req)) throw new AccountError("SIGNED_IN", "Sign out before creating another account.", 409);
   const legacy = req.headers.get("x-cambio-profile");
   const token = newSessionToken();
-  const account = await accountRpc<RawAccount>("account_register", {
+  const passwordHash = await hashPassword(password);
+  let account = await accountRpc<RawAccount>("account_register", {
     p_username: username, p_display_name: name, p_handle: username,
-    p_password_hash: await hashPassword(password), p_session_hash: tokenHash(token),
+    p_password_hash: passwordHash, p_session_hash: tokenHash(token),
     p_legacy_hash: legacy ? tokenHash(legacy) : null,
   });
-  return { account, token };
+  let warning: string | null = null;
+  if (body.avatarId !== undefined) {
+    try {
+      account = await accountRpc<RawAccount>("account_update", {
+        p_session_hash: tokenHash(token), p_expected_hash: passwordHash,
+        p_display_name: null, p_username: null, p_password_hash: null,
+        p_next_session_hash: null, p_avatar_id: body.avatarId,
+      });
+    } catch (error) {
+      console.error("[account signup avatar]", error);
+      // Registration already committed. Deliver its session even if this
+      // optional customization failed, so the new account remains accessible.
+      warning = "Your account is created, but your avatar could not be saved. Choose your avatar again in your account.";
+    }
+  }
+  return { account, token, warning };
 }
 
 export async function loginAccount(req: Request, body: Record<string, unknown>) {

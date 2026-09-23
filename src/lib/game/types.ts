@@ -269,6 +269,8 @@ export type Action =
   | { type: "setBotDifficulty"; seat: number; difficulty: BotDifficulty }
   /** Host only, at any point: block requests while keeping invitations available. */
   | { type: "setDoNotDisturb"; enabled: boolean }
+  /** Guest only: change this seat's temporary name and avatar without leaving. */
+  | { type: "setGuestIdentity"; name: string; avatarId: number }
   | { type: "advance" }             // peek window -> first turn (idempotent)
   | { type: "draw" }
   | { type: "place" }               // discard the drawn card (may trigger power)

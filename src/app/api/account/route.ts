@@ -16,9 +16,10 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { account, token } = await registerAccount(req, body);
+    const { account, token, warning: avatarWarning } = await registerAccount(req, body);
     // An upgrade retains its original profile ID and any existing seats.
-    const warning = await refreshIdentity(account.profile.id, account.profile.display_name, account.profile.avatar_id, body.guestSeats);
+    const identityWarning = await refreshIdentity(account.profile.id, account.profile.display_name, account.profile.avatar_id, body.guestSeats);
+    const warning = [avatarWarning, identityWarning].filter(Boolean).join(" ") || null;
     return setSessionCookie(ok({ ...accountView(account), warning }, { status: 201 }), token);
   } catch (error) { return fail(error); }
 }

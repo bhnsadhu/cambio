@@ -4,9 +4,74 @@ import { cardValue, powerOf } from "./cards";
 import { projectFor } from "./view";
 import { planBots } from "./bots";
 import { act, card, makeCtx, player, readyAll, rig, rigDeck, settleFinalTurns, started, table } from "./testkit";
-import type { GameState } from "./types";
+import type { Action, GameState } from "./types";
 
 const topOf = (s: GameState) => s.cards[s.discard[s.discard.length - 1]];
+
+describe("temporary guest identity", () => {
+  it.each(["lobby", "ready", "peek", "playing", "final", "scoring"] as const)("changes only name and avatar during %s, including while paused", (phase) => {
+    const ctx = makeCtx();
+    const { state, ids } = started(ctx, 2);
+    state.phase = phase;
+    state.reveals.push({ id: "old-reveal", kind: "peekOwn", toPlayerId: ids[1], cardIds: [state.players[1].hand[0]!], until: ctx.now - 1 });
+    for (const paused of [false, true]) {
+      const input = { ...state, paused };
+      const before = structuredClone(input);
+      const result = applyAction(input, { actionId: "guest-edit", playerId: ids[1], action: {
+        type: "setGuestIdentity", name: "  New   Guest ", avatarId: 35,
+      } }, ctx);
+      expect(result.changed).toBe(true);
+      expect(result.state).toEqual({ ...before,
+        players: before.players.map((p) => p.id === ids[1] ? { ...p, name: "New Guest", avatarId: 35 } : p),
+        appliedActionIds: [...before.appliedActionIds, "guest-edit"], updatedAt: ctx.now,
+      });
+      expect(input).toEqual(before);
+      expect(projectFor(result.state, 2, ids[1], ctx.now).public.players[1]).toMatchObject({ name: "New Guest", avatarId: 35 });
+      expect(applyAction(result.state, { actionId: "same-identity", playerId: ids[1], action: {
+        type: "setGuestIdentity", name: "New Guest", avatarId: 35,
+      } }, ctx).changed).toBe(false);
+    }
+  });
+
+  it("keeps duplicate submissions idempotent", () => {
+    const ctx = makeCtx();
+    const { state, hostId } = table(ctx, 1);
+    const envelope = { actionId: "guest-edit", playerId: hostId, action: { type: "setGuestIdentity" as const, name: "Guest", avatarId: 0 } };
+    const result = applyAction(state, envelope, ctx);
+    expect(applyAction(result.state, envelope, ctx)).toEqual({ state: result.state, changed: false });
+  });
+
+  it("rejects account seats, house bots and spectators", () => {
+    const ctx = makeCtx();
+    const { state, hostId } = started(ctx, 1);
+    state.players[0].profileId = "account";
+    for (const id of [hostId, state.players[1].id, "spectator"]) {
+      expect(() => act(state, id, { type: "setGuestIdentity", name: "New name", avatarId: 0 }, ctx)).toThrow(GameError);
+    }
+  });
+
+  it.each([undefined, null, -1, 36, 0.5, "0", {}])("rejects malformed avatar %j without altering the seat", (avatarId) => {
+    const ctx = makeCtx();
+    const { state, hostId } = table(ctx, 1);
+    const before = structuredClone(state);
+    expect(() => act(state, hostId, { type: "setGuestIdentity", name: "New name", avatarId } as Action, ctx)).toThrow(/valid avatar/);
+    expect(state).toEqual(before);
+  });
+
+  it.each([undefined, null, 7, "", "   ", "Cameron", "CaMiLlE", "guest\u0000name"])("rejects malformed or reserved name %j", (name) => {
+    const ctx = makeCtx();
+    const { state, hostId } = table(ctx, 1);
+    expect(() => act(state, hostId, { type: "setGuestIdentity", name, avatarId: 0 } as Action, ctx)).toThrow(GameError);
+  });
+
+  it("carries selected guest avatars into new seats and preserves omitted defaults", () => {
+    const ctx = makeCtx();
+    const { state } = createGame("TEST1", "Guest host", ctx, undefined, 35);
+    const selected = joinGame(state, "Guest friend", ctx, undefined, 0).state;
+    const defaulted = joinGame(selected, "Guest default", ctx).state;
+    expect(defaulted.players.map((p) => [p.profileId, p.avatarId])).toEqual([[null, 35], [null, 0], [null, null]]);
+  });
+});
 
 describe("mid-round bot handoff", () => {
   it("preserves the exact slots, extra cards, drawn card and turn while revoking the old player", () => {

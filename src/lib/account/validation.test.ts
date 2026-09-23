@@ -26,4 +26,7 @@ describe("Account form validation", () => {
     for (const value of [null, {}, "", "short", "x".repeat(7), "x".repeat(129)]) expect(() => passwordValue(value)).toThrow();
     for (const value of [null, {}, "", "   ", "x".repeat(19), "CaMiLa"]) expect(() => displayNameValue(value)).toThrow();
   });
+  it.each(["Cameron", "Camila", "Cami", "Camille", "cAmIlLe"])("reserves house bot name %s", (name) => {
+    expect(() => displayNameValue(name)).toThrow(/house bot/);
+  });
 });

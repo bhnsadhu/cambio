@@ -9,7 +9,7 @@ import type { Action } from "@/lib/game/types";
 const ACTION_TYPES = new Set<Action["type"]>([
   "start", "ready", "setBotDifficulty", "advance", "draw", "place", "swap", "callCambio", "peekOwn", "peekOther",
   "blindSwap", "kingLook", "kingDecide", "skipPower", "stick", "give", "playAgain", "timeout",
-  "pauseRequest", "pauseVote", "returnToLobby", "leaveTable", "setDoNotDisturb", "kickPlayer",
+  "pauseRequest", "pauseVote", "returnToLobby", "leaveTable", "setDoNotDisturb", "kickPlayer", "setGuestIdentity",
 ]);
 
 export async function POST(req: Request, { params }: { params: Promise<{ code: string }> }) {

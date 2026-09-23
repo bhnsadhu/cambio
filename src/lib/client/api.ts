@@ -35,8 +35,8 @@ export interface StateResponse { view: PlayerView; me: string | null; seat?: Ses
 export interface ActionResponse extends StateResponse { note: { kind: "stick"; correct: boolean } | { kind: "cambio" } | null }
 
 export const api = {
-  create: (name: string) => call<Seat>("/api/games", { method: "POST", body: JSON.stringify({ name }) }),
-  join: (code: string, name: string) => call<Seat>(`/api/games/${code}/join`, { method: "POST", token: loadSession(code)?.token, body: JSON.stringify({ name }) }),
+  create: (name: string, avatarId?: number) => call<Seat>("/api/games", { method: "POST", body: JSON.stringify({ name, avatarId }) }),
+  join: (code: string, name: string, avatarId?: number) => call<Seat>(`/api/games/${code}/join`, { method: "POST", token: loadSession(code)?.token, body: JSON.stringify({ name, avatarId }) }),
   state: (code: string, token: string | null) => call<StateResponse>(`/api/games/${code}/state`, { token }),
   action: (code: string, token: string, actionId: string, action: Action) =>
     call<ActionResponse>(`/api/games/${code}/actions`, { method: "POST", token, body: JSON.stringify({ actionId, action }) }),

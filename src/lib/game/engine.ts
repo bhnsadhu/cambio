@@ -7,7 +7,9 @@
  * can serialize actions with optimistic concurrency (see server/store.ts).
  */
 
-import { botAvatarId } from "../bot-identity";
+import { BOT_NAMES, botAvatarId, isBotName } from "../bot-identity";
+export { BOT_NAMES } from "../bot-identity";
+import { isAvatarId } from "../avatars";
 import { assessCambio } from "./bot-beliefs";
 import {
   buildDeck,
@@ -37,7 +39,6 @@ import type {
 } from "./types";
 
 export const SEATS = 4;
-export const BOT_NAMES = ["Cameron", "Camila", "Cami", "Camille"] as const;
 export const DEFAULT_BOT_DIFFICULTY: BotDifficulty = "medium";
 export const OPENING_PEEK_MS = 5_000;
 /**
@@ -118,6 +119,7 @@ export function createGame(
   avatarId?: number | null,
 ): { state: GameState; hostId: string; token: string } {
   const name = cleanName(hostName);
+  if (avatarId != null && !isAvatarId(avatarId)) throw new GameError("INVALID_TARGET", "Choose a valid avatar.");
   const hostId = ctx.newId();
   const token = ctx.newId() + ctx.newId();
   const host: Player = { id: hostId, seat: 0, name, isBot: false, isHost: true, token, profileId: profileId ?? null, avatarId: avatarId ?? null, hand: [null, null, null, null] };
@@ -177,6 +179,7 @@ export function joinGame(
   const humans = state.players.filter((p) => !p.isBot);
   if (humans.length >= SEATS) throw new GameError("GAME_FULL", "All four seats are taken.");
   const name = cleanName(rawName);
+  if (avatarId != null && !isAvatarId(avatarId)) throw new GameError("INVALID_TARGET", "Choose a valid avatar.");
   const seat = nextOpenSeat(state);
   const joinOrder = rememberHumanJoinOrder(state);
   const playerId = ctx.newId();
@@ -194,9 +197,10 @@ export function joinGame(
 }
 
 export function cleanName(raw: string): string {
-  const name = (raw ?? "").trim().replace(/\s+/g, " ").slice(0, 18);
+  const name = (typeof raw === "string" ? raw : "").trim().replace(/\s+/g, " ").slice(0, 18);
   if (name.length < 1) throw new GameError("BAD_NAME", "Enter a name to play.");
-  if (BOT_NAMES.some((b) => b.toLowerCase() === name.toLowerCase())) {
+  if (/[\u0000-\u001f\u007f]/.test(name)) throw new GameError("BAD_NAME", "Choose a name without control characters.");
+  if (isBotName(name)) {
     throw new GameError("BAD_NAME", `${name} is one of the house bots. Pick another name.`);
   }
   return name;
@@ -256,21 +260,30 @@ export function applyAction(input: GameState, env: ActionEnvelope | IdentityEnve
     state.updatedAt = ctx.now;
     return { state, changed: true };
   }
-  // Paused gameplay is frozen; room settings and pause votes remain available.
+  // Paused gameplay is frozen; cosmetic edits, room settings and votes remain available.
   // Reveals are not pruned either, so a peek that was running when the table
   // went dark still has its remaining seconds when play resumes.
-  if (state.paused && a.type !== "pauseRequest" && a.type !== "pauseVote" && a.type !== "setDoNotDisturb" && a.type !== "kickPlayer" && a.type !== "leaveTable") {
+  if (state.paused && a.type !== "pauseRequest" && a.type !== "pauseVote" && a.type !== "setDoNotDisturb" && a.type !== "kickPlayer" && a.type !== "leaveTable" && a.type !== "setGuestIdentity") {
     // The watchdogs (any client, and the bot runner) keep firing these; they
     // are no-ops rather than errors so nothing surfaces as a failure.
     if (a.type === "timeout" || a.type === "advance") return { state: input, changed: false };
     throw new GameError("PAUSED", "The game is paused. It resumes when everyone agrees.");
   }
-  if (!state.paused) pruneReveals(state, ctx.now);
+  if (!state.paused && a.type !== "setGuestIdentity") pruneReveals(state, ctx.now);
   const actor = state.players.find((p) => p.id === env.playerId);
   if (!actor) throw new GameError("NOT_FOUND", "You are not seated at this table.");
 
   let note: ApplyResult["note"];
   switch (a.type) {
+    case "setGuestIdentity": {
+      if (actor.isBot || actor.profileId || !actor.token) throw new GameError("INVALID_TARGET", "Only guest players can change their temporary identity.");
+      const name = cleanName(a.name);
+      if (!isAvatarId(a.avatarId)) throw new GameError("INVALID_TARGET", "Choose a valid avatar.");
+      if (actor.name === name && actor.avatarId === a.avatarId) return { state: input, changed: false };
+      actor.name = name;
+      actor.avatarId = a.avatarId;
+      break;
+    }
     case "setDoNotDisturb": {
       if (actor.id !== state.hostId) throw new GameError("NOT_HOST", "Only the host can change room settings.");
       if (typeof a.enabled !== "boolean") throw new GameError("INVALID_TARGET", "Choose whether Do not disturb is on or off.");
