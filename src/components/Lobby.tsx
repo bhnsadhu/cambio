@@ -77,10 +77,10 @@ export function Lobby({
           {seats.map((p, seat) => {
             const botName = p ? null : BOT_NAMES[botIdx++];
             return (
-              <li key={seat} className={`flex min-h-[136px] min-w-0 flex-col justify-between rounded-panel border-[1.5px] px-5 py-4 transition-[box-shadow,background-color] duration-300 xl:px-3 ${p ? "border-transparent bg-surface hairline animate-pop" : "border-dashed border-line-strong"}`}>
+              <li key={seat} className={`flex min-h-[136px] min-w-0 flex-col rounded-panel border-[1.5px] px-5 py-4 transition-[box-shadow,background-color] duration-300 xl:px-3 ${p ? "border-transparent bg-surface hairline animate-pop" : "border-dashed border-line-strong"}`}>
                 <p className="t-caption text-ink-3">Seat {seat + 1}</p>
                 {p ? (
-                  <div className="min-w-0">
+                  <div className="mt-3 min-w-0 flex-1">
                     <p className="t-headline flex min-w-0 items-center gap-2"><Avatar identity={p.profileId ?? p.name} size={40} /><span className="min-w-0 [overflow-wrap:anywhere]"><PlayerName name={p.name} isBot={p.isBot} /></span></p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {p.isHost ? <Chip>Host</Chip> : null}
@@ -88,12 +88,12 @@ export function Lobby({
                     </div>
                   </div>
                 ) : (
-                  <div>
-                    <p className="t-headline text-ink-3">Open</p>
+                  <div className="mt-3 flex flex-1 flex-col">
+                    <p className="t-headline flex min-h-10 items-center text-ink-3">Open</p>
                     <p className="t-footnote mt-1 text-ink-3">
                       <PlayerName name={botName!} isBot /> sits here if it stays empty
                     </p>
-                    <div className="mt-2">
+                    <div className="mt-auto pt-2">
                       <DifficultyPicker
                         label={`How ${botName} plays`}
                         value={view.botDifficulty[seat] ?? "medium"}
