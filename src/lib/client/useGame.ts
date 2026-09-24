@@ -18,7 +18,7 @@ export interface GameHook {
   removed: boolean;
   /** milliseconds to add to Date.now() to get the server's clock */
   skew: number;
-  send: (action: Action) => Promise<ActionResponse | null>;
+  send: (action: Action, options?: { throwOnError?: boolean }) => Promise<ActionResponse | null>;
   refresh: () => Promise<void>;
   setSession: (s: Session | null) => void;
   toast: (text: string, tone?: "neutral" | "good" | "bad") => void;
@@ -177,7 +177,7 @@ export function useGame(code: string): GameHook {
     return () => clearInterval(poll);
   }, [activeRound, refresh]);
 
-  const send = useCallback(async (action: Action): Promise<ActionResponse | null> => {
+  const send = useCallback(async (action: Action, options?: { throwOnError?: boolean }): Promise<ActionResponse | null> => {
     const s = sessionRef.current;
     if (!s) return null;
     const gen = profileGeneration();
@@ -200,11 +200,12 @@ export function useGame(code: string): GameHook {
       if (gen !== profileGeneration() || sessionRef.current?.token !== s.token) return null;
       if (e instanceof RequestError) {
         if (e.status === 401) setSession(null);
-        toast(e.message, "bad");
+        if (!options?.throwOnError) toast(e.message, "bad");
         void refresh();
       } else {
-        toast("Lost the connection for a moment. Try again.", "bad");
+        if (!options?.throwOnError) toast("Lost the connection for a moment. Try again.", "bad");
       }
+      if (options?.throwOnError) throw e;
       return null;
     } finally {
       setBusy(false);

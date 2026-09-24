@@ -10,6 +10,7 @@ import type { LeaderboardScope, LeaderboardSnapshot } from "@/lib/social/leaderb
 import { ordinal, standingFor } from "@/lib/social/rank";
 import { RankBadge } from "./RankBadge";
 import { Notifications } from "./Friends";
+import { Notification } from "./Notification";
 import { AppHeader } from "./AppHeader";
 import { Button, buttonClass } from "./ui";
 
@@ -77,10 +78,7 @@ function Standings({ scope }: { scope: LeaderboardScope }) {
   const changePage = (next: number) => { setError(null); setOffset(next); };
   return (
     <section aria-label={scope === "friends" ? "Friends standings" : "All player standings"}>
-      {error ? <div className="mb-4 flex flex-wrap items-center gap-3">
-        <p role="alert" className="t-sub text-red">{error}</p>
-        <Button size="sm" onClick={() => { setError(null); setAttempt((value) => value + 1); }}>Try again</Button>
-      </div> : null}
+      {error ? <Notification title="Leaderboard" tone="bad" actions={<Button size="sm" onClick={() => { setError(null); setAttempt((value) => value + 1); }}>Try again</Button>}>{error}</Notification> : null}
       {!data ? !error ? <p role="status" className="t-sub text-ink-2">Loading the leaderboard</p> : null : <>
         {data.me ? <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-panel bg-surface px-5 py-5 hairline sm:px-6" aria-label="Your standing">
           <div>

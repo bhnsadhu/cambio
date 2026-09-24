@@ -2,17 +2,39 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { usePathname } from "next/navigation";
 import { dismissAccountNotice, useAccountNotice } from "@/lib/client/profile";
+import { useActiveDialog } from "@/lib/client/useModalFocus";
 
 type Tone = "neutral" | "good" | "bad";
 interface Message { id: number; text: string; title: string; tone: Tone }
 type Notify = (text: string, tone?: Tone, title?: string) => void;
-const HostContext = createContext<HTMLDivElement | null>(null);
+const HostContext = createContext<HTMLElement | null>(null);
 const NotifyContext = createContext<Notify>(() => {});
 
 /** One viewport survives navigation; every notification portals into this stack. */
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  const dialog = useActiveDialog();
+  const pathname = usePathname();
+  useEffect(() => {
+    let header: HTMLElement | undefined;
+    // Next can retain hidden route trees. Only the visible header sets the inset.
+    const measure = () => {
+      const visible = Array.from(document.querySelectorAll<HTMLElement>("[data-app-header]")).find((element) => element.offsetHeight > 0);
+      if (visible !== header) {
+        observer.disconnect();
+        header = visible;
+        if (header) observer.observe(header);
+      }
+      if (header) document.documentElement.style.setProperty("--notification-top", `${header.offsetHeight + 12}px`);
+    };
+    const observer = new ResizeObserver(measure);
+    const routes = new MutationObserver(() => { if (!header?.isConnected || !header.offsetHeight) measure(); });
+    routes.observe(document.body, { childList: true, subtree: true });
+    measure();
+    return () => { observer.disconnect(); routes.disconnect(); document.documentElement.style.removeProperty("--notification-top"); };
+  }, [pathname]);
   const [messages, setMessages] = useState<Message[]>([]);
   const sequence = useRef(0);
   const notify = useCallback<Notify>((text, tone = "neutral", title = "Cambio") => {
@@ -20,12 +42,13 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     setMessages((current) => [...current.filter((item) => item.text !== text).slice(-2), message]);
   }, []);
   const dismiss = useCallback((id: number) => setMessages((current) => current.filter((item) => item.id !== id)), []);
+  const viewport = <section ref={setHost} className="notification-viewport" data-notification-viewport role="region" aria-label="Notifications" />;
   return <NotifyContext.Provider value={notify}>
     <HostContext.Provider value={host}>
       {children}
       <AccountNotification />
       {messages.map((message) => <TimedMessage key={message.id} message={message} dismiss={dismiss} />)}
-      <div ref={setHost} className="notification-viewport" data-notification-viewport role="region" aria-label="Notifications" />
+      {dialog ? createPortal(viewport, dialog) : viewport}
     </HostContext.Provider>
   </NotifyContext.Provider>;
 }
@@ -67,7 +90,7 @@ export function Notification({ title, children, tone = "neutral", label, actions
   if (!host) return null;
   return createPortal(
     <section className="app-notification" data-tone={tone} data-interactive={!!(actions || onDismiss)} style={style}
-      aria-label={label ?? title} onPointerEnter={() => setHeld(true)} onPointerLeave={() => setHeld(false)}
+      aria-label={label ?? `${title} notification`} onPointerEnter={() => setHeld(true)} onPointerLeave={() => setHeld(false)}
       onFocusCapture={() => setHeld(true)} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setHeld(false); }}>
       <div className="notification-content">
         <p className="notification-heading"><span className="notification-mark" aria-hidden />{title}</p>

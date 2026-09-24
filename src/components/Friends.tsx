@@ -83,7 +83,7 @@ export function FriendsPanel({
 
       <Link href="/leaderboard?scope=friends" className="t-sub text-ink-2 hover:text-ink">Friends leaderboard</Link>
       {social.loading ? <p role="status" className="t-sub text-ink-3">Loading your friends</p> : null}
-      {social.error ? <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line-strong p-3"><p role="alert" className="t-sub min-w-0 flex-1 text-red">{social.error}</p><Button size="sm" variant="ghost" onClick={() => void social.refresh()}>Try again</Button></div> : null}
+      {social.error ? <Notification title="Friends" tone="bad" actions={<Button size="sm" variant="secondary" onClick={() => void social.refresh()}>Try again</Button>}>{social.error}</Notification> : null}
 
       <form onSubmit={add} className="flex items-center gap-2">
         <input
@@ -99,7 +99,7 @@ export function FriendsPanel({
         />
         <Button type="submit" variant="secondary" className="shrink-0" disabled={busy || !username.trim()}>Add</Button>
       </form>
-      {note ? <p role={noteError ? "alert" : "status"} className={`t-footnote ${noteError ? "text-red" : "text-ink-2"}`}>{note}</p> : null}
+      {note ? <Notification title="Friends" tone={noteError ? "bad" : "good"} onDismiss={() => setNote(null)} duration={noteError ? undefined : 5000}>{note}</Notification> : null}
 
       {incoming.length ? (
         <div>
@@ -224,7 +224,7 @@ function FriendRow({ friend, social, inviteCode, here }: { friend: Friend; socia
           ) : null}
         </div>
       </div>
-      {note ? <p className="t-footnote mt-2.5 break-words text-ink-2">{note}</p> : null}
+      {note ? <Notification title="Table invitation" tone="bad" onDismiss={() => setNote(null)}>{note}</Notification> : null}
     </li>
   );
 }
@@ -251,7 +251,7 @@ export function AskToJoin({ friend, social }: { friend: Friend; social: SocialHo
     </Button>
     {!invited && cooldown > 0 ? <span className="t-footnote text-ink-3">Again in {cooldown}s</span> : null}
     {request?.status === "declined" ? <p className="t-footnote text-ink-3">Request declined</p> : null}
-    {error ? <p role="alert" className="t-footnote text-red">{error}</p> : null}
+    {error ? <Notification title="Join request" tone="bad" onDismiss={() => setError(null)}>{error}</Notification> : null}
   </div>;
 }
 

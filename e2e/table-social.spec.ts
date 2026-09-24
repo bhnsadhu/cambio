@@ -171,7 +171,7 @@ test("table friends sort by seats and presence, and player cards show rank badge
       const response = page.waitForResponse((result) => result.url().endsWith("/api/social/friends/respond"));
       await details(page, "New Player").getByRole("button", { name: "Accept friend", exact: true }).click();
       expect((await (await response).json()).outcome).toBe("missing");
-      await expect(details(page, "New Player").getByRole("alert")).toHaveText("That friend request is no longer available.");
+      await expect(page.getByRole("region", { name: "Notifications", exact: true }).getByRole("alert")).toHaveText("That friend request is no longer available.");
       await expect(details(page, "New Player").getByText("Friend", { exact: true })).toHaveCount(0);
       const actual = (await (await stranger.context.request.get("/api/social")).json()).social;
       expect(actual.friends.some((friend: { id: string }) => friend.id === host.profile.id)).toBe(false);

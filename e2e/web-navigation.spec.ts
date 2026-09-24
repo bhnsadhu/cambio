@@ -59,14 +59,14 @@ test("friends failures show a retry path and failed approvals can be retried wit
     await page.route("**/api/social", (route) => route.fulfill({ status: 503, json: { error: { code: "UNAVAILABLE", message: "Friends temporarily unavailable." } } }));
     await page.goto("/");
     const panel = page.getByRole("region", { name: "Friends", exact: true });
-    await expect(panel.getByRole("alert")).toHaveText("Friends temporarily unavailable.");
+    await expect(page.getByRole("region", { name: "Notifications", exact: true }).getByRole("alert")).toHaveText("Friends temporarily unavailable.");
     await expect(panel.getByText("No friends yet.", { exact: false })).toHaveCount(0);
     await page.unroute("**/api/social");
-    await panel.getByRole("button", { name: "Try again", exact: true }).click();
+    await page.getByRole("region", { name: "Notifications", exact: true }).getByRole("button", { name: "Try again", exact: true }).click();
     await expect(panel.getByRole("button", { name: "Accept", exact: true })).toBeVisible();
     await page.route("**/api/social/friends/respond", (route) => route.fulfill({ status: 503, json: { error: { code: "UNAVAILABLE", message: "Could not accept. Try again." } } }));
     await panel.getByRole("button", { name: "Accept", exact: true }).click();
-    await expect(panel.getByRole("alert")).toHaveText("Could not accept. Try again.");
+    await expect(page.getByRole("region", { name: "Notifications", exact: true }).getByRole("alert")).toHaveText("Could not accept. Try again.");
     await page.unroute("**/api/social/friends/respond");
     await panel.getByRole("button", { name: "Accept", exact: true }).click();
     await expect(panel.getByRole("link", { name: "Desktop Friend", exact: true })).toBeVisible();

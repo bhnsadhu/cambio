@@ -131,13 +131,14 @@ export function restOfSentence(text: string, name: string, asYou: boolean): stri
 }
 
 /** The actor's name, set apart from the rest of the sentence. */
-function Sentence({ entry, players }: { entry: LogEntry; players: PlayerPublic[] }) {
+function Sentence({ entry, players, me }: { entry: LogEntry; players: PlayerPublic[]; me: string | null }) {
   const actor = players.find((p) => p.id === entry.actorId) ?? null;
+  const asYou = entry.weight === "loud" && actor?.id === me;
   if (actor && entry.text.startsWith(actor.name)) {
     return (
       <>
-        <span className="font-semibold text-ink"><PlayerName name={actor.name} isBot={actor.isBot} /></span>
-        {restOfSentence(entry.text, actor.name, false)}
+        <span className="font-semibold text-ink">{asYou ? "You" : <PlayerName name={actor.name} isBot={actor.isBot} />}</span>
+        {restOfSentence(entry.text, actor.name, asYou)}
       </>
     );
   }
@@ -151,7 +152,7 @@ export function Announcer({ announcement, players, me }: { announcement: Announc
   const touched = players.filter((p) => (entry.subjectIds ?? []).includes(p.id));
   const tone = entry.tone === "bad" ? "bad" : entry.tone === "good" || entry.tone === "accent" ? "good" : "neutral";
   return <Notification key={entry.seq} title={KICKER[entry.kind]} tone={tone} label="Game event">
-    <p><Sentence entry={entry} players={players} /></p>
+    <p><Sentence entry={entry} players={players} me={me} /></p>
     {touched.length ? <p className="mt-1.5 text-[11px] text-ink-3">
       {touched.map((p, index) => <span key={p.id}>{index ? " · " : ""}{p.id === me ? "You" : <PlayerName name={p.name} isBot={p.isBot} />}</span>)}
     </p> : null}

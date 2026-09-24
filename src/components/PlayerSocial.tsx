@@ -8,6 +8,7 @@ import { useTableProfiles } from "@/lib/client/tableProfiles";
 import type { PlayerPublic, PublicView } from "@/lib/game/types";
 import type { TableProfile } from "@/lib/social/types";
 import { RankBadge } from "./RankBadge";
+import { Notification } from "./Notification";
 import { Button, buttonClass, Chip } from "./ui";
 
 interface TableSocial {
@@ -103,7 +104,7 @@ function AccountSocial({ table, player, profileId, isMe }: { table: TableSocial;
           {busy ? (incoming ? "Accepting" : "Sending") : incoming ? "Accept friend" : "Add friend"}
         </Button>
       )}
-      {error ? <p role="alert" className="w-full break-words text-[11.5px] leading-4 text-red">{error}</p> : null}
+      {error ? <Notification title="Friends" tone="bad" onDismiss={() => setError(null)}>{error}</Notification> : null}
     </div>
   );
 }

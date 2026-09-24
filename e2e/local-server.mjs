@@ -21,7 +21,7 @@ const proxy = createServer(async (req, res) => {
 });
 proxy.on('upgrade', (_req, socket) => socket.destroy());
 await new Promise((resolve) => proxy.listen(proxyPort, '127.0.0.1', resolve));
-const next = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'dev', '--port', String(appPort)], {
+const next = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'dev', ...(process.env.E2E_WEBPACK ? ['--webpack'] : []), '--port', String(appPort)], {
   stdio: 'inherit', env: { ...process.env,
     NEXT_PUBLIC_SUPABASE_URL: `http://127.0.0.1:${proxyPort}`,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: 'local-test-anon-key',

@@ -15,6 +15,7 @@ import { CardBack, FaceCard } from "./cards";
 import { FriendsPanel, Notifications } from "./Friends";
 import { AppHeader } from "./AppHeader";
 import { RecentTable } from "./RecentTable";
+import { Notification } from "./Notification";
 import { GuestSetup } from "./GuestPlayer";
 import { Button, Field, inputClass, PlayerName } from "./ui";
 
@@ -59,7 +60,7 @@ export function Landing() {
           <p className="t-sub mt-2 text-ink-2">Host a game with friends, or try a round with the house bots.</p>
         </div>
         {profile ? <p className="t-sub break-words text-ink-2">Playing as <strong className="text-ink">{name}</strong></p> : null}
-        {error?.mode === "create" ? <p role="alert" className="t-sub text-red">{error.message}</p> : null}
+        {error?.mode === "create" ? <Notification title="New table" tone="bad" onDismiss={() => setError(null)}>{error.message}</Notification> : null}
         <Button type="submit" variant="primary" className="mt-auto sm:self-start" disabled={!accountReady || !!busy || !name.trim()}>
           {busy === "create" ? "Opening" : "Open a table"}
         </Button>
@@ -72,7 +73,7 @@ export function Landing() {
         <Field label="Table code">
           <input className={`${inputClass} tnum tracking-[0.14em]`} value={code} onChange={(event) => { setCode(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5)); setError(null); }} placeholder="ABCDE" minLength={5} maxLength={5} autoCapitalize="characters" spellCheck={false} autoComplete="off" required disabled={!!busy} />
         </Field>
-        {error?.mode === "join" ? <p role="alert" className="t-sub text-red">{error.message}</p> : null}
+        {error?.mode === "join" ? <Notification title="Join table" tone="bad" onDismiss={() => setError(null)}>{error.message}</Notification> : null}
         <Button type="submit" variant="secondary" className="mt-auto sm:self-start" disabled={!accountReady || !!busy || !name.trim() || code.length !== 5}>
           {busy === "join" ? "Joining" : "Join table"}
         </Button>

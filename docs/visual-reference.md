@@ -14,6 +14,14 @@ Website pages share a 1280px canvas and persistent navigation for tables, the le
 
 At laptop sizes, the game shows all four hands beside the piles and a scrollable move history. Rules and walkthroughs use the available desktop width. The home page focuses on opening a table or joining friends. An explicit Leave action explains its consequences before proceeding.
 
+## Notifications
+
+`NotificationProvider` in the root layout owns the only notification viewport. `Notification` portals every message into that stack: charcoal surfaces, thin neutral borders, 16px corners, compact labels, and a small mint or red status indicator. All messages share the same width and anchor below the visible header, including on narrow screens and while a dialog is open. New notification types should use this component instead of adding their own position or surface classes.
+
+The audit includes routine and major game events, correct and incorrect sticks, action and connection errors, opening and power reveals, pause requests, invitations and join requests with their failures, friend-action feedback, account access and settings, sign-out and deletion, guest editing, table creation and joining, clipboard feedback, and leaderboard failures. Sticks use their authoritative game event once. Timed reveals retain their countdown and card data; actionable requests remain until resolved. Loading indicators, relationship badges, the move history, and game controls remain part of their respective screens.
+
+The notification browser checks compare position and appearance for every game-event kind on desktop and mobile, verify a single message per stick, and exercise dialog focus, navigation cleanup, and reduced motion. Account, social, guest, and table-access suites cover the remaining triggers. The isolated test server also supports `E2E_WEBPACK=1` when the Turbopack development font loader is unavailable.
+
 ## Avatars
 
 `public/avatars/heads.png` is original artwork generated with the built-in image generation tool. It is a six-head, three-column by two-row atlas. It uses simplified expressive 3D heads, as requested, rather than realistic portraits. Players can choose any of the six heads in Account settings → Avatar → Change. Their choice is saved with the account and displayed across profiles, friends, standings, and tables. Until a player makes a choice, `Avatar.tsx` selects a stable head from their identity. It uses Next Image optimization at its displayed size.

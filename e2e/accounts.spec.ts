@@ -108,7 +108,7 @@ test("complete account lifecycle preserves identity and closes revoked sessions"
   await usernameForm.getByLabel("Username", { exact: true }).fill(friendName);
   await usernameForm.getByLabel("Current password", { exact: true }).fill(firstPassword);
   await usernameForm.getByRole("button", { name: "Save username" }).click();
-  await expect(page.locator("main").getByRole("alert")).toHaveText("That username is already taken.");
+  await expect(page.getByRole("region", { name: "Notifications", exact: true }).getByRole("alert")).toHaveText("That username is already taken.");
   await usernameForm.getByLabel("Username", { exact: true }).fill(nextUsername);
   await usernameForm.getByRole("button", { name: "Save username" }).click();
   await expect(page.getByRole("status")).toContainText("Username updated");
@@ -130,7 +130,7 @@ test("complete account lifecycle preserves identity and closes revoked sessions"
   await passwordForm.getByLabel("New password", { exact: true }).fill(nextPassword);
   await passwordForm.getByLabel("Confirm new password", { exact: true }).fill(nextPassword);
   await passwordForm.getByRole("button", { name: "Save password" }).click();
-  await expect(page.locator("main").getByRole("alert")).toHaveText("Your current password is incorrect.");
+  await expect(page.getByRole("region", { name: "Notifications", exact: true }).getByRole("alert")).toHaveText("Your current password is incorrect.");
   await passwordForm.getByLabel("Current password", { exact: true }).fill(firstPassword);
   await passwordForm.getByRole("button", { name: "Save password" }).click();
   await expect(page.getByRole("status")).toContainText("Password changed");
@@ -164,7 +164,7 @@ test("complete account lifecycle preserves identity and closes revoked sessions"
   await deletion.getByLabel("Current password", { exact: true }).fill("incorrect password");
   await deletion.getByLabel("Type DELETE to confirm").fill("DELETE");
   await deletion.getByRole("button", { name: "Permanently delete account" }).click();
-  await expect(page.locator("main").getByRole("alert")).toHaveText("Your current password is incorrect.");
+  await expect(page.getByRole("region", { name: "Notifications", exact: true }).getByRole("alert")).toHaveText("Your current password is incorrect.");
   await deletion.getByLabel("Current password", { exact: true }).fill(nextPassword);
   await deletion.getByRole("button", { name: "Permanently delete account" }).click();
   await expect(page).toHaveURL(`${origin}/`);
@@ -217,7 +217,7 @@ test("logout reaches another open tab and a delayed response cannot restore the 
   await expect(otherTab.getByRole("heading", { name: "Account settings", exact: true })).toBeVisible();
   await page.route("**/api/account/logout", (route) => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: { message: "Could not sign out. Try again." } }) }));
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
-  await expect(page.locator("main").getByRole("alert")).toHaveText("Could not sign out. Try again.");
+  await expect(page.getByRole("region", { name: "Notifications", exact: true }).getByRole("alert")).toHaveText("Could not sign out. Try again.");
   await expect(page.getByRole("heading", { name: "Account settings", exact: true })).toBeVisible();
   await page.unroute("**/api/account/logout");
 
@@ -381,7 +381,7 @@ test("account access, tables, and help keep clear copy and responsive settings",
   await expect(page.getByRole("button", { name: "I'm ready", exact: true })).toBeVisible();
   await noPunctuationDashes(page);
   await page.getByRole("button", { name: "I'm ready", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Casey ONeil", exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Casey ONeil's hand", exact: true }).getByRole("heading")).toBeVisible();
   await noPunctuationDashes(page);
   await page.screenshot({ path: "test-results/game-table.png", fullPage: true });
   await page.goto("/me");

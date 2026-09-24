@@ -220,10 +220,10 @@ a:focus-visible, summary:focus-visible { outline: 2px solid var(--color-accent);
 .notification-viewport {
   position: fixed;
   z-index: 80;
-  top: calc(env(safe-area-inset-top, 0px) + 80px);
+  top: calc(env(safe-area-inset-top, 0px) + var(--notification-top, 92px));
   right: max(16px, env(safe-area-inset-right, 0px));
-  width: min(400px, calc(100vw - 32px));
-  max-height: calc(100dvh - 96px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  width: min(400px, calc(100vw - max(16px, env(safe-area-inset-left, 0px)) - max(16px, env(safe-area-inset-right, 0px))));
+  max-height: calc(100dvh - var(--notification-top, 92px) - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   gap: 8px;

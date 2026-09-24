@@ -27,6 +27,7 @@ import { TableSocialProvider } from "./PlayerSocial";
 import { GuestPlayerButton, GuestPlayerDialog, GuestSetup } from "./GuestPlayer";
 import { HeaderBar, HeaderButton, HeaderLink } from "./Header";
 import { Button, buttonClass, DotOff, Pip } from "./ui";
+import { Notification } from "./Notification";
 
 /**
  * Card flights are tracked here rather than inside the table so that the
@@ -184,7 +185,7 @@ function GameShell({ code }: { code: string }) {
           returnFocusRef={guestButtonRef}
           onClose={() => setGuestEditorFor(null)}
           onApply={async (value) => {
-            const result = await game.send({ type: "setGuestIdentity", name: value.name, avatarId: value.avatarId! });
+            const result = await game.send({ type: "setGuestIdentity", name: value.name, avatarId: value.avatarId! }, { throwOnError: true });
             if (!result) throw new Error("Could not update your guest player. Try again.");
             storeGuestIdentity(value);
             if (game.session) game.setSession({ ...game.session, name: value.name });
@@ -269,7 +270,7 @@ function JoinForm({ code, onJoined }: { code: string; onJoined: (s: { playerId: 
         {!accountReady ? <p role="status" className="t-sub text-ink-2">Checking your account</p>
           : profile ? <p className="t-body text-ink-2">Playing as <strong className="text-ink">{name}</strong></p>
             : <GuestSetup name={name} onNameChange={setName} disabled={busy} next={`/g/${code}`} />}
-        {error ? <p role="alert" className="t-sub text-red">{error}</p> : null}
+        {error ? <Notification title="Join table" tone="bad" onDismiss={() => setError(null)}>{error}</Notification> : null}
         <Button type="submit" variant="primary" size="lg" disabled={!accountReady || busy || !name.trim()}>{busy ? "Taking a seat" : "Take a seat"}</Button>
       </form>
       {accountReady && !profile ? <p className="t-sub mt-5 text-ink-2">Your guest player is temporary. <Link href={loginHref(`/g/${code}`)} onClick={() => storeGuestIdentity({ name: name.trim(), avatarId: guestAvatarId })} className="font-medium text-ink hover:text-ink-2">Log in to use your saved profile</Link></p> : null}

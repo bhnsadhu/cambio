@@ -1,12 +1,18 @@
 "use client";
 
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef, useSyncExternalStore, type RefObject } from "react";
 
 const stack: { dialog: HTMLElement; layer: number }[] = [];
 let previousOverflow = "";
+const listeners = new Set<() => void>();
+const subscribe = (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; };
+const emit = () => { for (const listener of listeners) listener(); };
 
 /** The stack follows paint order, including when equal layers mount out of order. */
 function topDialog() { return stack.at(-1)?.dialog ?? null; }
+
+/** Shared notifications belong to the active dialog's accessibility and focus scope. */
+export function useActiveDialog() { return useSyncExternalStore(subscribe, topDialog, () => null); }
 
 function restoreDialogFocus(trigger: HTMLElement | null, preferred?: RefObject<HTMLElement | null>) {
   const next = topDialog();
@@ -37,6 +43,7 @@ export function useModalFocus(open = true, restoreFocus?: RefObject<HTMLElement 
       if (position & Node.DOCUMENT_POSITION_PRECEDING) return 1;
       return 0;
     });
+    emit();
     const top = () => topDialog() === dialog;
     if (top()) dialog.focus({ preventScroll: true });
     const onKey = (event: KeyboardEvent) => {
@@ -59,6 +66,7 @@ export function useModalFocus(open = true, restoreFocus?: RefObject<HTMLElement 
       const wasTop = top();
       const index = stack.indexOf(entry);
       if (index >= 0) stack.splice(index, 1);
+      emit();
       if (!stack.length) document.body.style.overflow = previousOverflow;
       if (wasTop) restoreDialogFocus(trigger, restoreFocus);
     };

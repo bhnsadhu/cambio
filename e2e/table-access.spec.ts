@@ -303,8 +303,8 @@ test("Do not disturb belongs to the room and blocks requests while allowing invi
     await hostPage.setViewportSize({ width: 390, height: 844 });
     await hostPage.getByRole("navigation", { name: "Table controls" }).screenshot({ path: "test-results/room-do-not-disturb-mobile.png", animations: "disabled" });
     const size = await toggle.boundingBox();
-    expect(size!.height).toBeLessThanOrEqual(32);
-    expect(size!.width).toBeLessThan(120);
+    expect(size!.height).toBe(40);
+    expect(size!.x + size!.width).toBeLessThanOrEqual(390);
     await friendPage.goto("/");
     await expect(friendPage.getByText("Do not disturb", { exact: true })).toHaveCount(2);
     await expect(friendPage.getByRole("button", { name: /Ask to join|Ask again/ })).toHaveCount(0);

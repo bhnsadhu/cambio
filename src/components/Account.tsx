@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { authenticate, deleteAccount, signOut, updateAccount, type StoredProfile } from "@/lib/client/profile";
 import { AVATAR_OPTIONS, SKIN_TONE_OPTIONS, avatarIndex, avatarStyle, avatarTone } from "@/lib/avatars";
 import { Avatar } from "./Avatar";
 import { AvatarPicker } from "./AvatarPicker";
 import { Button, Field, inputClass } from "./ui";
+import { Notification } from "./Notification";
 
 type Mode = "login" | "register";
 const errorText = (error: unknown) => error instanceof Error ? error.message : "Something went wrong. Try again.";
@@ -54,7 +55,7 @@ export function AuthForm({ initialMode = "login", initialName = "", legacy = fal
           <p className="t-footnote -mt-2 text-ink-3">Use 8 to 128 characters. A memorable phrase works well. Save it in your password manager.</p>
           <Field label="Confirm password"><input className={inputClass} name="confirmPassword" type="password" value={confirm} onChange={(event) => setConfirm(event.target.value)} autoComplete="new-password" minLength={8} maxLength={128} required disabled={busy} /></Field>
         </> : null}
-        {error ? <p role="alert" className="t-sub text-red">{error}</p> : null}
+        {error ? <Notification title={registering ? "Create account" : "Log in"} tone="bad" onDismiss={() => setError(null)}>{error}</Notification> : null}
         <Button type="submit" variant="primary" size="lg" disabled={busy}>{busy ? "Please wait" : registering ? legacy ? "Secure this profile" : "Create account" : "Log in"}</Button>
       </form>
       {!legacy ? <p className="t-sub mt-5 text-center text-ink-2">
@@ -104,9 +105,7 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
     catch (error) { setNotice({ kind, text: errorText(error), error: true }); }
     finally { setBusy(null); }
   };
-  const noticeRef = useRef<HTMLParagraphElement>(null);
-  useEffect(() => { if (notice) noticeRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }); }, [notice]);
-  const feedback = (kind: string) => notice?.kind === kind ? <p ref={noticeRef} role={notice.error ? "alert" : "status"} className={`t-sub mt-4 ${notice.error ? "text-red" : "text-accent"}`}>{notice.text}</p> : null;
+  const feedback = (kind: string) => notice?.kind === kind ? <Notification title="Account" tone={notice.error ? "bad" : "good"} onDismiss={() => setNotice(null)} duration={notice.error ? undefined : 5000}>{notice.text}</Notification> : null;
   const change = (kind: Editor, label: string) => editing !== kind ? (
     <Button ref={(button) => { changeButtons.current[kind] = button; }} type="button" size="sm" className="shrink-0" aria-label={`Change ${label}`} disabled={!!busy} onClick={() => edit(kind)}>Change</Button>
   ) : null;

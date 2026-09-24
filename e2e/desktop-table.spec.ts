@@ -134,18 +134,33 @@ test("laptop browsers keep hands, piles, activity, and turn actions together thr
   for (const size of laptopSizes) {
     await page.setViewportSize(size);
     await page.evaluate(() => scrollTo(0, 0));
+    const headerHeight = await page.locator("[data-app-header]").evaluate((header) => (header as HTMLElement).offsetHeight);
+    await expect.poll(async () => (await reveal.boundingBox())!.y).toBe(headerHeight + 12);
     const pauseBounds = (await vote.boundingBox())!;
     const revealBounds = (await reveal.boundingBox())!;
-    expect(revealBounds.y).toBe(80);
     expect(pauseBounds.x).toBe(revealBounds.x);
     expect(pauseBounds.width).toBe(revealBounds.width);
     expect(pauseBounds.y).toBeGreaterThanOrEqual(revealBounds.y + revealBounds.height + 8);
     await withinViewport(vote);
     await withinViewport(reveal);
+    if (size.width === 1366) await page.screenshot({ path: "test-results/notifications/reveal-pause-desktop.png", fullPage: true, animations: "disabled" });
     await actions.scrollIntoViewIfNeeded();
     await withinViewport(actions);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    await notices.evaluate((element) => element.scrollTo(0, 0));
+    const headerHeight = await page.locator("[data-app-header]").evaluate((header) => (header as HTMLElement).offsetHeight);
+    await expect.poll(async () => (await reveal.boundingBox())!.y).toBe(headerHeight + 12);
+    expect((await vote.boundingBox())!.width).toBe((await reveal.boundingBox())!.width);
+    await page.screenshot({ path: `test-results/notifications/reveal-pause-${width}.png`, animations: "disabled" });
+    const agree = vote.getByRole("button", { name: "Agree", exact: true });
+    await agree.scrollIntoViewIfNeeded();
+    await expect(agree).toBeInViewport();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
+  await page.setViewportSize(laptopSizes.at(-1)!);
   await actions.getByRole("button", { name: "Leave them", exact: true }).click();
   await expect(page.getByText("Two cards. Your call.", { exact: true })).toHaveCount(0);
   // Return to an actionable own-card power for the large-hand accessibility check.

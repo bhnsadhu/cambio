@@ -56,7 +56,7 @@ export function RevealBanner({
                 </div>
                 <div className="flex max-w-full items-start justify-center gap-3">
                   {r.cards.map((c, i) => (
-                    <div key={c.id} className="flex w-[58px] min-w-0 flex-col items-center gap-1.5">
+                    <div key={c.id} className="flex w-20 min-w-0 flex-col items-center gap-1.5">
                       <FaceCard card={c} size="sm" />
                       {isKing ? (
                         <span className="t-footnote w-full text-center text-ink-3 [overflow-wrap:anywhere]">{ownerOf(r.cardIds[i])?.id === view.private?.playerId ? "Yours" : names.get(ownerOf(r.cardIds[i])?.id ?? "")}</span>

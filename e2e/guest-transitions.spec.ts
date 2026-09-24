@@ -163,5 +163,5 @@ test("returning guests keep their seat appearance when Add friend leads to signu
   expect((await registration).postDataJSON()).toMatchObject({
     displayName: "Returning Guest", avatarId: 13, guestSeats: [{ code: state.code, token: seat.token }],
   });
-  await expect(form.getByRole("alert")).toHaveText("Signup unavailable for this check.");
+  await expect(page.getByRole("region", { name: "Notifications", exact: true }).getByRole("alert")).toHaveText("Signup unavailable for this check.");
 });

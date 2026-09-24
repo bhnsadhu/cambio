@@ -1,6 +1,7 @@
 "use client";
 
 import { Avatar } from "./Avatar";
+import { useNotify } from "./Notification";
 import { useState } from "react";
 import type { BotDifficulty, PublicView } from "@/lib/game/types";
 import { BOT_NAMES } from "@/lib/game/engine";
@@ -24,7 +25,7 @@ export function Lobby({
   onDifficulty: (seat: number, difficulty: BotDifficulty) => void;
 }) {
   const [copied, setCopied] = useState(false);
-  const [copyError, setCopyError] = useState(false);
+  const notify = useNotify();
   const isHost = me === view.hostId;
   const host = view.players.find((p) => p.id === view.hostId);
   const humans = view.players.filter((p) => !p.isBot);
@@ -37,9 +38,9 @@ export function Lobby({
       // Keep invitations on the public domain, even when opened through a deployment URL.
       await navigator.clipboard.writeText(`${SITE_URL}/g/${view.code}`);
       setCopied(true);
-      setCopyError(false);
+      notify("Table link copied.", "good", "Share table");
       setTimeout(() => setCopied(false), 1600);
-    } catch { setCopyError(true); }
+    } catch { notify("Copying is unavailable. Share the table code instead.", "bad", "Share table"); }
   };
 
   return (
@@ -51,7 +52,6 @@ export function Lobby({
             <span className="t-money text-[44px] leading-none tracking-[0.08em] sm:text-[48px]">{view.code}</span>
             <Button variant="secondary" size="sm" onClick={copy}>{copied ? "Copied" : "Copy link"}</Button>
           </div>
-          {copyError ? <p role="status" className="t-sub mt-2 text-ink-2">Copying is unavailable. Share the code above instead.</p> : null}
           <p className="t-body mt-4 max-w-[440px] text-ink-2">
             Share the code to invite someone. {view.doNotDisturb ? "Join requests are off. Invitations and table codes still work. " : hasAccount ? "Friends can also ask to join and wait for you to accept. " : ""}Seats still open when the round starts go to the house bots.
           </p>
