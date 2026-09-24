@@ -145,16 +145,28 @@ function Sentence({ entry, players, me }: { entry: LogEntry; players: PlayerPubl
   return <>{entry.text}</>;
 }
 
-/** Every move uses the same surface; major moments stay visible longer. */
+/** Original table treatments, all delivered to the shared centered area. */
 export function Announcer({ announcement, players, me }: { announcement: Announcement | null; players: PlayerPublic[]; me: string | null }) {
   if (!announcement) return null;
   const { entry } = announcement;
   const touched = players.filter((p) => (entry.subjectIds ?? []).includes(p.id));
   const tone = entry.tone === "bad" ? "bad" : entry.tone === "good" || entry.tone === "accent" ? "good" : "neutral";
-  return <Notification key={entry.seq} title={KICKER[entry.kind]} tone={tone} kind={entry.kind === "stick" || entry.kind === "stickMiss" ? "stick" : "game"} label="Game event">
-    <p><Sentence entry={entry} players={players} me={me} /></p>
-    {touched.length ? <p className="mt-1.5 text-[11px] text-ink-3">
-      {touched.map((p, index) => <span key={p.id}>{index ? " · " : ""}{p.id === me ? "You" : <PlayerName name={p.name} isBot={p.isBot} />}</span>)}
-    </p> : null}
+  const loud = entry.weight === "loud";
+  const labelTone = tone === "bad" ? "text-red" : tone === "good" || loud ? "text-accent" : "text-ink-3";
+  return <Notification key={entry.seq} title={KICKER[entry.kind]} tone={tone} kind={entry.kind === "stick" || entry.kind === "stickMiss" ? "stick" : "game"} label="Game event" custom
+    className={loud
+      ? "max-w-[620px] animate-pop rounded-panel bg-surface-2/95 px-5 py-4 text-center shadow-float backdrop-blur-sm hairline-strong sm:px-9 sm:py-7"
+      : "flex max-w-[680px] animate-rise flex-wrap items-center gap-3 rounded-panel bg-surface-2 px-5 py-3 shadow-float sm:gap-4"}>
+    {loud ? <>
+      <p className={`t-caption ${labelTone}`}>{KICKER[entry.kind]}</p>
+      <p className="t-title2 mt-2.5 text-ink"><Sentence entry={entry} players={players} me={me} /></p>
+    </> : <>
+      <span className={`t-caption shrink-0 ${labelTone}`}>{KICKER[entry.kind]}</span>
+      <span className="h-6 w-px shrink-0 bg-line-strong" aria-hidden />
+      <p className="t-callout text-ink-2"><Sentence entry={entry} players={players} me={me} /></p>
+      {touched.length ? <span className="ml-auto flex max-w-full flex-wrap items-center gap-1.5">
+        {touched.map((p) => <span key={p.id} className="inline-flex h-[22px] items-center rounded-full bg-accent-soft px-2 text-[11.5px] font-medium text-accent-ink">{p.id === me ? "You" : <PlayerName name={p.name} isBot={p.isBot} />}</span>)}
+      </span> : null}
+    </>}
   </Notification>;
 }

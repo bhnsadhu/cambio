@@ -24,6 +24,7 @@ async function withinViewport(locator: Locator) {
 async function laptopCanvas(page: Page, label: string) {
   for (const size of laptopSizes) {
     await page.setViewportSize(size);
+    await page.evaluate(() => scrollTo(0, 0));
     await page.evaluate(() => document.fonts.ready);
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     const hands = page.getByRole("region", { name: /'s hand$/ });
@@ -32,9 +33,11 @@ async function laptopCanvas(page: Page, label: string) {
     const actions = page.getByRole("region", { name: "Round actions", exact: true });
     const piles = page.getByRole("region", { name: "Deck and discard pile", exact: true });
     const log = page.getByRole("complementary", { name: "Table log", exact: true });
-    await withinViewport(actions);
     await withinViewport(piles);
-    await withinViewport(log);
+    // Notifications expand the document; controls can move below the fold.
+    await actions.scrollIntoViewIfNeeded();
+    await withinViewport(actions);
+    await page.evaluate(() => scrollTo(0, 0));
     const lastHand = (await hands.last().boundingBox())!;
     const deck = (await piles.boundingBox())!;
     const history = (await log.boundingBox())!;
@@ -134,7 +137,6 @@ test("laptop browsers keep hands, piles, activity, and turn actions together thr
   for (const size of laptopSizes) {
     await page.setViewportSize(size);
     await page.evaluate(() => scrollTo(0, 0));
-    await notices.evaluate((element) => element.scrollTo(0, 0));
     const area = (await page.locator("[data-notification-area]").boundingBox())!;
     const stack = (await notices.boundingBox())!;
     expect(Math.abs(stack.x + stack.width / 2 - area.x - area.width / 2)).toBeLessThan(1);
@@ -143,10 +145,11 @@ test("laptop browsers keep hands, piles, activity, and turn actions together thr
     expect(stack.y + stack.height).toBeLessThanOrEqual(controls.y);
     const pauseBounds = (await vote.boundingBox())!;
     const revealBounds = (await reveal.boundingBox())!;
-    expect(pauseBounds.x).toBe(revealBounds.x);
-    expect(pauseBounds.width).toBe(revealBounds.width);
-    expect(pauseBounds.y).toBeGreaterThanOrEqual(revealBounds.y + revealBounds.height + 8);
-    await withinViewport(notices);
+    expect(Math.abs(pauseBounds.x + pauseBounds.width / 2 - revealBounds.x - revealBounds.width / 2)).toBeLessThan(1);
+    expect(pauseBounds.y).toBeGreaterThanOrEqual(revealBounds.y + revealBounds.height + 12);
+    expect(stack.height).toBeGreaterThanOrEqual(revealBounds.height + pauseBounds.height + 12 - 1);
+    expect(await notices.evaluate((element) => ({ overflow: getComputedStyle(element).overflowY, clipped: element.scrollHeight > element.clientHeight + 1 }))).toEqual({ overflow: "visible", clipped: false });
+    if (size.width === 1366) expect(await page.evaluate(() => document.documentElement.scrollHeight > innerHeight)).toBe(true);
     await expect(reveal).toHaveAttribute("data-kind", "reveal");
     await expect(vote).toHaveAttribute("data-kind", "pause");
     if (size.width === 1366) await page.screenshot({ path: "test-results/notifications/reveal-pause-desktop.png", fullPage: true, animations: "disabled" });
@@ -156,7 +159,6 @@ test("laptop browsers keep hands, piles, activity, and turn actions together thr
   }
   for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 844 });
-    await notices.evaluate((element) => element.scrollTo(0, 0));
     await notices.scrollIntoViewIfNeeded();
     const area = (await page.locator("[data-notification-area]").boundingBox())!;
     const stack = (await notices.boundingBox())!;
@@ -167,6 +169,10 @@ test("laptop browsers keep hands, piles, activity, and turn actions together thr
     const agree = vote.getByRole("button", { name: "Agree", exact: true });
     await agree.scrollIntoViewIfNeeded();
     await expect(agree).toBeInViewport();
+    expect(await notices.evaluate((element) => element.scrollTop)).toBe(0);
+    expect(await page.evaluate(() => scrollY)).toBeGreaterThan(0);
+    await actions.scrollIntoViewIfNeeded();
+    await withinViewport(actions);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
   await page.setViewportSize(laptopSizes.at(-1)!);

@@ -69,7 +69,7 @@ function Answer({ view, me, busy, onVote, size = "sm" }: Omit<PauseProps, "onReq
   if (!answered) {
     return (
       <div className="flex shrink-0 items-center gap-2">
-        <Button variant="secondary" size={size} disabled={busy} onClick={() => onVote(true)}>Agree</Button>
+        <Button variant="accent" size={size} disabled={busy} onClick={() => onVote(true)}>Agree</Button>
         <Button variant="ghost" size={size} disabled={busy} onClick={() => onVote(false)}>Decline</Button>
       </div>
     );
@@ -95,16 +95,20 @@ export function PauseBanner({ view, me, busy, onVote }: Omit<PauseProps, "onRequ
   const name = by ? <PlayerName name={by.name} isBot={by.isBot} /> : "Someone";
   const mine = vote.byId === me;
   return (
-    <Notification title={vote.kind === "pause" ? "Pause requested" : "Resume requested"} kind="pause" label={vote.kind === "pause" ? "Pause requested" : "Resume requested"} priority={20}
-      actions={<Answer view={view} me={me} busy={busy} onVote={onVote} />}>
-          <p>
+    <Notification title={vote.kind === "pause" ? "Pause requested" : "Resume requested"} kind="pause" label={vote.kind === "pause" ? "Pause requested" : "Resume requested"} priority={20} custom
+      className="flex max-w-[760px] animate-rise flex-wrap items-center gap-4 rounded-panel bg-surface-2 px-5 py-4 shadow-float sm:gap-6">
+        <div className="min-w-0 max-w-[240px]">
+          <p className="t-caption text-ink-3">{vote.kind === "pause" ? "Pause requested" : "Resume requested"}</p>
+          <p className="t-callout mt-1 text-ink-2">
             {mine ? <>You asked to {vote.kind} the table.</> : <>{name} asked to {vote.kind} the table.</>}{" "}
             <span className="text-ink">Everyone has to agree.</span>
           </p>
-          <p className="mt-1 text-[11px] text-ink-3">
+          <p className="t-footnote mt-1 text-ink-3">
             {vote.kind === "pause" ? "Play carries on until they do." : "The table stays paused until they do."}
           </p>
-        <div className="mt-3"><Roster view={view} /></div>
+        </div>
+        <Roster view={view} />
+        <div className="ml-auto"><Answer view={view} me={me} busy={busy} onVote={onVote} /></div>
     </Notification>
   );
 }

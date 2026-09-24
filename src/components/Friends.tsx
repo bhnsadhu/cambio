@@ -303,7 +303,7 @@ export function Notifications({ social, atCode = null, acceptsJoinRequests = tru
     <>
       {requests.map((request) => (
         <Notification key={request.id} title="Join request" kind="social" label={`Join request from ${request.from.displayName}`} priority={30} actions={<>
-            <Button size="sm" variant="secondary" disabled={answering !== null} onClick={() => void answerRequest(request.id, true)}>Accept</Button>
+            <Button size="sm" variant="accent" disabled={answering !== null} onClick={() => void answerRequest(request.id, true)}>Accept</Button>
             <Button size="sm" variant="ghost" disabled={answering !== null} onClick={() => void answerRequest(request.id, false)}>Decline</Button>
           </>}>
           <p><strong>{request.from.displayName}</strong> asked to join your table.</p>
@@ -312,7 +312,7 @@ export function Notifications({ social, atCode = null, acceptsJoinRequests = tru
       ))}
       {invites.map((invite) => (
         <Notification key={invite.id} title="Table invitation" kind="social" label={`Table invitation from ${invite.from.displayName}`} priority={30} actions={<>
-            <Button size="sm" variant="secondary" disabled={answering !== null} onClick={() => void accept(invite.id)}>
+            <Button size="sm" variant="accent" disabled={answering !== null} onClick={() => void accept(invite.id)}>
               {answering === invite.id ? "Taking a seat" : "Join"}
             </Button>
             <Button

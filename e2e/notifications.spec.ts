@@ -23,6 +23,7 @@ async function centeredAtTable(page: Page) {
   expect(Math.abs(stack.y + stack.height / 2 - area.y - area.height / 2)).toBeLessThan(1);
   expect(stack.y).toBeGreaterThanOrEqual(area.y - 1);
   expect(stack.y + stack.height).toBeLessThanOrEqual(actions.y);
+  expect(await viewport(page).evaluate((element) => ({ overflow: getComputedStyle(element).overflowY, clipped: element.scrollHeight > element.clientHeight + 1 }))).toEqual({ overflow: "visible", clipped: false });
   const hands = await page.getByRole("region", { name: /'s hand$/ }).all();
   for (const hand of hands) {
     const box = (await hand.boundingBox())!;
@@ -73,7 +74,7 @@ async function table(page: Page) {
 }
 
 for (const width of [390, 1440]) {
-  test(`sticks, game events, and action errors share one dark surface at ${width}px`, async ({ page }) => {
+  test(`original notification treatments share the natural table flow at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.emulateMedia({ reducedMotion: "reduce" });
     const fixture = await table(page);
@@ -84,8 +85,8 @@ for (const width of [390, 1440]) {
     await expect(event).toContainText("it is gone");
     await expect(notices.locator(".app-notification")).toHaveCount(1);
     const standard = await appearance(event);
-    expect(standard.background).toBe("rgb(21, 21, 24)");
-    expect(standard.radius).toBe("16px");
+    expect(standard.background).toBe("rgb(32, 32, 40)");
+    expect(standard.radius).toBe(width >= 1024 ? "18px" : "24px");
     expect(standard.x).toBeGreaterThanOrEqual(16);
     expect(standard.x + standard.width).toBeLessThanOrEqual(width - 16);
     await centeredAtTable(page);
@@ -104,12 +105,21 @@ for (const width of [390, 1440]) {
     await expect(event).toHaveAttribute("data-tone", "bad");
     await expect(event).toHaveCount(0);
 
-    // Every announceable event kind uses the same geometry, including major moments.
+    // Routine bars and larger major moments remain centered in the same area.
     const kinds: EventKind[] = ["table", "kick", "deal", "draw", "place", "swap", "peekOwn", "peekOther", "blindSwap", "kingLook", "kingSwap", "kingLeave", "skipPower", "give", "cambio", "zero", "timeout", "reshuffle", "roundEnd", "replay"];
     fixture.publish(kinds.map((kind) => ({ kind, text: `An event of kind ${kind}.`, weight: ["deal", "cambio", "zero", "roundEnd"].includes(kind) ? "loud" : "normal" })));
     for (const kind of kinds) {
       await expect(event).toContainText(`An event of kind ${kind}.`);
-      expect(await appearance(event)).toEqual(standard);
+      const look = await appearance(event);
+      if (["deal", "cambio", "zero", "roundEnd"].includes(kind)) {
+        expect(look.radius).toBe(standard.radius);
+        expect(look.width).toBe(Math.min(620, width < 1024 ? width - 40 : 620));
+        expect(await event.locator(".t-title2").evaluate((element) => getComputedStyle(element).fontSize)).toBe("23px");
+        if (kind === "cambio") {
+          await notices.scrollIntoViewIfNeeded();
+          await page.screenshot({ path: `test-results/notifications/major-${width}.png`, animations: "disabled" });
+        }
+      } else expect(look).toEqual(standard);
       await centeredAtTable(page);
       await expect(event).toHaveAttribute("data-kind", "game");
       await expect(notices.locator(".app-notification")).toHaveCount(1);
@@ -143,12 +153,14 @@ for (const width of [390, 1440]) {
       await expect(notices).toHaveAttribute("data-docked", "false");
       const position = (await notices.boundingBox())!;
       expect(position.x + position.width / 2).toBe(width / 2);
-      expect(position.y + position.height).toBe(900 - 24);
+      expect(await notices.evaluate((element) => getComputedStyle(element).position)).toBe("sticky");
+      await notices.scrollIntoViewIfNeeded();
+      await expect(notices).toBeInViewport();
     }
   });
 }
 
-test("form feedback keeps its position, keyboard access, and reduced-motion treatment in a dialog", async ({ page }) => {
+test("form feedback stays centered, accessible, and motion-safe in a dialog", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 740 });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.route("**/api/account", (route) => route.fulfill({ json: { profile: null, username: null } }));
@@ -161,12 +173,15 @@ test("form feedback keeps its position, keyboard access, and reduced-motion trea
   const baseline = await appearance(notice);
   const position = (await notice.boundingBox())!;
   expect(position.x + position.width / 2).toBe(160);
-  expect(position.y + position.height).toBe(740 - 24);
+  await notice.scrollIntoViewIfNeeded();
+  await expect(notice).toBeInViewport();
   await page.getByRole("button", { name: "Customize guest player", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Your guest player", exact: true });
   await expect(dialog.getByRole("region", { name: "Notifications", exact: true })).toBeVisible();
   expect(await appearance(notice)).toEqual(baseline);
-  expect(await notice.boundingBox()).toEqual(position);
+  const dialogPosition = (await notice.boundingBox())!;
+  expect(dialogPosition.x + dialogPosition.width / 2).toBe(160);
+  expect(dialogPosition.y + dialogPosition.height).toBe(740 - 24);
   const dismiss = notice.getByRole("button", { name: "Dismiss new table notification" });
   await dismiss.focus();
   await expect(dismiss).toBeFocused();

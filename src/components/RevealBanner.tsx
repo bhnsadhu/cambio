@@ -44,20 +44,21 @@ export function RevealBanner({
             r.kind === "peekOther" ? `${names.get(ownerOf(r.cardIds[0])?.id ?? "") ?? "Their"}'s card` :
             "Two cards. Your call.";
           return (
-            <Notification key={r.id} title={title} kind="reveal" label="Card reveal" priority={0} announce={false}>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="min-w-0 flex-1 basis-[140px]">
-                  <p>
+            <Notification key={r.id} title={title} kind="reveal" label="Card reveal" priority={0} announce={false} custom className="max-w-[720px] animate-rise rounded-panel bg-surface-2 px-5 py-4 shadow-float">
+              <div className="flex flex-wrap items-center justify-center gap-4 sm:justify-start sm:gap-5">
+                <div className="min-w-0 flex-1 basis-[170px]">
+                  <p className="t-caption text-ink-3">{title}</p>
+                  <p className="t-callout mt-1 text-ink-2">
                     {isKing ? "Swap them, or leave them." : (
                       <>Face down again in <span className="tnum font-medium text-accent">{(left / 1000).toFixed(1)}s</span></>
                     )}
                   </p>
-                  {hint ? <p className="mt-1.5 text-[11px] text-ink-3">{hint}</p> : null}
+                  {hint ? <p className="t-footnote mt-2 max-w-[220px] text-ink-3">{hint}</p> : null}
                 </div>
                 <div className="flex max-w-full items-start justify-center gap-3">
                   {r.cards.map((c, i) => (
-                    <div key={c.id} className="flex w-20 min-w-0 flex-col items-center gap-1.5">
-                      <FaceCard card={c} size="sm" />
+                    <div key={c.id} className={`flex min-w-0 flex-col items-center gap-1.5 ${isKing ? "w-[100px]" : ""}`}>
+                      <FaceCard card={c} size="md" className="animate-flip-in" />
                       {isKing ? (
                         <span className="t-footnote w-full text-center text-ink-3 [overflow-wrap:anywhere]">{ownerOf(r.cardIds[i])?.id === view.private?.playerId ? "Yours" : names.get(ownerOf(r.cardIds[i])?.id ?? "")}</span>
                       ) : null}
@@ -67,7 +68,7 @@ export function RevealBanner({
 
               </div>
               {pct !== null ? (
-                <div className="mt-3 h-0.5 w-full overflow-hidden rounded-full bg-white/10" aria-hidden>
+                <div className="mt-3 h-[3px] w-full overflow-hidden rounded-full bg-white/10" aria-hidden>
                   <div className="h-full rounded-full bg-accent transition-[width] duration-100 ease-linear" style={{ width: `${pct}%` }} />
                 </div>
               ) : null}
