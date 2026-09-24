@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { dismissAccountNotice, useAccountNotice, useAccountReady, useStoredProfile } from "@/lib/client/profile";
+import { useAccountReady, useStoredProfile } from "@/lib/client/profile";
 import { loginHref } from "@/lib/account/navigation";
 import { avatarIndex } from "@/lib/avatars";
 import { guestIdentity, storeGuestIdentity, useGuestIdentity } from "@/lib/client/guest";
@@ -45,7 +45,6 @@ export function GameScreen({ code }: { code: string }) {
 function GameShell({ code }: { code: string }) {
   const game = useGame(code);
   const social = useSocial();
-  const accountNotice = useAccountNotice();
   const router = useRouter();
   const view = game.view;
   // Friends can see the table you are sitting at, and whether it has a seat
@@ -165,11 +164,6 @@ function GameShell({ code }: { code: string }) {
             )}
         </HeaderBar>
 
-        {accountNotice ? <div className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-panel bg-accent-soft p-4">
-          <p role="status" className="t-sub min-w-0 flex-1 basis-40 text-accent">{accountNotice}</p>
-          <Button type="button" variant="ghost" size="sm" className="shrink-0" aria-label="Dismiss message" onClick={dismissAccountNotice}>Dismiss</Button>
-        </div> : null}
-
         {body}
 
         <FlightLayer specs={flights.specs} onLanded={flights.onLanded} />
@@ -196,7 +190,6 @@ function GameShell({ code }: { code: string }) {
             if (game.session) game.setSession({ ...game.session, name: value.name });
           }}
         /> : null}
-        <Toasts toasts={game.toasts} />
         <Notifications social={social} atCode={code} acceptsJoinRequests={!seated || !view?.public.doNotDisturb} />
       </main>
     </TableSocialProvider>
@@ -348,19 +341,6 @@ function TableSkeleton() {
           <p className="t-sub mt-4 inline-flex items-center gap-2 text-ink-3"><Pip />Finding the table</p>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Toasts({ toasts }: { toasts: { id: number; text: string; tone: string }[] }) {
-  if (!toasts.length) return null;
-  return (
-    <div className="pointer-events-none fixed inset-x-5 top-16 z-50 flex flex-col gap-2 sm:left-auto sm:right-8 sm:max-w-[440px]" role="status">
-      {toasts.map((t) => (
-        <div key={t.id} className={`animate-rise rounded-full px-4 py-2 text-[13px] font-medium shadow-float ${t.tone === "bad" ? "bg-surface-2 text-ink hairline-strong" : "bg-ink text-bg"}`}>
-          {t.text}
-        </div>
-      ))}
     </div>
   );
 }

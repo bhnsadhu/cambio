@@ -6,7 +6,7 @@ import { useState, type FormEvent } from "react";
 import { loginHref } from "@/lib/account/navigation";
 import { avatarIndex } from "@/lib/avatars";
 import { api, RequestError } from "@/lib/client/api";
-import { dismissAccountNotice, useAccountNotice, useAccountReady } from "@/lib/client/profile";
+import { useAccountReady } from "@/lib/client/profile";
 import { saveSession, storeName } from "@/lib/client/session";
 import { useSocial } from "@/lib/client/social";
 import { useStoredName } from "@/lib/client/useStoredName";
@@ -22,7 +22,6 @@ export function Landing() {
   const router = useRouter();
   const social = useSocial();
   const accountReady = useAccountReady();
-  const notice = useAccountNotice();
   const [name, setName] = useStoredName("Guest");
   const guest = useGuestIdentity();
   const guestAvatarId = avatarIndex(name || "Guest", guest?.avatarId);
@@ -85,10 +84,6 @@ export function Landing() {
   return (
     <main className="site-shell">
       <AppHeader active="tables" loginNext={next} onLogin={rememberGuest} />
-      {notice ? <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-panel bg-accent-soft p-4">
-        <p role="status" className="t-sub min-w-0 flex-1 basis-40 text-accent">{notice}</p>
-        <Button type="button" variant="ghost" size="sm" className="shrink-0" aria-label="Dismiss message" onClick={dismissAccountNotice}>Dismiss</Button>
-      </div> : null}
       <RecentTable />
       {profile ? <>
         <header className="pt-10 pb-7"><h1 className="t-title">Ready for a round?</h1><p className="t-body mt-2 text-ink-2">Open a table, share the code, and invite your friends.</p></header>

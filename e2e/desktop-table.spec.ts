@@ -108,7 +108,7 @@ test("laptop browsers keep hands, piles, activity, and turn actions together thr
   await expect(actions.getByRole("button", { name: "Skip the power", exact: true })).toBeVisible();
 
   // A pause vote can arrive while the black king is revealing two cards.
-  // Both notices must remain between the hands and the one set of decisions.
+  // Both notices share the fixed stack without displacing the decisions.
   state = started(makeCtx(9, Date.now() - 10_001)).state;
   for (const [index, id] of initial.ids.entries()) player(state, id).name = names[index];
   ctx.now = Date.now();
@@ -119,8 +119,9 @@ test("laptop browsers keep hands, piles, activity, and turn actions together thr
   state = act(state, initial.ids[1], { type: "pauseRequest" }, ctx);
   version++;
   await page.reload();
-  const vote = page.getByText("Pause requested", { exact: true }).locator("..").locator("..");
-  const reveal = page.getByText("Two cards. Your call.", { exact: true }).locator("..").locator("..").locator("..");
+  const notices = page.getByRole("region", { name: "Notifications", exact: true });
+  const vote = notices.getByRole("region", { name: "Pause requested", exact: true });
+  const reveal = notices.getByRole("region", { name: "Card reveal", exact: true });
   await expect(vote).toBeVisible();
   await expect(reveal).toBeVisible();
   // Bounding boxes include transforms. Measure the final layout after the
@@ -133,14 +134,14 @@ test("laptop browsers keep hands, piles, activity, and turn actions together thr
   for (const size of laptopSizes) {
     await page.setViewportSize(size);
     await page.evaluate(() => scrollTo(0, 0));
-    const hands = await page.getByRole("region", { name: /'s hand$/ }).all();
-    const handBottom = Math.max(...await Promise.all(hands.map(async (hand) => { const rect = (await hand.boundingBox())!; return rect.y + rect.height; })));
     const pauseBounds = (await vote.boundingBox())!;
     const revealBounds = (await reveal.boundingBox())!;
-    const actionsBounds = (await actions.boundingBox())!;
-    expect(pauseBounds.y).toBeGreaterThanOrEqual(handBottom + 8);
-    expect(revealBounds.y).toBeGreaterThanOrEqual(pauseBounds.y + pauseBounds.height + 8);
-    expect(actionsBounds.y).toBeGreaterThanOrEqual(revealBounds.y + revealBounds.height + 8);
+    expect(revealBounds.y).toBe(80);
+    expect(pauseBounds.x).toBe(revealBounds.x);
+    expect(pauseBounds.width).toBe(revealBounds.width);
+    expect(pauseBounds.y).toBeGreaterThanOrEqual(revealBounds.y + revealBounds.height + 8);
+    await withinViewport(vote);
+    await withinViewport(reveal);
     await actions.scrollIntoViewIfNeeded();
     await withinViewport(actions);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

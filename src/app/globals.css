@@ -215,3 +215,48 @@ a:focus-visible, summary:focus-visible { outline: 2px solid var(--color-accent);
 
 /* Offsuit-style statistics groups: quiet outlines, compact value/label pairs. */
 .stat-group { border: 1px solid var(--color-line-strong); border-radius: 16px; background: #111113; padding: 16px 18px; }
+
+/* A single quiet notification surface, anchored independently of page layout. */
+.notification-viewport {
+  position: fixed;
+  z-index: 80;
+  top: calc(env(safe-area-inset-top, 0px) + 80px);
+  right: max(16px, env(safe-area-inset-right, 0px));
+  width: min(400px, calc(100vw - 32px));
+  max-height: calc(100dvh - 96px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: none;
+  scrollbar-width: thin;
+}
+.notification-viewport:empty { display: none; }
+.app-notification {
+  position: relative;
+  flex: none;
+  min-width: 0;
+  padding: 15px 16px;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 16px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.28);
+  animation: notification-in 160ms var(--ease-out) both;
+  overflow-wrap: anywhere;
+}
+.app-notification[data-interactive="true"] { pointer-events: auto; }
+.notification-heading { display: flex; align-items: center; gap: 8px; padding-right: 24px; color: var(--color-ink-2); font-size: 11px; line-height: 16px; font-weight: 500; }
+.notification-mark { width: 5px; height: 5px; flex-shrink: 0; border-radius: 50%; background: var(--color-ink-3); }
+.app-notification[data-tone="good"] .notification-mark { background: var(--color-accent); }
+.app-notification[data-tone="bad"] .notification-mark { background: var(--color-red); }
+.notification-message { margin-top: 5px; font-size: 13px; line-height: 1.55; color: var(--color-ink-2); }
+.notification-message strong { font-weight: 600; color: var(--color-ink); }
+.notification-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.notification-actions button { min-height: 36px; }
+.notification-dismiss { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; color: var(--color-ink-3); }
+.notification-dismiss:hover { color: var(--color-ink); background: var(--color-surface-2); }
+.notification-dismiss:focus-visible { outline: 2px solid var(--color-ink-2); outline-offset: -2px; }
+@keyframes notification-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .app-notification { animation: none; } }

@@ -3,14 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import type { EventKind, EventWeight, LogEntry, PlayerPublic } from "@/lib/game/types";
 import { PlayerName } from "./ui";
+import { Notification } from "./Notification";
 
 /**
  * What just happened, said out loud.
  *
  * The log is the event stream: every entry carries who moved, whose cards it
  * touched, which cards to highlight and how loudly to say it. This turns that
- * into one announcement at a time — a standard notice for a look or a swap, a
- * big one for the moments that change the round — so a player who is not
+ * into one announcement at a time, with a longer hold for the moments
+ * that change the round — so a player who is not
  * acting can still follow every card and every person.
  */
 
@@ -143,68 +144,16 @@ function Sentence({ entry, players }: { entry: LogEntry; players: PlayerPublic[]
   return <>{entry.text}</>;
 }
 
-/**
- * A routine move: a line at the middle of the table, where everyone is
- * already looking, naming the kind of move and who it happened to.
- */
+/** Every move uses the same surface; major moments stay visible longer. */
 export function Announcer({ announcement, players, me }: { announcement: Announcement | null; players: PlayerPublic[]; me: string | null }) {
-  if (!announcement || announcement.entry.weight === "loud") return null;
+  if (!announcement) return null;
   const { entry } = announcement;
   const touched = players.filter((p) => (entry.subjectIds ?? []).includes(p.id));
-  const tone = entry.tone === "bad" ? "text-red" : entry.tone === "accent" || entry.tone === "good" ? "text-accent" : "text-ink-3";
-  return (
-    <div
-      key={entry.seq}
-      className="animate-rise flex w-full max-w-[680px] flex-wrap items-center gap-3 rounded-panel bg-surface-2 px-5 py-3 shadow-float sm:gap-4"
-      role="status"
-    >
-      <span className={`t-caption shrink-0 ${tone}`}>{KICKER[entry.kind]}</span>
-      <span className="h-6 w-px shrink-0 bg-line-strong" />
-      <p className="t-callout text-ink-2">
-        <Sentence entry={entry} players={players} />
-      </p>
-      {touched.length ? (
-        <span className="ml-auto flex max-w-full flex-wrap items-center gap-1.5">
-          {touched.map((p) => (
-            <span key={p.id} className="inline-flex h-[22px] items-center rounded-full bg-accent-soft px-2 text-[11.5px] font-medium text-accent-ink">
-              {p.id === me ? "You" : <PlayerName name={p.name} isBot={p.isBot} />}
-            </span>
-          ))}
-        </span>
-      ) : null}
-    </div>
-  );
-}
-
-/**
- * A moment worth stopping for: Cambio, a swap in the final turns, a player
- * out of cards, the table going dark. It takes the middle of the table, where
- * the standard notice goes, at four times the size — out of the layout so it
- * cannot move a card, and out of the way of a click so it cannot block one.
- */
-export function BigMoment({ announcement, players, me }: { announcement: Announcement | null; players: PlayerPublic[]; me: string | null }) {
-  if (!announcement || announcement.entry.weight !== "loud") return null;
-  const { entry } = announcement;
-  const actor = players.find((p) => p.id === entry.actorId) ?? null;
-  const mine = !!me && entry.actorId === me;
-  const tone = entry.tone === "bad" ? "text-red" : "text-accent";
-  return (
-    <div className="pointer-events-none w-full max-w-[620px] xl:absolute xl:left-1/2 xl:top-1/2 xl:z-30 xl:w-max xl:max-w-[min(620px,90%)] xl:-translate-x-1/2 xl:-translate-y-1/2" aria-live="polite">
-      <div key={entry.seq} className="animate-pop rounded-panel bg-surface-2/95 px-5 py-4 text-center shadow-float backdrop-blur-sm hairline-strong sm:px-9 sm:py-7">
-        <p className={`t-caption ${tone}`}>{KICKER[entry.kind]}</p>
-        <p className="t-title2 mt-2.5 text-ink">
-          {actor && entry.text.startsWith(actor.name) ? (
-            <span className="font-semibold">{mine ? "You" : <PlayerName name={actor.name} isBot={actor.isBot} />}</span>
-          ) : null}
-          {headline(entry, actor?.name ?? null, mine)}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-/** The sentence with the actor's name lifted out of the front of it. */
-function headline(entry: LogEntry, actorName: string | null, mine: boolean): string {
-  if (actorName && entry.text.startsWith(actorName)) return restOfSentence(entry.text, actorName, mine);
-  return entry.text;
+  const tone = entry.tone === "bad" ? "bad" : entry.tone === "good" || entry.tone === "accent" ? "good" : "neutral";
+  return <Notification key={entry.seq} title={KICKER[entry.kind]} tone={tone} label="Game event">
+    <p><Sentence entry={entry} players={players} /></p>
+    {touched.length ? <p className="mt-1.5 text-[11px] text-ink-3">
+      {touched.map((p, index) => <span key={p.id}>{index ? " · " : ""}{p.id === me ? "You" : <PlayerName name={p.name} isBot={p.isBot} />}</span>)}
+    </p> : null}
+  </Notification>;
 }

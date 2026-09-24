@@ -7,7 +7,7 @@ import { shortLabel } from "@/lib/game/cards";
 import type { GameHook } from "@/lib/client/useGame";
 import { usePositions } from "@/lib/client/positions";
 import { setPref, usePrefs } from "@/lib/client/prefs";
-import { Announcer, BigMoment, useAnnouncements } from "./Announcements";
+import { Announcer, useAnnouncements } from "./Announcements";
 import { PlayerPanel } from "./PlayerPanel";
 import { Piles } from "./Piles";
 import { EventFeed } from "./EventFeed";
@@ -170,8 +170,7 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
   const fire = async (action: Action) => {
     setSelected(null);
     setArmed(false);
-    const res = await game.send(action);
-    if (res?.note?.kind === "stick") game.toast(res.note.correct ? "Stuck." : "Not a match. Penalty card drawn.", res.note.correct ? "good" : "bad");
+    await game.send(action);
   };
 
   /** Picks the second half of a pair, or starts one. */
@@ -287,10 +286,8 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
 
         </div>
 
-        {/* The middle of the table: timed reveals and an open pause request
-            live here, between the hands and the actions. */}
+        {/* Notifications portal to the shared viewport without shifting the table. */}
         <div className="relative order-3 flex min-h-min flex-1 flex-col items-center justify-center gap-3">
-          <BigMoment announcement={announcement} players={pub.players} me={me} />
           <PauseBanner view={pub} me={me} busy={game.busy} onVote={(agree) => void game.send({ type: "pauseVote", agree })} />
           <Announcer announcement={announcement} players={pub.players} me={me} />
           {dealing ? null : (

@@ -9,6 +9,7 @@ import { saveSession } from "@/lib/client/session";
 import type { Friend } from "@/lib/social/types";
 import { orderFriends } from "@/lib/social/friends-order";
 import { RankBadge } from "./RankBadge";
+import { Notification } from "./Notification";
 import { Button, PresenceDot, inputClass, presenceOf } from "./ui";
 
 /**
@@ -299,26 +300,19 @@ export function Notifications({ social, atCode = null, acceptsJoinRequests = tru
   };
 
   return (
-    <div className="fixed bottom-5 right-5 z-40 flex max-h-[70dvh] w-[320px] max-w-[calc(100vw-2.5rem)] flex-col gap-2 overflow-y-auto sm:bottom-6 sm:right-6" aria-label="Table invitations and requests">
+    <>
       {requests.map((request) => (
-        <div key={request.id} role="region" aria-label={`Join request from ${request.from.displayName}`} className="animate-rise rounded-[18px] bg-surface-2 p-3.5 shadow-float hairline-strong">
-          <p className="t-sub"><span className="font-semibold">{request.from.displayName}</span> asked to join your table.</p>
-          {trouble[request.id] ? <p role="alert" className="t-footnote mt-1.5 text-red">{trouble[request.id]}</p> : null}
-          <div className="mt-2.5 flex gap-1.5">
-            <Button size="sm" variant="accent" disabled={answering !== null} onClick={() => void answerRequest(request.id, true)}>Accept</Button>
+        <Notification key={request.id} title="Join request" label={`Join request from ${request.from.displayName}`} priority={30} actions={<>
+            <Button size="sm" variant="secondary" disabled={answering !== null} onClick={() => void answerRequest(request.id, true)}>Accept</Button>
             <Button size="sm" variant="ghost" disabled={answering !== null} onClick={() => void answerRequest(request.id, false)}>Decline</Button>
-          </div>
-        </div>
+          </>}>
+          <p><strong>{request.from.displayName}</strong> asked to join your table.</p>
+          {trouble[request.id] ? <p role="alert" className="mt-1.5 text-red">{trouble[request.id]}</p> : null}
+        </Notification>
       ))}
       {invites.map((invite) => (
-        <div key={invite.id} role="region" aria-label={`Table invitation from ${invite.from.displayName}`} className="animate-rise rounded-[18px] bg-surface-2 p-3.5 shadow-float hairline-strong">
-          <p className="t-sub">
-            <span className="font-semibold">{invite.from.displayName}</span>{invite.requested ? " accepted your request to join table " : " invited you to table "}
-            <span className="tnum font-semibold tracking-[0.06em]">{invite.code}</span>.
-          </p>
-          {trouble[invite.id] ? <p role="alert" className="t-footnote mt-1.5 text-red">{trouble[invite.id]}</p> : null}
-          <div className="mt-2.5 flex gap-1.5">
-            <Button size="sm" variant="accent" disabled={answering !== null} onClick={() => void accept(invite.id)}>
+        <Notification key={invite.id} title="Table invitation" label={`Table invitation from ${invite.from.displayName}`} priority={30} actions={<>
+            <Button size="sm" variant="secondary" disabled={answering !== null} onClick={() => void accept(invite.id)}>
               {answering === invite.id ? "Taking a seat" : "Join"}
             </Button>
             <Button
@@ -329,10 +323,11 @@ export function Notifications({ social, atCode = null, acceptsJoinRequests = tru
             >
               No thanks
             </Button>
-          </div>
-        </div>
+          </>}>
+          <p><strong>{invite.from.displayName}</strong>{invite.requested ? " accepted your request to join table " : " invited you to table "}<strong className="tnum tracking-[0.06em]">{invite.code}</strong>.</p>
+          {trouble[invite.id] ? <p role="alert" className="mt-1.5 text-red">{trouble[invite.id]}</p> : null}
+        </Notification>
       ))}
-
-    </div>
+    </>
   );
 }

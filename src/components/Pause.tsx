@@ -7,6 +7,7 @@ import { useModalFocus } from "@/lib/client/useModalFocus";
 import { Button, buttonClass, Pip, PlayerName } from "./ui";
 import { TablePlayers } from "./TablePlayers";
 import { HeaderButton } from "./Header";
+import { Notification } from "./Notification";
 
 /**
  * Pausing is unanimous, so the interesting part is always the same: who has
@@ -84,8 +85,7 @@ function Answer({ view, me, busy, onVote, size = "sm" }: Omit<PauseProps, "onReq
 }
 
 /**
- * A request is open and play carries on around it, so this sits in the middle
- * of the table with the timed reveals rather than covering a hand.
+ * A request joins the shared notification stack while play carries on.
  */
 export function PauseBanner({ view, me, busy, onVote }: Omit<PauseProps, "onRequest">) {
   const vote = view.pauseVote;
@@ -95,22 +95,17 @@ export function PauseBanner({ view, me, busy, onVote }: Omit<PauseProps, "onRequ
   const name = by ? <PlayerName name={by.name} isBot={by.isBot} /> : "Someone";
   const mine = vote.byId === me;
   return (
-    <div className="flex w-full justify-center sm:px-6">
-      <div className="flex max-w-[760px] animate-rise flex-wrap items-center gap-4 rounded-panel bg-surface-2 px-5 py-4 shadow-float sm:gap-6">
-        <div className="min-w-0 max-w-[240px]">
-          <p className="t-caption text-ink-3">{vote.kind === "pause" ? "Pause requested" : "Resume requested"}</p>
-          <p className="t-callout mt-1 text-ink-2">
+    <Notification title={vote.kind === "pause" ? "Pause requested" : "Resume requested"} priority={20}
+      actions={<Answer view={view} me={me} busy={busy} onVote={onVote} />}>
+          <p>
             {mine ? <>You asked to {vote.kind} the table.</> : <>{name} asked to {vote.kind} the table.</>}{" "}
             <span className="text-ink">Everyone has to agree.</span>
           </p>
-          <p className="t-footnote mt-1 text-ink-3">
+          <p className="mt-1 text-[11px] text-ink-3">
             {vote.kind === "pause" ? "Play carries on until they do." : "The table stays paused until they do."}
           </p>
-        </div>
-        <Roster view={view} />
-        <div className="ml-auto"><Answer view={view} me={me} busy={busy} onVote={onVote} /></div>
-      </div>
-    </div>
+        <div className="mt-3"><Roster view={view} /></div>
+    </Notification>
   );
 }
 

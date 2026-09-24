@@ -4,10 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import type { Action, PlayerView, PublicView } from "@/lib/game/types";
 import { profileGeneration, storedProfile, useStoredProfile } from "./profile";
 import { api, RequestError, type ActionResponse } from "./api";
+import { useNotify } from "@/components/Notification";
 import { subscribeGame, type ConnectionStatus } from "./realtime";
 import { forgetRecentTable, getServerSessionSnapshot, getSessionSnapshot, recentTable, rememberTable, setSessionValue, subscribeSession, type Session } from "./session";
-
-export interface Toast { id: number; text: string; tone: "neutral" | "good" | "bad" }
 
 export interface GameHook {
   status: "loading" | "ready" | "notfound" | "error";
@@ -17,13 +16,12 @@ export interface GameHook {
   connection: ConnectionStatus;
   busy: boolean;
   removed: boolean;
-  toasts: Toast[];
   /** milliseconds to add to Date.now() to get the server's clock */
   skew: number;
   send: (action: Action) => Promise<ActionResponse | null>;
   refresh: () => Promise<void>;
   setSession: (s: Session | null) => void;
-  toast: (text: string, tone?: Toast["tone"]) => void;
+  toast: (text: string, tone?: "neutral" | "good" | "bad") => void;
 }
 
 const POLL_MS = 5000;
@@ -50,7 +48,7 @@ export function useGame(code: string): GameHook {
   const [connection, setConnection] = useState<ConnectionStatus>("connecting");
   const [busy, setBusy] = useState(false);
   const [removed, setRemoved] = useState(false);
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const toast = useNotify();
   const [skewState, setSkewState] = useState(0);
   const skew = useRef(0);
   const lastChange = useRef(0);
@@ -66,12 +64,6 @@ export function useGame(code: string): GameHook {
     sessionRef.current = s;
     setSessionValue(code, s);
   }, [code]);
-
-  const toast = useCallback((text: string, tone: Toast["tone"] = "neutral") => {
-    const id = Date.now() + Math.random();
-    setToasts((t) => [...t.slice(-2), { id, text, tone }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 2800);
-  }, []);
 
   /** Merge a public view if it is newer than what we have. */
   const acceptPublic = useCallback((pub: PublicView) => {
@@ -271,7 +263,7 @@ export function useGame(code: string): GameHook {
   }, [code, send]);
 
   return useMemo(
-    () => ({ status, view, me, session, connection, busy, removed, toasts, skew: skewState, send, refresh, setSession, toast }),
-    [status, view, me, session, connection, busy, removed, toasts, skewState, send, refresh, setSession, toast],
+    () => ({ status, view, me, session, connection, busy, removed, skew: skewState, send, refresh, setSession, toast }),
+    [status, view, me, session, connection, busy, removed, skewState, send, refresh, setSession, toast],
   );
 }

@@ -1,5 +1,6 @@
 import { PresenceSession } from "@/lib/client/presence";
 import { AccountSession } from "@/lib/client/profile";
+import { NotificationProvider } from "@/components/Notification";
 import { SITE_DESCRIPTION, SITE_URL } from "@/lib/site";
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
@@ -43,7 +44,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${jakarta.variable} h-full`}>
-      <body className="min-h-full"><AccountSession /><PresenceSession />{children}</body>
+      <body className="min-h-full"><NotificationProvider><AccountSession /><PresenceSession />{children}</NotificationProvider></body>
     </html>
   );
 }
