@@ -104,7 +104,7 @@ function AccountSocial({ table, player, profileId, isMe }: { table: TableSocial;
           {busy ? (incoming ? "Accepting" : "Sending") : incoming ? "Accept friend" : "Add friend"}
         </Button>
       )}
-      {error ? <Notification title="Friends" tone="bad" onDismiss={() => setError(null)}>{error}</Notification> : null}
+      {error ? <Notification title="Friends" kind="social" tone="bad" onDismiss={() => setError(null)}>{error}</Notification> : null}
     </div>
   );
 }

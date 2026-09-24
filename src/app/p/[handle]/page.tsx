@@ -76,7 +76,7 @@ function PlayerRecord({ handle }: { handle: string }) {
         <div className="pt-8 animate-rise lg:pt-12">
           <p className="t-overline mb-6 text-ink-3">Player record</p>
           <ProfileCard profile={state.profile} actions={<>
-          {actionError ? <Notification title="Friends" tone="bad" onDismiss={() => setActionError(null)}>{actionError}</Notification> : null}
+          {actionError ? <Notification title="Friends" kind="social" tone="bad" onDismiss={() => setActionError(null)}>{actionError}</Notification> : null}
           {friend?.playing ? (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-panel bg-surface-2 px-5 py-4 hairline">
               <p className="t-sub">

@@ -83,7 +83,7 @@ export function FriendsPanel({
 
       <Link href="/leaderboard?scope=friends" className="t-sub text-ink-2 hover:text-ink">Friends leaderboard</Link>
       {social.loading ? <p role="status" className="t-sub text-ink-3">Loading your friends</p> : null}
-      {social.error ? <Notification title="Friends" tone="bad" actions={<Button size="sm" variant="secondary" onClick={() => void social.refresh()}>Try again</Button>}>{social.error}</Notification> : null}
+      {social.error ? <Notification title="Friends" kind="social" tone="bad" actions={<Button size="sm" variant="secondary" onClick={() => void social.refresh()}>Try again</Button>}>{social.error}</Notification> : null}
 
       <form onSubmit={add} className="flex items-center gap-2">
         <input
@@ -99,7 +99,7 @@ export function FriendsPanel({
         />
         <Button type="submit" variant="secondary" className="shrink-0" disabled={busy || !username.trim()}>Add</Button>
       </form>
-      {note ? <Notification title="Friends" tone={noteError ? "bad" : "good"} onDismiss={() => setNote(null)} duration={noteError ? undefined : 5000}>{note}</Notification> : null}
+      {note ? <Notification title="Friends" kind="social" tone={noteError ? "bad" : "good"} onDismiss={() => setNote(null)} duration={noteError ? undefined : 5000}>{note}</Notification> : null}
 
       {incoming.length ? (
         <div>
@@ -224,7 +224,7 @@ function FriendRow({ friend, social, inviteCode, here }: { friend: Friend; socia
           ) : null}
         </div>
       </div>
-      {note ? <Notification title="Table invitation" tone="bad" onDismiss={() => setNote(null)}>{note}</Notification> : null}
+      {note ? <Notification title="Table invitation" kind="social" tone="bad" onDismiss={() => setNote(null)}>{note}</Notification> : null}
     </li>
   );
 }
@@ -251,7 +251,7 @@ export function AskToJoin({ friend, social }: { friend: Friend; social: SocialHo
     </Button>
     {!invited && cooldown > 0 ? <span className="t-footnote text-ink-3">Again in {cooldown}s</span> : null}
     {request?.status === "declined" ? <p className="t-footnote text-ink-3">Request declined</p> : null}
-    {error ? <Notification title="Join request" tone="bad" onDismiss={() => setError(null)}>{error}</Notification> : null}
+    {error ? <Notification title="Join request" kind="social" tone="bad" onDismiss={() => setError(null)}>{error}</Notification> : null}
   </div>;
 }
 
@@ -302,7 +302,7 @@ export function Notifications({ social, atCode = null, acceptsJoinRequests = tru
   return (
     <>
       {requests.map((request) => (
-        <Notification key={request.id} title="Join request" label={`Join request from ${request.from.displayName}`} priority={30} actions={<>
+        <Notification key={request.id} title="Join request" kind="social" label={`Join request from ${request.from.displayName}`} priority={30} actions={<>
             <Button size="sm" variant="secondary" disabled={answering !== null} onClick={() => void answerRequest(request.id, true)}>Accept</Button>
             <Button size="sm" variant="ghost" disabled={answering !== null} onClick={() => void answerRequest(request.id, false)}>Decline</Button>
           </>}>
@@ -311,7 +311,7 @@ export function Notifications({ social, atCode = null, acceptsJoinRequests = tru
         </Notification>
       ))}
       {invites.map((invite) => (
-        <Notification key={invite.id} title="Table invitation" label={`Table invitation from ${invite.from.displayName}`} priority={30} actions={<>
+        <Notification key={invite.id} title="Table invitation" kind="social" label={`Table invitation from ${invite.from.displayName}`} priority={30} actions={<>
             <Button size="sm" variant="secondary" disabled={answering !== null} onClick={() => void accept(invite.id)}>
               {answering === invite.id ? "Taking a seat" : "Join"}
             </Button>

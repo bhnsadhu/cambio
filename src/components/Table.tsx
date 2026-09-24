@@ -8,6 +8,7 @@ import type { GameHook } from "@/lib/client/useGame";
 import { usePositions } from "@/lib/client/positions";
 import { setPref, usePrefs } from "@/lib/client/prefs";
 import { Announcer, useAnnouncements } from "./Announcements";
+import { NotificationArea } from "./Notification";
 import { PlayerPanel } from "./PlayerPanel";
 import { Piles } from "./Piles";
 import { EventFeed } from "./EventFeed";
@@ -286,8 +287,7 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
 
         </div>
 
-        {/* Notifications portal to the shared viewport without shifting the table. */}
-        <div className="relative order-3 flex min-h-min flex-1 flex-col items-center justify-center gap-3">
+        <NotificationArea>
           <PauseBanner view={pub} me={me} busy={game.busy} onVote={(agree) => void game.send({ type: "pauseVote", agree })} />
           <Announcer announcement={announcement} players={pub.players} me={me} />
           {dealing ? null : (
@@ -297,7 +297,7 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
               hint={peekHint ? "These two are yours. When the timer ends they turn back over and stay that way." : null}
             />
           )}
-        </div>
+        </NotificationArea>
 
         {/* Action bar */}
         <section aria-label="Round actions" className="order-4 flex min-h-[92px] shrink-0 flex-col items-start justify-between gap-4 rounded-panel bg-surface px-4 py-4 hairline sm:px-5 xl:flex-row xl:items-center xl:gap-6">

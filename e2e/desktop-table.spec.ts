@@ -108,7 +108,7 @@ test("laptop browsers keep hands, piles, activity, and turn actions together thr
   await expect(actions.getByRole("button", { name: "Skip the power", exact: true })).toBeVisible();
 
   // A pause vote can arrive while the black king is revealing two cards.
-  // Both notices share the fixed stack without displacing the decisions.
+  // Both notices share the table's original space above the round controls.
   state = started(makeCtx(9, Date.now() - 10_001)).state;
   for (const [index, id] of initial.ids.entries()) player(state, id).name = names[index];
   ctx.now = Date.now();
@@ -134,15 +134,21 @@ test("laptop browsers keep hands, piles, activity, and turn actions together thr
   for (const size of laptopSizes) {
     await page.setViewportSize(size);
     await page.evaluate(() => scrollTo(0, 0));
-    const headerHeight = await page.locator("[data-app-header]").evaluate((header) => (header as HTMLElement).offsetHeight);
-    await expect.poll(async () => (await reveal.boundingBox())!.y).toBe(headerHeight + 12);
+    await notices.evaluate((element) => element.scrollTo(0, 0));
+    const area = (await page.locator("[data-notification-area]").boundingBox())!;
+    const stack = (await notices.boundingBox())!;
+    expect(Math.abs(stack.x + stack.width / 2 - area.x - area.width / 2)).toBeLessThan(1);
+    expect(Math.abs(stack.y + stack.height / 2 - area.y - area.height / 2)).toBeLessThan(1);
+    const controls = (await actions.boundingBox())!;
+    expect(stack.y + stack.height).toBeLessThanOrEqual(controls.y);
     const pauseBounds = (await vote.boundingBox())!;
     const revealBounds = (await reveal.boundingBox())!;
     expect(pauseBounds.x).toBe(revealBounds.x);
     expect(pauseBounds.width).toBe(revealBounds.width);
     expect(pauseBounds.y).toBeGreaterThanOrEqual(revealBounds.y + revealBounds.height + 8);
-    await withinViewport(vote);
-    await withinViewport(reveal);
+    await withinViewport(notices);
+    await expect(reveal).toHaveAttribute("data-kind", "reveal");
+    await expect(vote).toHaveAttribute("data-kind", "pause");
     if (size.width === 1366) await page.screenshot({ path: "test-results/notifications/reveal-pause-desktop.png", fullPage: true, animations: "disabled" });
     await actions.scrollIntoViewIfNeeded();
     await withinViewport(actions);
@@ -151,8 +157,11 @@ test("laptop browsers keep hands, piles, activity, and turn actions together thr
   for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 844 });
     await notices.evaluate((element) => element.scrollTo(0, 0));
-    const headerHeight = await page.locator("[data-app-header]").evaluate((header) => (header as HTMLElement).offsetHeight);
-    await expect.poll(async () => (await reveal.boundingBox())!.y).toBe(headerHeight + 12);
+    await notices.scrollIntoViewIfNeeded();
+    const area = (await page.locator("[data-notification-area]").boundingBox())!;
+    const stack = (await notices.boundingBox())!;
+    expect(Math.abs(stack.x + stack.width / 2 - area.x - area.width / 2)).toBeLessThan(1);
+    expect(stack.y + stack.height).toBeLessThanOrEqual((await actions.boundingBox())!.y);
     expect((await vote.boundingBox())!.width).toBe((await reveal.boundingBox())!.width);
     await page.screenshot({ path: `test-results/notifications/reveal-pause-${width}.png`, animations: "disabled" });
     const agree = vote.getByRole("button", { name: "Agree", exact: true });

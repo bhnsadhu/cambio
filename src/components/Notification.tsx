@@ -2,39 +2,40 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { usePathname } from "next/navigation";
 import { dismissAccountNotice, useAccountNotice } from "@/lib/client/profile";
 import { useActiveDialog } from "@/lib/client/useModalFocus";
 
 type Tone = "neutral" | "good" | "bad";
+type Kind = "game" | "stick" | "reveal" | "pause" | "social" | "account" | "info";
 interface Message { id: number; text: string; title: string; tone: Tone }
 type Notify = (text: string, tone?: Tone, title?: string) => void;
 const HostContext = createContext<HTMLElement | null>(null);
 const NotifyContext = createContext<Notify>(() => {});
+const AreaContext = createContext<(area: HTMLElement | null) => void>(() => {});
 
 /** One viewport survives navigation; every notification portals into this stack. */
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const [host, setHost] = useState<HTMLElement | null>(null);
+  const [area, setArea] = useState<HTMLElement | null>(null);
   const dialog = useActiveDialog();
-  const pathname = usePathname();
   useEffect(() => {
-    let header: HTMLElement | undefined;
-    // Next can retain hidden route trees. Only the visible header sets the inset.
-    const measure = () => {
-      const visible = Array.from(document.querySelectorAll<HTMLElement>("[data-app-header]")).find((element) => element.offsetHeight > 0);
-      if (visible !== header) {
-        observer.disconnect();
-        header = visible;
-        if (header) observer.observe(header);
-      }
-      if (header) document.documentElement.style.setProperty("--notification-top", `${header.offsetHeight + 12}px`);
+    if (!dialog || !area || !host) return;
+    // Keep the table placement while moving the stack into a dialog's focus scope.
+    const reset = () => { for (const key of ["left", "top", "bottom", "transform", "width", "max-height"]) host.style.removeProperty(key); };
+    const place = () => {
+      reset();
+      if (!window.matchMedia("(min-width: 1024px)").matches) return;
+      const box = area.getBoundingClientRect();
+      if (box.bottom <= 0 || box.top >= innerHeight) return;
+      Object.assign(host.style, { left: `${box.left + box.width / 2}px`, top: `${box.top + box.height / 2}px`, bottom: "auto", transform: "translate(-50%, -50%)", width: `${Math.min(400, box.width)}px`, maxHeight: `${box.height}px` });
     };
-    const observer = new ResizeObserver(measure);
-    const routes = new MutationObserver(() => { if (!header?.isConnected || !header.offsetHeight) measure(); });
-    routes.observe(document.body, { childList: true, subtree: true });
-    measure();
-    return () => { observer.disconnect(); routes.disconnect(); document.documentElement.style.removeProperty("--notification-top"); };
-  }, [pathname]);
+    const observer = new ResizeObserver(place);
+    observer.observe(area);
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    place();
+    return () => { observer.disconnect(); window.removeEventListener("resize", place); window.removeEventListener("scroll", place, true); reset(); };
+  }, [area, dialog, host]);
   const [messages, setMessages] = useState<Message[]>([]);
   const sequence = useRef(0);
   const notify = useCallback<Notify>((text, tone = "neutral", title = "Cambio") => {
@@ -42,15 +43,27 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     setMessages((current) => [...current.filter((item) => item.text !== text).slice(-2), message]);
   }, []);
   const dismiss = useCallback((id: number) => setMessages((current) => current.filter((item) => item.id !== id)), []);
-  const viewport = <section ref={setHost} className="notification-viewport" data-notification-viewport role="region" aria-label="Notifications" />;
+  const destination = dialog ?? area;
+  const viewport = <section ref={setHost} className="notification-viewport" data-notification-viewport data-docked={!!area && !dialog} role="region" aria-label="Notifications" />;
   return <NotifyContext.Provider value={notify}>
-    <HostContext.Provider value={host}>
-      {children}
-      <AccountNotification />
-      {messages.map((message) => <TimedMessage key={message.id} message={message} dismiss={dismiss} />)}
-      {dialog ? createPortal(viewport, dialog) : viewport}
-    </HostContext.Provider>
+    <AreaContext.Provider value={setArea}>
+      <HostContext.Provider value={host}>
+        {children}
+        <AccountNotification />
+        {messages.map((message) => <TimedMessage key={message.id} message={message} dismiss={dismiss} />)}
+        {destination ? createPortal(viewport, destination) : viewport}
+      </HostContext.Provider>
+    </AreaContext.Provider>
   </NotifyContext.Provider>;
+}
+
+/** The original table space between the hands and the round controls. */
+export function NotificationArea({ children }: { children: ReactNode }) {
+  const register = useContext(AreaContext);
+  const ref = useRef<HTMLDivElement>(null);
+  // Effects also clean up when Next hides a retained route tree.
+  useEffect(() => { register(ref.current); return () => register(null); }, [register]);
+  return <div ref={ref} data-notification-area className="notification-area order-3">{children}</div>;
 }
 
 export function useNotify() { return useContext(NotifyContext); }
@@ -62,14 +75,15 @@ function TimedMessage({ message, dismiss }: { message: Message; dismiss: (id: nu
 
 function AccountNotification() {
   const notice = useAccountNotice();
-  return notice ? <Notification title="Account" onDismiss={dismissAccountNotice}>{notice}</Notification> : null;
+  return notice ? <Notification title="Account" kind="account" onDismiss={dismissAccountNotice}>{notice}</Notification> : null;
 }
 
 /** Shared shell for passive events, errors, private reveals, and actionable requests. */
-export function Notification({ title, children, tone = "neutral", label, actions, onDismiss, duration, priority = 10, announce = true }: {
+export function Notification({ title, children, tone = "neutral", kind = "info", label, actions, onDismiss, duration, priority = 10, announce = true }: {
   title: string;
   children: ReactNode;
   tone?: Tone;
+  kind?: Kind;
   label?: string;
   actions?: ReactNode;
   onDismiss?: () => void;
@@ -89,11 +103,11 @@ export function Notification({ title, children, tone = "neutral", label, actions
   const style = useMemo(() => ({ order: priority }), [priority]);
   if (!host) return null;
   return createPortal(
-    <section className="app-notification" data-tone={tone} data-interactive={!!(actions || onDismiss)} style={style}
+    <section className="app-notification" data-tone={tone} data-kind={kind} data-interactive={!!(actions || onDismiss)} style={style}
       aria-label={label ?? `${title} notification`} onPointerEnter={() => setHeld(true)} onPointerLeave={() => setHeld(false)}
       onFocusCapture={() => setHeld(true)} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setHeld(false); }}>
       <div className="notification-content">
-        <p className="notification-heading"><span className="notification-mark" aria-hidden />{title}</p>
+        <p className="notification-heading"><span className="notification-mark" aria-hidden><NotificationSymbol kind={kind} tone={tone} /></span>{title}</p>
         <div role={announce ? tone === "bad" ? "alert" : "status" : undefined} aria-atomic={announce || undefined} className="notification-message">{children}</div>
       </div>
       {onDismiss ? <button type="button" className="notification-dismiss" aria-label={`Dismiss ${title.toLowerCase()} notification`} onClick={onDismiss}>
@@ -102,4 +116,17 @@ export function Notification({ title, children, tone = "neutral", label, actions
       {actions ? <div className="notification-actions">{actions}</div> : null}
     </section>, host,
   );
+}
+
+function NotificationSymbol({ kind, tone }: { kind: Kind; tone: Tone }) {
+  const paths: Record<Kind, ReactNode> = {
+    game: <><rect x="5.5" y="2.5" width="8" height="11" rx="1.5" /><path d="M3.5 4.5H3A1.5 1.5 0 0 0 1.5 6v7A1.5 1.5 0 0 0 3 14.5h6" /></>,
+    stick: tone === "bad" ? <path d="m4 4 8 8m0-8-8 8" /> : <path d="m3 8 3 3 7-7" />,
+    reveal: <><path d="M1 8s2.5-4.5 7-4.5S15 8 15 8s-2.5 4.5-7 4.5S1 8 1 8Z" /><circle cx="8" cy="8" r="2" /></>,
+    pause: <path d="M5 3v10M11 3v10" />,
+    social: <><circle cx="6" cy="5" r="2.5" /><path d="M1.5 13v-1A3.5 3.5 0 0 1 5 8.5h2a3.5 3.5 0 0 1 3.5 3.5v1M11 2.5a2.5 2.5 0 0 1 0 5M12 9a3 3 0 0 1 2.5 3v1" /></>,
+    account: <><circle cx="8" cy="5" r="2.5" /><path d="M3 13v-1a3.5 3.5 0 0 1 3.5-3.5h3A3.5 3.5 0 0 1 13 12v1" /></>,
+    info: tone === "good" ? <path d="m3 8 3 3 7-7" /> : <><circle cx="8" cy="8" r="6" /><path d="M8 4.5v4M8 11h.01" /></>,
+  };
+  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">{paths[kind]}</svg>;
 }

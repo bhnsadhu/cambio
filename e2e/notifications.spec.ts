@@ -11,8 +11,23 @@ async function appearance(notice: Locator) {
   return notice.evaluate((element) => {
     const box = element.getBoundingClientRect();
     const style = getComputedStyle(element);
-    return { x: box.x, y: box.y, width: box.width, background: style.backgroundColor, radius: style.borderRadius, border: style.borderColor };
+    return { x: box.x, width: box.width, background: style.backgroundColor, radius: style.borderRadius, border: style.borderColor };
   });
+}
+
+async function centeredAtTable(page: Page) {
+  const area = (await page.locator("[data-notification-area]").boundingBox())!;
+  const stack = (await viewport(page).boundingBox())!;
+  const actions = (await page.getByRole("region", { name: "Round actions", exact: true }).boundingBox())!;
+  expect(Math.abs(stack.x + stack.width / 2 - area.x - area.width / 2)).toBeLessThan(1);
+  expect(Math.abs(stack.y + stack.height / 2 - area.y - area.height / 2)).toBeLessThan(1);
+  expect(stack.y).toBeGreaterThanOrEqual(area.y - 1);
+  expect(stack.y + stack.height).toBeLessThanOrEqual(actions.y);
+  const hands = await page.getByRole("region", { name: /'s hand$/ }).all();
+  for (const hand of hands) {
+    const box = (await hand.boundingBox())!;
+    expect(stack.y).toBeGreaterThanOrEqual(box.y + box.height);
+  }
 }
 
 /** Game traffic is local and deterministic; no accounts or production writes. */
@@ -73,8 +88,10 @@ for (const width of [390, 1440]) {
     expect(standard.radius).toBe("16px");
     expect(standard.x).toBeGreaterThanOrEqual(16);
     expect(standard.x + standard.width).toBeLessThanOrEqual(width - 16);
-    expect(standard.y).toBe(await page.locator("[data-app-header]").evaluate((header) => (header as HTMLElement).offsetHeight + 12));
+    await centeredAtTable(page);
+    await expect(event).toHaveAttribute("data-kind", "stick");
     await expect(event).toHaveAttribute("data-tone", "good");
+    await notices.scrollIntoViewIfNeeded();
     await page.screenshot({ path: `test-results/notifications/stick-${width}.png`, animations: "disabled" });
     await expect(event).toHaveCount(0);
 
@@ -82,6 +99,8 @@ for (const width of [390, 1440]) {
     await expect(event).toContainText("penalty card");
     await expect(notices.locator(".app-notification")).toHaveCount(1);
     expect(await appearance(event)).toEqual(standard);
+    await centeredAtTable(page);
+    await expect(event).toHaveAttribute("data-kind", "stick");
     await expect(event).toHaveAttribute("data-tone", "bad");
     await expect(event).toHaveCount(0);
 
@@ -91,6 +110,8 @@ for (const width of [390, 1440]) {
     for (const kind of kinds) {
       await expect(event).toContainText(`An event of kind ${kind}.`);
       expect(await appearance(event)).toEqual(standard);
+      await centeredAtTable(page);
+      await expect(event).toHaveAttribute("data-kind", "game");
       await expect(notices.locator(".app-notification")).toHaveCount(1);
     }
     await expect(event).toHaveCount(0);
@@ -99,9 +120,31 @@ for (const width of [390, 1440]) {
     const error = notices.getByRole("region", { name: "Cambio notification", exact: true });
     await expect(error.getByRole("alert")).toHaveText("That move is no longer available. Try again.");
     expect(await appearance(error)).toEqual(standard);
+    await centeredAtTable(page);
+    await expect(error).toHaveAttribute("data-kind", "info");
+    await notices.scrollIntoViewIfNeeded();
     await page.screenshot({ path: `test-results/notifications/error-${width}.png`, animations: "disabled" });
+    if (width === 1440) {
+      const position = (await notices.boundingBox())!;
+      await page.getByRole("button", { name: "Your guest player", exact: true }).click();
+      const dialog = page.getByRole("dialog", { name: "Your guest player", exact: true });
+      await expect(dialog.getByRole("region", { name: "Notifications", exact: true })).toBeVisible();
+      await expect.poll(() => notices.boundingBox()).toEqual(position);
+      await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+    }
     await error.getByRole("button", { name: "Dismiss cambio notification" }).click();
     await expect(notices).toBeHidden();
+    if (width === 1440) {
+      await page.route("**/api/games", (route) => route.fulfill({ status: 503, json: { error: { code: "TEST", message: "Tables are temporarily unavailable." } } }));
+      await page.getByRole("link", { name: "Cambio home", exact: true }).click();
+      await page.getByLabel("Display name", { exact: true }).fill("Guest");
+      await page.getByRole("button", { name: "Open a table", exact: true }).click();
+      await expect(notices.getByRole("alert")).toHaveText("Tables are temporarily unavailable.");
+      await expect(notices).toHaveAttribute("data-docked", "false");
+      const position = (await notices.boundingBox())!;
+      expect(position.x + position.width / 2).toBe(width / 2);
+      expect(position.y + position.height).toBe(900 - 24);
+    }
   });
 }
 
@@ -116,10 +159,14 @@ test("form feedback keeps its position, keyboard access, and reduced-motion trea
   const notice = viewport(page).getByRole("region", { name: "New table notification", exact: true });
   await expect(notice.getByRole("alert")).toHaveText("Tables are temporarily unavailable.");
   const baseline = await appearance(notice);
+  const position = (await notice.boundingBox())!;
+  expect(position.x + position.width / 2).toBe(160);
+  expect(position.y + position.height).toBe(740 - 24);
   await page.getByRole("button", { name: "Customize guest player", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Your guest player", exact: true });
   await expect(dialog.getByRole("region", { name: "Notifications", exact: true })).toBeVisible();
   expect(await appearance(notice)).toEqual(baseline);
+  expect(await notice.boundingBox()).toEqual(position);
   const dismiss = notice.getByRole("button", { name: "Dismiss new table notification" });
   await dismiss.focus();
   await expect(dismiss).toBeFocused();

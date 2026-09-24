@@ -101,7 +101,7 @@ export function GuestPlayerDialog({ initial, next, view, playerId, onClose, onAp
         <form className="mt-5 flex min-w-0 flex-col gap-5" aria-label="Guest player settings" onSubmit={(event) => void submit(event)}>
           <Field label="Display name"><input className={inputClass} value={name} onChange={(event) => setName(event.target.value)} autoComplete="nickname" maxLength={18} required disabled={busy} /></Field>
           <AvatarPicker identity={name || "Guest"} value={avatarId} onChange={setAvatarId} disabled={busy} />
-          {error ? <Notification title="Your player" tone="bad" onDismiss={() => setError(null)}>{error}</Notification> : null}
+          {error ? <Notification title="Your player" kind="account" tone="bad" onDismiss={() => setError(null)}>{error}</Notification> : null}
           <div className="flex flex-wrap justify-end gap-2 border-t border-line pt-5">
             <Button type="button" variant="ghost" disabled={busy} onClick={onClose}>Cancel</Button>
             <Button type="submit" variant="primary" disabled={busy}>{busy ? "Applying" : "Apply changes"}</Button>

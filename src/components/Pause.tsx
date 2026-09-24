@@ -95,7 +95,7 @@ export function PauseBanner({ view, me, busy, onVote }: Omit<PauseProps, "onRequ
   const name = by ? <PlayerName name={by.name} isBot={by.isBot} /> : "Someone";
   const mine = vote.byId === me;
   return (
-    <Notification title={vote.kind === "pause" ? "Pause requested" : "Resume requested"} label={vote.kind === "pause" ? "Pause requested" : "Resume requested"} priority={20}
+    <Notification title={vote.kind === "pause" ? "Pause requested" : "Resume requested"} kind="pause" label={vote.kind === "pause" ? "Pause requested" : "Resume requested"} priority={20}
       actions={<Answer view={view} me={me} busy={busy} onVote={onVote} />}>
           <p>
             {mine ? <>You asked to {vote.kind} the table.</> : <>{name} asked to {vote.kind} the table.</>}{" "}

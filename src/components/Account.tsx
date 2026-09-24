@@ -55,7 +55,7 @@ export function AuthForm({ initialMode = "login", initialName = "", legacy = fal
           <p className="t-footnote -mt-2 text-ink-3">Use 8 to 128 characters. A memorable phrase works well. Save it in your password manager.</p>
           <Field label="Confirm password"><input className={inputClass} name="confirmPassword" type="password" value={confirm} onChange={(event) => setConfirm(event.target.value)} autoComplete="new-password" minLength={8} maxLength={128} required disabled={busy} /></Field>
         </> : null}
-        {error ? <Notification title={registering ? "Create account" : "Log in"} tone="bad" onDismiss={() => setError(null)}>{error}</Notification> : null}
+        {error ? <Notification title={registering ? "Create account" : "Log in"} kind="account" tone="bad" onDismiss={() => setError(null)}>{error}</Notification> : null}
         <Button type="submit" variant="primary" size="lg" disabled={busy}>{busy ? "Please wait" : registering ? legacy ? "Secure this profile" : "Create account" : "Log in"}</Button>
       </form>
       {!legacy ? <p className="t-sub mt-5 text-center text-ink-2">
@@ -105,7 +105,7 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
     catch (error) { setNotice({ kind, text: errorText(error), error: true }); }
     finally { setBusy(null); }
   };
-  const feedback = (kind: string) => notice?.kind === kind ? <Notification title="Account" tone={notice.error ? "bad" : "good"} onDismiss={() => setNotice(null)} duration={notice.error ? undefined : 5000}>{notice.text}</Notification> : null;
+  const feedback = (kind: string) => notice?.kind === kind ? <Notification title="Account" kind="account" tone={notice.error ? "bad" : "good"} onDismiss={() => setNotice(null)} duration={notice.error ? undefined : 5000}>{notice.text}</Notification> : null;
   const change = (kind: Editor, label: string) => editing !== kind ? (
     <Button ref={(button) => { changeButtons.current[kind] = button; }} type="button" size="sm" className="shrink-0" aria-label={`Change ${label}`} disabled={!!busy} onClick={() => edit(kind)}>Change</Button>
   ) : null;

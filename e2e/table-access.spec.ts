@@ -73,6 +73,15 @@ for (const playing of [false, true]) test(`invite and accept while a friend is a
     await expect(friendRow.getByRole("button", { name: "Invited", exact: true })).toBeDisabled();
     const notification = friendPage.getByRole("region", { name: "Table invitation from Table Host" });
     await expect(notification).toBeVisible({ timeout: 15_000 });
+    await expect(notification).toHaveAttribute("data-kind", "social");
+    const stack = friendPage.getByRole("region", { name: "Notifications", exact: true });
+    if (playing) {
+      await expect(stack).toHaveAttribute("data-docked", "true");
+      const area = (await friendPage.locator("[data-notification-area]").boundingBox())!;
+      const bounds = (await stack.boundingBox())!;
+      expect(Math.abs(bounds.x + bounds.width / 2 - area.x - area.width / 2)).toBeLessThan(1);
+      expect(Math.abs(bounds.y + bounds.height / 2 - area.y - area.height / 2)).toBeLessThan(1);
+    }
     await notification.getByRole("button", { name: "Join", exact: true }).click();
     await expect(friendPage).toHaveURL(`${origin}/g/${seat.code}`);
     await expect(friendPage.getByRole("form", { name: "Join table", exact: true })).toHaveCount(0);

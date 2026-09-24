@@ -151,7 +151,7 @@ export function Announcer({ announcement, players, me }: { announcement: Announc
   const { entry } = announcement;
   const touched = players.filter((p) => (entry.subjectIds ?? []).includes(p.id));
   const tone = entry.tone === "bad" ? "bad" : entry.tone === "good" || entry.tone === "accent" ? "good" : "neutral";
-  return <Notification key={entry.seq} title={KICKER[entry.kind]} tone={tone} label="Game event">
+  return <Notification key={entry.seq} title={KICKER[entry.kind]} tone={tone} kind={entry.kind === "stick" || entry.kind === "stickMiss" ? "stick" : "game"} label="Game event">
     <p><Sentence entry={entry} players={players} me={me} /></p>
     {touched.length ? <p className="mt-1.5 text-[11px] text-ink-3">
       {touched.map((p, index) => <span key={p.id}>{index ? " · " : ""}{p.id === me ? "You" : <PlayerName name={p.name} isBot={p.isBot} />}</span>)}

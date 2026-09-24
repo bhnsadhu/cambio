@@ -44,7 +44,7 @@ export function RevealBanner({
             r.kind === "peekOther" ? `${names.get(ownerOf(r.cardIds[0])?.id ?? "") ?? "Their"}'s card` :
             "Two cards. Your call.";
           return (
-            <Notification key={r.id} title={title} label="Card reveal" priority={0} announce={false}>
+            <Notification key={r.id} title={title} kind="reveal" label="Card reveal" priority={0} announce={false}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0 flex-1 basis-[140px]">
                   <p>
