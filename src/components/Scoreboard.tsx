@@ -2,7 +2,6 @@
 
 import { Avatar } from "./Avatar";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { useModalFocus } from "@/lib/client/useModalFocus";
 import type { PublicView } from "@/lib/game/types";
 import { FaceCard } from "./cards";
@@ -107,7 +106,7 @@ export function Scoreboard({
         </header>
 
         <ol className="mt-6 space-y-3 lg:hidden" aria-label="Final hands and scores">
-          {rows.map(({ player, score, cards, rank }, index) => {
+          {rows.map(({ player, score, cards, rank }) => {
             const won = result.winnerIds.includes(player.id);
             return <li key={player.id} className={`rounded-card p-4 ${player.id === me ? "bg-accent-soft" : "bg-surface-2"}`} aria-label={`${player.name}'s result`}>
               <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
@@ -118,7 +117,7 @@ export function Scoreboard({
                   </div>
                   <div className="mt-1 flex flex-wrap gap-1.5">{player.id === me ? <Chip>You</Chip> : null}{won ? <Chip tone="accent">Winner</Chip> : null}</div>
                 </div>
-                <div className="shrink-0 text-right"><p className="t-caption text-ink-3">Hand total</p><p className={`t-money text-[26px] ${won ? "text-accent" : ""}`}><CountUp value={score} delay={240 + index * 220} /></p></div>
+                <div className="shrink-0 text-right"><p className="t-caption text-ink-3">Hand total</p><p className={`t-money text-[26px] ${won ? "text-accent" : ""}`}>{score}</p></div>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">{cards.length ? cards.map((card) => (
                 <div key={card.id} className="flex shrink-0 flex-col items-center gap-1">
@@ -175,7 +174,7 @@ export function Scoreboard({
                     </div>
                   </td>
                   <td className={`t-money border-t border-line px-3 py-3.5 text-right align-middle text-[26px] ${won ? "text-accent" : ""}`}>
-                    <CountUp value={score} delay={base + cards.length * 70} />
+                    {score}
                   </td>
                   <td className="t-money border-t border-line px-4 py-3.5 text-right align-middle text-[17px] text-ink-2">
                     {wins}<span className="t-sub text-ink-3"> of {view.results.length}</span>
@@ -188,22 +187,4 @@ export function Scoreboard({
       </div>
     </div>
   );
-}
-
-function CountUp({ value, delay }: { value: number; delay: number }) {
-  const [n, setN] = useState(0);
-  useEffect(() => {
-    let raf = 0;
-    const start = performance.now() + delay;
-    const dur = 560;
-    const tick = (t: number) => {
-      const p = Math.min(1, Math.max(0, (t - start) / dur));
-      const eased = 1 - Math.pow(1 - p, 3);
-      setN(Math.round(value * eased));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [value, delay]);
-  return <>{n}</>;
 }
