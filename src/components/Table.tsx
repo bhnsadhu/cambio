@@ -49,7 +49,8 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
   const mine = pub.players.find((p) => p.id === me) ?? null;
   const turnPlayer = pub.turn ? pub.players.find((p) => p.id === pub.turn!.playerId) ?? null : null;
 
-  const myTurn = !!mine && pub.turn?.playerId === mine.id;
+  const outOfRound = !!mine && !!pub.cambio?.zeroedIds?.includes(mine.id);
+  const myTurn = !!mine && !outOfRound && pub.turn?.playerId === mine.id;
   const owner = (cardId: string) => pub.players.find((p) => p.hand.includes(cardId)) ?? null;
 
   /**
@@ -58,14 +59,14 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
    * say it is, including while this player is drawing, deciding or resolving
    * a power. (Mirrors `canStick` in the engine.)
    */
-  const stickOpen = useMemo(() => {
-    if (!mine || pub.paused) return false;
+  const stickOpen = (() => {
+    if (!mine || pub.paused || outOfRound) return false;
     if (pub.phase !== "playing" && pub.phase !== "final") return false;
     return !!pub.discardTop && mine.cardCount > 0 && !pub.pendingGives.some((g) => g.from === mine.id);
-  }, [mine, pub]);
+  })();
 
-  const mode: Mode = useMemo(() => {
-    if (!mine) return { kind: "none" };
+  const mode: Mode = (() => {
+    if (!mine || outOfRound) return { kind: "none" };
     if (pub.phase !== "playing" && pub.phase !== "final") return { kind: "none" };
     const give = pub.pendingGives.find((g) => g.from === mine.id);
     if (give) return { kind: "give", to: pub.players.find((p) => p.id === give.to)! };
@@ -75,7 +76,7 @@ export function Table({ game, flights, onLeave }: { game: GameHook; flights: Ret
     if (myTurn && pub.turn?.stage === "decide") return { kind: "decide" };
     if (stickOpen) return { kind: "stick" };
     return { kind: "none" };
-  }, [mine, pub, myTurn, stickOpen]);
+  })();
 
   /**
    * When the turn already owns the click — a card to place, a power to use, a
@@ -467,6 +468,9 @@ function describeStatus(
   }
   if (pub.phase === "scoring") return { title: "Round over." };
   if (!mine) return { title: <>Watching. {name(turnPlayer)} is up.</>, detail: "Open your own table from the top of the page." };
+  if (pub.cambio?.zeroedIds?.includes(mine.id)) {
+    return { title: "You are out of this round.", detail: "You reached zero cards. The remaining players finish their final turns." };
+  }
 
   switch (mode.kind) {
     case "give":

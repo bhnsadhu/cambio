@@ -7,7 +7,7 @@
  */
 
 import { botAvatarId } from "../bot-identity";
-import { TURN_TIMEOUT_MS } from "./engine";
+import { TURN_TIMEOUT_MS, zeroedPlayerIds } from "./engine";
 import type { GameState, PlayerView, PrivateView, PublicView } from "./types";
 
 export function projectPublic(state: GameState, version: number, now: number): PublicView {
@@ -47,7 +47,7 @@ export function projectPublic(state: GameState, version: number, now: number): P
     pausedAt: state.pausedAt ?? null,
     pausedBy: state.pausedBy ?? null,
     pauseVote: state.pauseVote ? { ...state.pauseVote, agreed: state.pauseVote.agreed.slice() } : null,
-    cambio: state.cambio ? { callerId: state.cambio.callerId, reason: state.cambio.reason, remaining: state.cambio.remaining.slice() } : null,
+    cambio: state.cambio ? { callerId: state.cambio.callerId, reason: state.cambio.reason, remaining: state.cambio.remaining.slice(), zeroedIds: zeroedPlayerIds(state) } : null,
     dealingUntil: state.dealingUntil ?? null,
     openingPeekUntil: state.openingPeekUntil,
     stickWindowUntil: state.stickWindowUntil ?? null,

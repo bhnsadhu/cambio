@@ -316,7 +316,10 @@ export function applyAction(input: GameState, env: ActionEnvelope | IdentityEnve
     case "kingDecide": doKingDecide(state, actor, a.swap, ctx); break;
     case "skipPower": doSkipPower(state, actor, ctx); break;
     case "stick": note = doStick(state, actor, a.cardId, ctx); break;
-    case "give": doGive(state, actor, a.cardId, ctx); break;
+    case "give":
+      if (hasZeroed(state, actor.id)) throw new GameError("WRONG_STAGE", "You are out of this round.");
+      doGive(state, actor, a.cardId, ctx);
+      break;
     case "playAgain": {
       if (!doPlayAgain(state, actor, ctx)) return { state: input, changed: false };
       break;
@@ -358,6 +361,9 @@ export function applyAction(input: GameState, env: ActionEnvelope | IdentityEnve
     }
   }
 
+  // Excluded players cannot choose another move, but debts created before
+  // they went out still settle if an incoming give supplies the owed card.
+  settleZeroedGives(state, ctx);
   state.appliedActionIds.push(env.actionId);
   if (state.appliedActionIds.length > MAX_APPLIED_IDS) {
     state.appliedActionIds.splice(0, state.appliedActionIds.length - MAX_APPLIED_IDS);
@@ -491,6 +497,7 @@ function replaceDuringRound(state: GameState, departing: Player, ctx: EngineCtx)
   if (state.cambio) {
     state.cambio.callerId = replaceId(state.cambio.callerId);
     state.cambio.remaining = state.cambio.remaining.map(replaceId);
+    state.cambio.zeroedIds = zeroedPlayerIds(state).map(replaceId);
   }
   state.readyIds = state.readyIds.map(replaceId);
   state.replayVotes = state.replayVotes.map(replaceId);
@@ -786,6 +793,7 @@ function doCallCambio(state: GameState, actor: Player, ctx: EngineCtx) {
 /* ------------------------------------------------------------------ */
 
 function requirePower(state: GameState, actor: Player, kind: PowerKind) {
+  if (hasZeroed(state, actor.id)) throw new GameError("NO_POWER", "You are out of this round.");
   const pp = state.pendingPower;
   if (!pp || pp.playerId !== actor.id) throw new GameError("NO_POWER", "You have no power to use right now.");
   if (pp.kind !== kind) throw new GameError("NO_POWER", `That is not how a ${describePower(pp.kind)} works.`);
@@ -892,6 +900,7 @@ function doKingDecide(state: GameState, actor: Player, swap: boolean, ctx: Engin
 }
 
 function doSkipPower(state: GameState, actor: Player, ctx: EngineCtx) {
+  if (hasZeroed(state, actor.id)) throw new GameError("NO_POWER", "You are out of this round.");
   const pp = state.pendingPower;
   if (!pp || pp.playerId !== actor.id) throw new GameError("NO_POWER", "You have no power to skip.");
   state.reveals = state.reveals.filter((r) => !(r.kind === "kingLook" && r.toPlayerId === actor.id));
@@ -945,6 +954,7 @@ export function canStick(state: GameState, playerId: string): boolean {
   if (state.discard.length === 0) return false;
   const p = state.players.find((x) => x.id === playerId);
   if (!p || cardCount(p) === 0) return false;
+  if (hasZeroed(state, playerId)) return false;
   if (state.pendingGives.some((g) => g.from === playerId)) return false;
   return true;
 }
@@ -954,6 +964,7 @@ function doStick(state: GameState, actor: Player, cardId: string, ctx: EngineCtx
   if (state.discard.length === 0) throw new GameError("CANT_STICK", "The discard pile is empty.");
   if (state.pendingGives.some((g) => g.from === actor.id)) throw new GameError("PENDING_GIVE", "Give a card away first.");
   if (cardCount(actor) === 0) throw new GameError("CANT_STICK", "You have no cards left.");
+  if (hasZeroed(state, actor.id)) throw new GameError("CANT_STICK", "You are out of this round.");
   const owner = ownerOf(state, cardId);
   if (!owner) throw new GameError("TOO_LATE", "Too late. That card is already gone.");
   const card = state.cards[cardId];
@@ -1012,6 +1023,9 @@ function doGive(state: GameState, actor: Player, cardId: string, ctx: EngineCtx)
   if (slot < 0) throw new GameError("INVALID_TARGET", "Pick one of your own cards to give.");
   const to = state.players.find((p) => p.id === give.to)!;
   const from = placeOf(actor, slot, actor);
+  // Older saved rounds may not yet carry the zero history. Capture it before
+  // refilling a hand so the receipt cannot make an excluded player eligible.
+  if (state.cambio) state.cambio.zeroedIds = zeroedPlayerIds(state);
   actor.hand[slot] = null;
   trimHand(actor);
   addToHand(to, cardId);
@@ -1020,6 +1034,18 @@ function doGive(state: GameState, actor: Player, cardId: string, ctx: EngineCtx)
     { kind: "give", weight: "normal", actorId: actor.id, subjectIds: [to.id], cardIds: [cardId] });
   if (cardCount(actor) === 0) handleZero(state, actor, ctx);
   maybeEndRound(state, ctx);
+}
+
+function settleZeroedGives(state: GameState, ctx: EngineCtx) {
+  if (state.paused || state.phase !== "final") return;
+  while (state.pendingGives.length) {
+    const give = state.pendingGives.find((g) => hasZeroed(state, g.from)
+      && state.players.some((p) => p.id === g.from && cardCount(p) > 0));
+    if (!give) break;
+    const from = state.players.find((p) => p.id === give.from)!;
+    const cards = from.hand.filter((id): id is string => id !== null);
+    doGive(state, from, cards[Math.floor(ctx.rng() * cards.length)], ctx);
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -1056,6 +1082,7 @@ function doTimeout(state: GameState, ctx: EngineCtx): boolean {
     const ids = from.hand.filter((id): id is string => !!id);
     if (ids.length) {
       const cardId = ids[Math.floor(ctx.rng() * ids.length)];
+      if (state.cambio) state.cambio.zeroedIds = zeroedPlayerIds(state);
       from.hand[from.hand.indexOf(cardId)] = null;
       trimHand(from);
       addToHand(to, cardId);
@@ -1070,7 +1097,10 @@ function doTimeout(state: GameState, ctx: EngineCtx): boolean {
   const t = state.turn;
   if (t) {
     const player = state.players.find((p) => p.id === t.playerId)!;
-    if (!player.isBot && ctx.now - t.startedAt >= TURN_TIMEOUT_MS) {
+    if (hasZeroed(state, player.id)) {
+      handleZero(state, player, ctx);
+      acted = true;
+    } else if (!player.isBot && ctx.now - t.startedAt >= TURN_TIMEOUT_MS) {
       // A drawn card that was never decided on lands on the pile with no power.
       if (t.drawnCardId) {
         const drawn = t.drawnCardId;
@@ -1184,20 +1214,35 @@ function startCambio(state: GameState, callerId: string, reason: CambioState["re
     if (!p || p.id === callerId || p.id === anchorId || cardCount(p) === 0) continue;
     remaining.push(p.id);
   }
-  state.cambio = { callerId, reason, remaining };
+  state.cambio = { callerId, reason, remaining, zeroedIds: state.players.filter((p) => cardCount(p) === 0).map((p) => p.id) };
   state.phase = "final";
 }
 
 function handleZero(state: GameState, player: Player, ctx: EngineCtx) {
   if (state.cambio) {
+    const alreadyZeroed = state.cambio.zeroedIds?.includes(player.id);
+    state.cambio.zeroedIds = [...new Set([...zeroedPlayerIds(state), player.id])];
     state.cambio.remaining = state.cambio.remaining.filter((id) => id !== player.id);
-    addLog(state, ctx, `${player.name} is out of cards and out of the round.`,
+    if (!alreadyZeroed) addLog(state, ctx, `${player.name} is out of cards and out of the round.`,
       { kind: "zero", tone: "accent", weight: "loud", actorId: player.id, subjectIds: [player.id] });
   } else {
     addLog(state, ctx, `${player.name} is out of cards. That calls Cambio: everyone else gets one last turn.`,
       { kind: "cambio", tone: "accent", weight: "loud", actorId: player.id, subjectIds: [player.id] });
     const anchorId = state.turn ? state.turn.playerId : player.id;
     startCambio(state, player.id, "zero", anchorId);
+  }
+  if (state.turn?.playerId === player.id) {
+    // The held draw belongs on the pile, never in the empty hand. It grants
+    // no power and incurs no timeout penalty after the player has gone out.
+    if (state.turn.drawnCardId) {
+      const drawn = state.turn.drawnCardId;
+      state.turn.drawnCardId = null;
+      toDiscard(state, drawn);
+      addLog(state, ctx, `${player.name}'s drawn ${shortLabel(state.cards[drawn])} goes on the pile. Their turn is over.`,
+        { kind: "place", actorId: player.id, cardIds: [drawn], weight: "quiet" });
+    }
+    state.reveals = state.reveals.filter((r) => r.toPlayerId !== player.id);
+    endTurn(state, ctx);
   }
   // The action that emptied this hand settles its remaining work before
   // checking the round. Scoring here could interrupt a stick or owed-card give.
@@ -1211,7 +1256,7 @@ function endTurn(state: GameState, ctx: EngineCtx) {
 
   if (state.cambio) {
     const rem = state.cambio.remaining;
-    while (rem.length && cardCount(state.players.find((p) => p.id === rem[0])!) === 0) rem.shift();
+    while (rem.length && hasZeroed(state, rem[0])) rem.shift();
     const next = rem.shift();
     if (!next) { maybeEndRound(state, ctx); return; }
     state.turn = { playerId: next, stage: "draw", drawnCardId: null, startedAt: ctx.now };
@@ -1300,6 +1345,20 @@ function tallyFor(state: GameState, playerId: string): RoundTally {
 
 export function cardCount(p: Player): number {
   return p.hand.filter((c) => c !== null).length;
+}
+
+/** Also recognizes empty hands in rounds saved before zero history existed. */
+export function zeroedPlayerIds(state: GameState): string[] {
+  if (!state.cambio) return [];
+  return [...new Set([
+    ...(state.cambio.zeroedIds ?? []),
+    ...(state.cambio.reason === "zero" ? [state.cambio.callerId] : []),
+    ...state.players.filter((p) => cardCount(p) === 0).map((p) => p.id),
+  ])];
+}
+
+function hasZeroed(state: GameState, playerId: string): boolean {
+  return zeroedPlayerIds(state).includes(playerId);
 }
 
 export function ownerOf(state: GameState, cardId: string): { player: Player; slot: number } | null {
@@ -1392,6 +1451,7 @@ function requirePhase(state: GameState, phases: GameState["phase"][]) {
 
 function requireTurn(state: GameState, actor: Player, stage: GameState["turn"] extends infer T ? (T extends { stage: infer S } ? S : never) : never) {
   requirePhase(state, ["playing", "final"]);
+  if (hasZeroed(state, actor.id)) throw new GameError("WRONG_STAGE", "You are out of this round.");
   const t = state.turn;
   if (!t || t.playerId !== actor.id) throw new GameError("NOT_YOUR_TURN", "It is not your turn.");
   if (t.stage !== stage) {

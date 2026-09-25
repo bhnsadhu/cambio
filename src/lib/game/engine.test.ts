@@ -172,7 +172,7 @@ describe("mid-round bot handoff", () => {
     for (const id of t.ids) s = act(s, id, { type: "leaveTable" }, ctx);
     const replacement = (id: string) => s.players[t.ids.indexOf(id)].id;
     expect(s.phase).toBe("final");
-    expect(s.cambio).toEqual({ callerId: replacement(t.hostId), reason: "called", remaining: remaining.map(replacement) });
+    expect(s.cambio).toEqual({ callerId: replacement(t.hostId), reason: "called", remaining: remaining.map(replacement), zeroedIds: [] });
     expect(s.turn).toEqual({ ...turn, playerId: replacement(turn.playerId) });
     expect(s.results).toEqual([]);
     for (let step = 0; step < 100 && s.phase !== "scoring"; step++) {
@@ -639,10 +639,11 @@ describe("sticking", () => {
     s = act(s, ids[1], { type: "draw" }, ctx);
     s = act(s, ids[1], { type: "stick", cardId: "b1" }, ctx);
     expect(cardCount(player(s, ids[1]))).toBe(0);
-    // out of cards calls Cambio; the drawn card still has to go somewhere
+    // The server places the held draw immediately; the excluded player has no further move.
     expect(s.phase).toBe("final");
     expect(s.cambio).toMatchObject({ callerId: ids[1], reason: "zero" });
-    s = act(s, ids[1], { type: "place" }, ctx);
+    expect(s.discard.at(-1)).toBe("d9");
+    expect(() => act(s, ids[1], { type: "place" }, ctx)).toThrow(/out of this round/);
     expect(s.turn?.playerId).not.toBe(ids[1]);
   });
 
@@ -705,7 +706,7 @@ describe("cambio and round end", () => {
     const { state, ids } = started(ctx);
     let s = act(state, ids[0], { type: "callCambio" }, ctx);
     expect(s.phase).toBe("final");
-    expect(s.cambio).toEqual({ callerId: ids[0], reason: "called", remaining: [ids[2], ids[3]] });
+    expect(s.cambio).toEqual({ callerId: ids[0], reason: "called", remaining: [ids[2], ids[3]], zeroedIds: [] });
     expect(s.turn?.playerId).toBe(ids[1]);
     for (const id of [ids[1], ids[2], ids[3]]) {
       expect(s.turn?.playerId).toBe(id);
@@ -742,7 +743,7 @@ describe("cambio and round end", () => {
     s = act(s, ids[2], { type: "stick", cardId: "c1" }, ctx); // P3 sticks own last card → zero
     expect(cardCount(player(s, ids[2]))).toBe(0);
     expect(s.phase).toBe("final");
-    expect(s.cambio).toEqual({ callerId: ids[2], reason: "zero", remaining: [ids[3], ids[0]] });
+    expect(s.cambio).toEqual({ callerId: ids[2], reason: "zero", remaining: [ids[3], ids[0]], zeroedIds: [ids[2]] });
     // P2 finishes the current turn as their last.
     expect(s.turn?.playerId).toBe(ids[1]);
     s = rigDeck(s, [card("n1", "3"), card("n2", "3"), card("n3", "3")]);

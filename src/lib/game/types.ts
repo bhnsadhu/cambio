@@ -101,6 +101,8 @@ export interface CambioState {
   reason: "called" | "zero";
   /** ordered player ids who still owe a final turn (current turn excluded) */
   remaining: string[];
+  /** Players who hit zero this round, even if an owed card later refills their hand. */
+  zeroedIds?: string[];
 }
 
 /**
@@ -358,7 +360,7 @@ export interface PublicView {
   /** during the ready check: who has said they are in, and when it gives up waiting */
   readyIds: string[];
   readyDeadline: number | null;
-  cambio: { callerId: string; reason: "called" | "zero"; remaining: string[] } | null;
+  cambio: CambioState | null;
   dealingUntil: number | null;
   openingPeekUntil: number | null;
   /** see `GameState.stickWindowUntil` */
