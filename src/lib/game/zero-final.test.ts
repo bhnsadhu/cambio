@@ -99,13 +99,15 @@ describe("zero permanently ends participation in a round", () => {
     expect(state.cambio?.zeroedIds).toEqual(expect.arrayContaining(ids.slice(0, 3)));
   });
 
-  it("keeps a zeroed seat excluded through bot replacement and clears it next round", () => {
+  it.each([false, true])("keeps a zeroed seat excluded through bot replacement, with its debt paid first: %s", (paidFirst) => {
     const { ctx, ids, state: initial } = fixture();
     let state = act(initial, ids[0], { type: "stick", cardId: "hand-2" }, ctx);
-    state = act(state, ids[0], { type: "give", cardId: "hand-0" }, ctx);
+    if (paidFirst) state = act(state, ids[0], { type: "give", cardId: "hand-0" }, ctx);
     state = act(state, ids[2], { type: "leaveTable" }, ctx);
     const replacement = state.players[2].id;
     expect(state.cambio?.zeroedIds).toContain(replacement);
+    expect(state.cambio?.zeroedIds).toEqual([...new Set(state.cambio?.zeroedIds)]);
+    if (!paidFirst) state = act(state, ids[0], { type: "give", cardId: "hand-0" }, ctx);
     expect(canStick(state, replacement)).toBe(false);
     for (const id of [ids[1], ids[3]]) {
       state = rigDeck(state, [card(`draw-${id}`, "2")]);

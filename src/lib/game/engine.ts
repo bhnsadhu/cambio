@@ -497,7 +497,7 @@ function replaceDuringRound(state: GameState, departing: Player, ctx: EngineCtx)
   if (state.cambio) {
     state.cambio.callerId = replaceId(state.cambio.callerId);
     state.cambio.remaining = state.cambio.remaining.map(replaceId);
-    state.cambio.zeroedIds = zeroedPlayerIds(state).map(replaceId);
+    state.cambio.zeroedIds = [...new Set(zeroedPlayerIds(state).map(replaceId))];
   }
   state.readyIds = state.readyIds.map(replaceId);
   state.replayVotes = state.replayVotes.map(replaceId);
