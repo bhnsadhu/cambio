@@ -65,13 +65,13 @@ function completeRound(seed: number, levels: BotDifficulty[]) {
   return state;
 }
 
-function matchup(first: BotDifficulty, second: BotDifficulty, seeds = 24) {
+function matchup(first: BotDifficulty, second: BotDifficulty, from = 1, seeds = 24) {
   const totals: Record<string, { winShare: number; score: number; seats: number; calls: number; callWins: number }> = {
     [first]: { winShare: 0, score: 0, seats: 0, calls: 0, callWins: 0 },
     [second]: { winShare: 0, score: 0, seats: 0, calls: 0, callWins: 0 },
   };
   for (const levels of [[first, second, first, second], [second, first, second, first]]) {
-    for (let seed = 1; seed <= seeds; seed++) {
+    for (let seed = from; seed < from + seeds; seed++) {
       const state = completeRound(seed, levels);
       const result = state.results[0];
       for (const player of state.players) {
@@ -86,7 +86,9 @@ function matchup(first: BotDifficulty, second: BotDifficulty, seeds = 24) {
       }
     }
   }
-  return Object.fromEntries(Object.entries(totals).map(([level, tally]) => [level, { ...tally, average: tally.score / tally.seats, callWinRate: tally.calls ? tally.callWins / tally.calls : null }]));
+  const result = Object.fromEntries(Object.entries(totals).map(([level, tally]) => [level, { ...tally, average: tally.score / tally.seats, callWinRate: tally.calls ? tally.callWins / tally.calls : null }]));
+  if (process.env.BOT_BENCHMARK) console.info(JSON.stringify({ seeds: [from, from + seeds - 1], result }));
+  return result;
 }
 
 describe("bot strategy at equal reaction speed", () => {
@@ -96,16 +98,22 @@ describe("bot strategy at equal reaction speed", () => {
     }
   }, 30_000);
 
-  it("hard wins more and scores lower than medium across both seatings", () => {
-    const result = matchup("hard", "medium");
-    expect(result.hard.winShare, JSON.stringify(result)).toBeGreaterThan(result.medium.winShare);
-    expect(result.hard.average, JSON.stringify(result)).toBeLessThan(result.medium.average);
+  it("hard wins more in both seed sets and has a clear overall advantage over medium", () => {
+    const results = [1, 101].map((from) => matchup("hard", "medium", from));
+    for (const result of results) {
+      expect(result.hard.winShare, JSON.stringify(result)).toBeGreaterThan(result.medium.winShare);
+      expect(result.hard.average, JSON.stringify(result)).toBeLessThan(result.medium.average);
+    }
+    // Measure the size of the advantage over all 96 rounds, rather than
+    // requiring the same win margin from every smaller sample of deals.
+    const wins = (level: "hard" | "medium") => results.reduce((sum, result) => sum + result[level].winShare, 0);
+    expect(wins("hard")).toBeGreaterThan(wins("medium") * 1.5);
   }, 30_000);
 
-  it("basic medium decisions beat easy without a timing advantage", () => {
-    const result = matchup("medium", "easy");
-    expect(result.medium.winShare, JSON.stringify(result)).toBeGreaterThan(result.easy.winShare);
-    expect(result.medium.average, JSON.stringify(result)).toBeLessThan(result.easy.average);
+  it.each([1, 101])("medium comfortably beats easy without a timing advantage (seeds from %i)", (from) => {
+    const result = matchup("medium", "easy", from);
+    expect(result.medium.winShare, JSON.stringify(result)).toBeGreaterThan(result.easy.winShare * 2);
+    expect(result.medium.average, JSON.stringify(result)).toBeLessThan(result.easy.average - 5);
   }, 30_000);
 });
 

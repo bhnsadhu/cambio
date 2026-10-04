@@ -9,7 +9,6 @@ const DECK_VALUES = [
 /** Only legitimately observed faces enter the belief model. */
 export function unseenValues(state: GameState, bot: Player): number[] {
   const pool = DECK_VALUES.slice();
-  if (bot.difficulty !== "hard") return pool;
   for (const id of new Set([...state.discard, ...(state.botKnown[bot.id] ?? [])])) {
     const card = state.cards[id];
     if (!card) continue;
@@ -20,7 +19,6 @@ export function unseenValues(state: GameState, bot: Player): number[] {
 }
 
 function weight(state: GameState, bot: Player, id: string, value: number): number {
-  if (bot.difficulty !== "hard") return 1;
   // A keep/push is evidence of intent, not proof of a face. Even a high kept
   // card or a low pushed card retains probability, so opponents can bluff.
   const clue = state.botHints?.[id];
@@ -51,8 +49,8 @@ export interface CambioAssessment {
 
 /**
  * A deterministic belief rollout, never an inspection of the undealt deck or
- * unobserved hands. All tiers use the same cautious decision rule; memory and
- * inference determine how accurately each tier assesses its situation.
+ * unobserved hands. All tiers share the full counting and inference model;
+ * their memory and attention determine how often they make use of it.
  * Opponents get one final draw and their best improving replacement before
  * we compare scores. This deliberately budgets for their last-turn recovery.
  */
@@ -82,7 +80,7 @@ export function assessCambio(state: GameState, botId: string): CambioAssessment 
         if (cursor <= 0) { index = i; break; }
       }
       const value = available[index];
-      if (bot.difficulty === "hard" && available === remaining) remaining.splice(index, 1);
+      if (available === remaining) remaining.splice(index, 1);
       return value;
     };
     const values = hands.map((hand) => hand.map((id) => known.has(id) && state.cards[id] ? cardValue(state.cards[id]) : take(id)));

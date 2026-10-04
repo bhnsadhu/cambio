@@ -180,7 +180,7 @@ for (const tier of tiers) {
   });
 }
 
-test("the live tiers resolve the same drawn nine with different tactics and real power actions", async ({ page }, info) => {
+test("the live tiers use shared tactics with difficulty-dependent lapses and real power actions", async ({ page }, info) => {
   test.setTimeout(90_000);
   const outcomes: Record<string, unknown> = {};
   for (const tier of tiers) {
@@ -203,17 +203,22 @@ test("the live tiers resolve the same drawn nine with different tactics and real
       expect(decision.subjectIds).toEqual([fixture.hostId]);
       expect(player(moved, fixture.hostId).hand).toContain("choice-nine");
       expect(moved.discard).toContain("leader-red-king");
-    } else if (tier === "medium") {
-      expect(decision.kind).toBe("place");
-      completed = await waitForLog(state.code, (entry) => entry.actorId === fixture.actorId && entry.kind === "peekOther");
-      const power = completed.log.find((entry) => entry.actorId === fixture.actorId && entry.kind === "peekOther")!;
-      expect(power.cardIds).toEqual(["leader-2"]);
     } else {
-      // Easy's normal production randomness may keep the nine in its own
-      // hand or place it; it does not make hard's targeted attack.
+      // Both lower tiers can make hard's targeted attack. A lapse can keep
+      // the nine carelessly or discard it, then use or skip the power. Exact
+      // 50/75% rates are covered with controlled rolls in the unit suite.
       expect(["place", "swap"]).toContain(decision.kind);
-      if (decision.kind === "swap") expect(decision.subjectIds).toEqual([fixture.actorId]);
-      else completed = await waitForLog(state.code, (entry) => entry.actorId === fixture.actorId && ["peekOther", "skipPower"].includes(entry.kind));
+      if (decision.kind === "swap") {
+        expect(decision.subjectIds).toHaveLength(1);
+        const target = decision.subjectIds![0];
+        expect([fixture.actorId, fixture.hostId]).toContain(target);
+        expect(player(moved, target).hand).toContain("choice-nine");
+        if (target === fixture.hostId) expect(moved.discard).toContain("leader-red-king");
+      } else {
+        completed = await waitForLog(state.code, (entry) => entry.actorId === fixture.actorId && ["peekOther", "skipPower"].includes(entry.kind));
+        const power = completed.log.find((entry) => entry.actorId === fixture.actorId && entry.kind === "peekOther");
+        if (power) expect(power.cardIds).toEqual(["leader-2"]);
+      }
     }
     outcomes[tier] = { decision, log: completed.log };
     const visibleAction = completed.log.filter((entry) => entry.actorId === fixture.actorId).at(-1)!;

@@ -1438,7 +1438,7 @@ function remember(state: GameState, botId: string, cardIds: string[]) {
   } else {
     const mine = (id: string) => bot.hand.includes(id) ||
       (state.turn?.playerId === botId && state.turn.drawnCardId === id);
-    state.botKnown[botId] = [...known.filter(mine), ...known.filter((id) => !mine(id)).slice(-2)];
+    state.botKnown[botId] = [...known.filter(mine), ...known.filter((id) => !mine(id)).slice(-6)];
   }
 }
 

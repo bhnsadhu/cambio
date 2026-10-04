@@ -10,7 +10,7 @@ describe("difficulty-specific legitimate memory", () => {
       const bot = state.players[1];
       bot.difficulty = difficulty;
       const opening = bot.hand.slice(2) as string[];
-      const others = state.players[2].hand.filter((id): id is string => !!id);
+      const others = state.players.slice(2).flatMap((p) => p.hand.filter((id): id is string => !!id));
       state.botKnown[bot.id] = [...opening, ...others];
       state.turn = { playerId: bot.id, stage: "draw", drawnCardId: null, startedAt: ctx.now };
       state = act(state, bot.id, { type: "draw" }, ctx);
@@ -20,7 +20,7 @@ describe("difficulty-specific legitimate memory", () => {
       if (difficulty === "easy") expect(remembered).toEqual([others.at(-1), drawn]);
       else {
         expect(remembered).toEqual(expect.arrayContaining(opening));
-        expect(remembered.filter((id) => others.includes(id))).toHaveLength(difficulty === "hard" ? 4 : 2);
+        expect(remembered.filter((id) => others.includes(id))).toEqual(difficulty === "hard" ? others : others.slice(-6));
       }
     });
   }

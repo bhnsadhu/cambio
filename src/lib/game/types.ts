@@ -29,9 +29,9 @@ export type Phase =
 export type TurnStage = "draw" | "decide" | "power";
 
 /**
- * How hard a house bot plays. Easy is loose and forgetful, medium is the
- * house's basic strategy, and hard counts what the pile has swallowed and
- * plays the odds. Set per seat before the round is dealt.
+ * How consistently a house bot uses its strongest strategy: easy 50%, medium
+ * 75%, hard 100%. Memory and reaction speed also improve with difficulty.
+ * Set per seat before the round is dealt.
  */
 export type BotDifficulty = "easy" | "medium" | "hard";
 

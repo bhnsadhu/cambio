@@ -26,7 +26,7 @@ describe("sticks are independent of turn powers", () => {
       expect(act(state, bot.id, peek.action, ctx).pendingPower).toBeNull();
     });
   }
-  it("easy learns not to repeat a wrong guess against an unchanged discard", () => {
+  it("easy misses a stick opportunity without guessing at an unseen card", () => {
     const ctx = makeCtx(8);
     let { state } = started(ctx, 1);
     const bot = state.players[1];
@@ -35,12 +35,9 @@ describe("sticks are independent of turn powers", () => {
     state.cards["top-two"] = card("top-two", "2");
     state.discard.push("top-two");
     state.botKnown[bot.id] = [];
-    const jitter = (key: string) => key.includes(":guess:") ? 0 : 0.6;
-    const guess = planBots(state, ctx.now, jitter).find((plan) => plan.playerId === bot.id && plan.action.type === "stick")!;
-    expect(guess.action).toEqual({ type: "stick", cardId: "blind-five" });
-    state = act(state, bot.id, guess.action, ctx);
-    expect(state.botMissedTop?.[bot.id]).toBe("top-two");
-    expect(planBots(state, ctx.now, jitter).some((plan) => plan.playerId === bot.id && plan.action.type === "stick")).toBe(false);
+    for (const roll of [0, 0.49, 0.5, 0.99]) {
+      expect(planBots(state, ctx.now, () => roll).some((plan) => plan.playerId === bot.id && plan.action.type === "stick")).toBe(false);
+    }
   });
   it("hard retains a negative king and declines a stick that only improves the opponent", () => {
     const ctx = makeCtx(9);

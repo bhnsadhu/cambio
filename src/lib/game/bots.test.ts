@@ -164,9 +164,9 @@ describe("difficulty", () => {
         if (plan.action.type !== "stick") continue;
         const level = state.players.find((p) => p.id === plan.playerId)!.difficulty!;
         seenStick[level].push(plan.delayMs);
-        // A guess is the one stick a bot may make on a card it has not seen,
-        // and only an easy one ever guesses.
-        if (level !== "easy") expect(state.botKnown[plan.playerId]).toContain(plan.action.cardId);
+        // Difficulty changes which opportunities it notices, never grants
+        // knowledge of a hidden face or turns a lapse into a blind penalty.
+        expect(state.botKnown[plan.playerId]).toContain(plan.action.cardId);
       }
       ctx.tick(plans[0].delayMs + 1);
       state = applyAction(state, { actionId: `l${i}`, playerId: plans[0].playerId, action: plans[0].action }, ctx).state;
