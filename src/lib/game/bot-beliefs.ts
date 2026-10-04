@@ -1,4 +1,5 @@
 import { cardValue } from "./cards";
+import { observeBot, type BotObservation } from "./bot-observation";
 import type { GameState, Player } from "./types";
 
 const DECK_VALUES = [
@@ -7,7 +8,7 @@ const DECK_VALUES = [
 ];
 
 /** Only legitimately observed faces enter the belief model. */
-export function unseenValues(state: GameState, bot: Player): number[] {
+export function unseenValues(state: Pick<BotObservation, "cards" | "discard" | "botKnown">, bot: Player): number[] {
   const pool = DECK_VALUES.slice();
   for (const id of new Set([...state.discard, ...(state.botKnown[bot.id] ?? [])])) {
     const card = state.cards[id];
@@ -18,7 +19,7 @@ export function unseenValues(state: GameState, bot: Player): number[] {
   return pool.length ? pool : DECK_VALUES.slice();
 }
 
-function weight(state: GameState, bot: Player, id: string, value: number): number {
+function weight(state: Pick<BotObservation, "botHints">, id: string, value: number): number {
   // A keep/push is evidence of intent, not proof of a face. Even a high kept
   // card or a low pushed card retains probability, so opponents can bluff.
   const clue = state.botHints?.[id];
@@ -27,11 +28,11 @@ function weight(state: GameState, bot: Player, id: string, value: number): numbe
   return 1;
 }
 
-export function expectedCard(state: GameState, bot: Player, id: string, pool = unseenValues(state, bot)): number {
+export function expectedCard(state: BotObservation, bot: Player, id: string, pool = unseenValues(state, bot)): number {
   if ((state.botKnown[bot.id] ?? []).includes(id) && state.cards[id]) return cardValue(state.cards[id]);
   let total = 0, weights = 0;
   for (const value of pool) {
-    const w = weight(state, bot, id, value);
+    const w = weight(state, id, value);
     total += value * w;
     weights += w;
   }
@@ -55,6 +56,12 @@ export interface CambioAssessment {
  * we compare scores. This deliberately budgets for their last-turn recovery.
  */
 export function assessCambio(state: GameState, botId: string): CambioAssessment {
+  // The reducer rechecks calls too; it must use exactly the same restricted
+  // information as the planner, even though it owns the full server state.
+  return assessObservedCambio(observeBot(state, botId), botId);
+}
+
+export function assessObservedCambio(state: BotObservation, botId: string): CambioAssessment {
   const bot = state.players.find((p) => p.id === botId)!;
   const known = new Set(state.botKnown[bot.id] ?? []);
   const pool = unseenValues(state, bot);
@@ -73,10 +80,10 @@ export function assessCambio(state: GameState, botId: string): CambioAssessment 
     const remaining = pool.slice();
     const take = (id: string) => {
       const available = remaining.length ? remaining : pool;
-      let cursor = random() * available.reduce((sum, value) => sum + weight(state, bot, id, value), 0);
+      let cursor = random() * available.reduce((sum, value) => sum + weight(state, id, value), 0);
       let index = available.length - 1;
       for (let i = 0; i < available.length; i++) {
-        cursor -= weight(state, bot, id, available[i]);
+        cursor -= weight(state, id, available[i]);
         if (cursor <= 0) { index = i; break; }
       }
       const value = available[index];

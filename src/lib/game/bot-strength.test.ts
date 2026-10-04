@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { assessCambio, planBots } from "./bots";
+import { observeBot } from "./bot-observation";
 import { applyAction, createGame } from "./engine";
 import { act, card, makeCtx, player, rig } from "./testkit";
 import type { BotDifficulty, GameState, Rank, Suit } from "./types";
@@ -222,6 +223,14 @@ function decisionStates(level: BotDifficulty) {
   sticking.discard.push(match);
   cases.push({ label: "stick", state: sticking });
   cases.push({ label: "give after stick", state: act(sticking, me, { type: "stick", cardId: target }, ctx) });
+  const next = state.players[1].id;
+  const passed = act(drawRank(state, me, "2", ctx), me, { type: "place" }, ctx);
+  const otherDraw = drawRank(passed, next, "K", ctx, "S");
+  cases.push({ label: "opponent's private draw", state: otherDraw });
+  const otherPower = act(otherDraw, next, { type: "place" }, ctx);
+  cases.push({ label: "opponent's private king look", state: act(otherPower, next, {
+    type: "kingLook", cardIdA: player(otherPower, next).hand[0]!, cardIdB: player(otherPower, me).hand[0]!,
+  }, ctx) });
   return { cases, me, ctx };
 }
 
@@ -237,7 +246,41 @@ function permuteUnseen(state: GameState, me: string, seed: number) {
   }
   const altered = structuredClone(state);
   hiddenIds.forEach((id, index) => { altered.cards[id] = { id, ...rankAndSuit[index] }; });
+  altered.deck.reverse();
+  for (const p of altered.players) if (p.id !== me) {
+    altered.botKnown[p.id] = [...hiddenIds];
+    altered.reveals.push({ id: `private-${p.id}`, toPlayerId: p.id, kind: "peekOther", cardIds: hiddenIds, until: Number.MAX_SAFE_INTEGER });
+  }
   return altered;
+}
+
+/** Fail immediately on even an attempted read, not only a changed decision. */
+function forbidSecrets(state: GameState, me: string): GameState {
+  const allowed = new Set([...state.discard, ...(state.botKnown[me] ?? [])]);
+  if (state.turn?.playerId === me && state.turn.drawnCardId) allowed.add(state.turn.drawnCardId);
+  if (state.pendingPower?.playerId === me && state.pendingPower.looked) {
+    allowed.add(state.pendingPower.looked.a);
+    allowed.add(state.pendingPower.looked.b);
+  }
+  const cards = new Proxy(state.cards, {
+    get(target, id: string) {
+      if (!allowed.has(id)) throw new Error(`Read of unobserved card ${id}`);
+      return target[id];
+    },
+    ownKeys() { throw new Error("Inspected the full card registry"); },
+  });
+  const botKnown = new Proxy(state.botKnown, {
+    get(target, id: string) {
+      if (id !== me) throw new Error("Read another bot's memory");
+      return target[id];
+    },
+  });
+  return new Proxy({ ...state, cards, botKnown }, {
+    get(target, key: keyof GameState) {
+      if (["deck", "reveals", "results"].includes(key)) throw new Error(`Read private server field ${key}`);
+      return target[key];
+    },
+  });
 }
 
 describe("hidden ranks cannot influence bot decisions", () => {
@@ -247,8 +290,12 @@ describe("hidden ranks cannot influence bot decisions", () => {
       const jitter = jitterFor(19);
       for (const fixture of cases) {
         const expected = planBots(fixture.state, ctx.now, jitter).filter((plan) => plan.playerId === me);
+        const guarded = forbidSecrets(fixture.state, me);
+        expect(planBots(guarded, ctx.now, jitter).filter((plan) => plan.playerId === me), fixture.label).toEqual(expected);
+        expect(assessCambio(guarded, me), fixture.label).toEqual(assessCambio(fixture.state, me));
         for (let seed = 201; seed < 213; seed++) {
           const hiddenWorld = permuteUnseen(fixture.state, me, seed);
+          expect(observeBot(hiddenWorld, me), `${level}: the strategy must receive no hidden differences`).toEqual(observeBot(fixture.state, me));
           expect(planBots(hiddenWorld, ctx.now, jitter).filter((plan) => plan.playerId === me), `${level}: ${fixture.label}, hidden world ${seed}`).toEqual(expected);
           expect(assessCambio(hiddenWorld, me), `${level}: call beliefs must not inspect hidden ranks`).toEqual(assessCambio(fixture.state, me));
         }

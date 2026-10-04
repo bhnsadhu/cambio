@@ -94,7 +94,9 @@ Powers activate when a drawn card is placed on the discard pile. Swapping a draw
 
 ### Bot AI
 
-The bots choose from information they could legitimately observe: opening peeks, their own draws, private power reveals, face-up discards, and public card movements. Unknown faces and the future deck order never enter a decision. Hidden-card permutation tests check that contract.
+The bots choose from information they could legitimately observe: opening peeks, their own draws, private power reveals, face-up discards, and public card movements. Each bot's strategy receives a separate observation containing only that seat's remembered or currently revealed faces and public information. Unseen faces, deck order, other players' private reveals, and other bots' memories are excluded before evaluating moves or rechecking a Cambio call. Hard's 100% strategy still estimates unknown cards; it cannot see them.
+
+All difficulties use the same rules engine as humans. Fairness tests change hidden faces, reverse the deck, and replace opponents' private knowledge without changing the bot's observation, moves, or call assessment. Additional tests throw on any attempted secret read and check that unpeeked cards, face-down gifts, blind swaps, and penalties do not grant new knowledge.
 
 | Level | How it plays |
 | --- | --- |
