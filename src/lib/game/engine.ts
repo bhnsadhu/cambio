@@ -380,9 +380,6 @@ function doStart(state: GameState, actor: Player, ctx: EngineCtx) {
   requirePhase(state, ["lobby"]);
   if (actor.id !== state.hostId) throw new GameError("NOT_HOST", "Only the host can start the round.");
   fillBots(state, ctx);
-  // A table that came back to the lobby between rounds keeps counting up.
-  state.round = state.results.length + 1;
-  state.leadSeat = 0;
   dealRound(state, ctx);
 }
 
@@ -447,9 +444,6 @@ function doPlayAgain(state: GameState, actor: Player, ctx: EngineCtx): boolean {
   const waiting = state.players.filter((p) => !state.replayVotes.includes(p.id));
   if (waiting.length === 0) {
     addLog(state, ctx, `Everyone is in. Dealing the next round.`, { kind: "replay", tone: "accent", weight: "loud", actorId: actor.id });
-    const last = state.results[state.results.length - 1];
-    state.round = state.results.length + 1;
-    state.leadSeat = last && state.players.some((p) => p.seat === last.nextLeadSeat) ? last.nextLeadSeat : lowestSeat(state);
     dealRound(state, ctx);
     return true;
   }
@@ -651,6 +645,15 @@ function doSetBotDifficulty(state: GameState, actor: Player, seat: number, diffi
 }
 
 function dealRound(state: GameState, ctx: EngineCtx) {
+  // Starting from the lobby and Play Again share the same rule. Only the
+  // starting turn changes; the players keep their clockwise seating order.
+  // Look up the winner by id because departures can close up lobby seats.
+  const last = state.results.at(-1);
+  const winners = state.players.filter((p) => last?.winnerIds.includes(p.id));
+  state.round = state.results.length + 1;
+  state.leadSeat = winners.length
+    ? Math.min(...winners.map((p) => p.seat))
+    : state.players.find((p) => p.id === state.hostId)?.seat ?? lowestSeat(state);
   const deck = shuffle(buildDeck(ctx.newId), ctx.rng);
   state.cards = {};
   for (const c of deck) state.cards[c.id] = c;
