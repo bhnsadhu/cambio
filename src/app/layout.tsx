@@ -28,14 +28,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Cambio",
-    title: "Cambio — Play with friends",
+    title: "Cambio | Play with friends",
     description: SITE_DESCRIPTION,
     url: "./",
     images: [shareImage],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Cambio — Play with friends",
+    title: "Cambio | Play with friends",
     description: SITE_DESCRIPTION,
     images: [shareImage],
   },
