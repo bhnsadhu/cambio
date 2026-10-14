@@ -180,6 +180,14 @@ a:focus-visible, summary:focus-visible { outline: 2px solid var(--color-accent);
 }
 .flip-side.back { transform: rotateY(180deg); }
 
+/*
+ * A one time intro that is still due keeps its cards hidden until the deal
+ * starts, so its final frame never paints first and then jumps. If script
+ * never runs, the cards appear on their own.
+ */
+html[data-intro~="hero"] [data-logo-intro="hero"] [data-logo-card] { opacity: 0; animation: intro-fallback 0s 2s forwards; }
+@keyframes intro-fallback { to { opacity: 1; } }
+
 .hairline { box-shadow: 0 0 0 1px var(--color-line); }
 .hairline-strong { box-shadow: 0 0 0 1px var(--color-line-strong); }
 .ring-turn { box-shadow: 0 0 0 1.5px var(--color-ink), var(--shadow-card); }

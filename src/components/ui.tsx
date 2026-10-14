@@ -2,6 +2,7 @@
 
 import type { ComponentPropsWithRef, ReactNode } from "react";
 import { BOT_DIFFICULTIES, type BotDifficulty } from "@/lib/game/types";
+import { Logo } from "./Logo";
 
 type Variant = "primary" | "secondary" | "accent" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg";
@@ -93,7 +94,7 @@ export function presenceOf(friend: { online: boolean; playing: unknown }): Prese
 export function Wordmark({ className = "" }: { className?: string }) {
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
-      <span className="relative inline-block h-5 w-4 rounded-[4px] card-back" aria-hidden />
+      <Logo size={24} decorative />
       <span className="t-headline">Cambio</span>
     </span>
   );

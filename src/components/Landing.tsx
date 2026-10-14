@@ -11,7 +11,7 @@ import { saveSession, storeName } from "@/lib/client/session";
 import { useSocial } from "@/lib/client/social";
 import { useStoredName } from "@/lib/client/useStoredName";
 import { storeGuestIdentity, useGuestIdentity } from "@/lib/client/guest";
-import { CardBack, FaceCard } from "./cards";
+import { Logo } from "./Logo";
 import { FriendsPanel, Notifications } from "./Friends";
 import { AppHeader } from "./AppHeader";
 import { RecentTable } from "./RecentTable";
@@ -94,13 +94,8 @@ export function Landing() {
         </div>
       </> : <section className="grid items-start gap-10 pt-10 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:pt-16">
         <div>
-          {/* One clean row: same baseline, same size, no tilt, even spacing. */}
-          <div className="mb-8 flex items-end gap-3" aria-hidden>
-            <CardBack size="md" />
-            <CardBack size="md" />
-            <FaceCard size="md" card={{ id: "h1", rank: "7", suit: "S" }} />
-            <CardBack size="md" />
-          </div>
+          {/* Deals itself once per session; a click deals it again. */}
+          <Logo size={112} mode="animated" intro="hero" className="mb-8" />
           <h1 className="t-display">The memory card game,<br />live with friends.</h1>
           <p className="t-body mt-5 max-w-[440px] text-ink-2">
             Remember your cards. Finish with the lowest hand. Play with friends, or let the house bots{" "}

@@ -2,6 +2,7 @@ import { PresenceSession } from "@/lib/client/presence";
 import { AccountSession } from "@/lib/client/profile";
 import { NotificationProvider } from "@/components/Notification";
 import { SITE_DESCRIPTION, SITE_URL } from "@/lib/site";
+import { INTRO_SCRIPT } from "@/lib/client/motion";
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
@@ -43,7 +44,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${jakarta.variable} h-full`}>
+    // The intro script may mark <html> before hydration.
+    <html lang="en" className={`${jakarta.variable} h-full`} suppressHydrationWarning>
+      <head><script dangerouslySetInnerHTML={{ __html: INTRO_SCRIPT }} /></head>
       <body className="min-h-full"><NotificationProvider><AccountSession /><PresenceSession />{children}</NotificationProvider></body>
     </html>
   );

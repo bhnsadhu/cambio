@@ -58,8 +58,8 @@ export function FaceCard({ card, size = "md", className = "", elRef, style }: { 
 }
 
 /** A plain face down card, used by flights and the deck. */
-export function CardBack({ size = "lg", className = "", elRef }: { size?: CardSize; className?: string; elRef?: Ref<HTMLDivElement> }) {
-  return <div ref={elRef} className={`relative ${SIZES[size].box} card-back ${className}`} />;
+export function CardBack({ size = "lg", className = "", elRef, style }: { size?: CardSize; className?: string; elRef?: Ref<HTMLDivElement>; style?: CSSProperties }) {
+  return <div ref={elRef} style={style} className={`relative ${SIZES[size].box} card-back ${className}`} />;
 }
 
 export interface TileProps {
