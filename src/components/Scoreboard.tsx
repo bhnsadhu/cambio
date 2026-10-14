@@ -58,7 +58,7 @@ export function Scoreboard({
 
   return (
     <div ref={dialogRef} tabIndex={-1} className="fixed inset-0 z-40 flex items-center justify-center bg-black/75 p-4 outline-none animate-fade" role="dialog" aria-modal aria-label="Round results">
-      <div className="max-h-[calc(100dvh-32px)] w-full min-w-0 max-w-[1040px] animate-rise overflow-y-auto rounded-panel bg-surface p-5 shadow-float hairline sm:p-8">
+      <div className="max-h-[calc(100dvh-32px)] w-full min-w-0 max-w-[1040px] animate-rise motion-reduce:animate-none overflow-y-auto rounded-panel bg-surface p-5 shadow-float hairline sm:p-8">
         <header className="flex flex-col items-start justify-between gap-5 lg:flex-row lg:gap-6">
           <div className="min-w-0 break-words">
             <p className="t-caption text-ink-3">Round {result.round} of this table</p>
@@ -167,7 +167,7 @@ export function Scoreboard({
                     <div className="flex flex-wrap gap-1.5">
                       {cards.length ? cards.map((c, i) => (
                         <div key={c.id} className="flex shrink-0 flex-col items-center gap-1">
-                          <FaceCard card={c} size="md" className="animate-flip-in" style={{ animationDelay: `${base + i * 70}ms` }} />
+                          <FaceCard card={c} size="md" className="animate-flip-in motion-reduce:animate-none" style={{ animationDelay: `${base + i * 70}ms` }} />
                           <span className="text-[10px] leading-3 font-medium text-ink-3" aria-label={`Card position ${player.hand.indexOf(c.id) + 1}`}>{player.hand.indexOf(c.id) + 1}</span>
                         </div>
                       )) : <span className="t-sub text-ink-3">No cards</span>}

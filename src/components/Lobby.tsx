@@ -80,7 +80,7 @@ export function Lobby({
           {seats.map((p, seat) => {
             const botName = p ? null : BOT_NAMES[botIdx++];
             return (
-              <li key={seat} className={`flex min-h-[136px] min-w-0 flex-col rounded-panel border-[1.5px] px-5 py-4 transition-[box-shadow,background-color] duration-300 xl:px-4 ${p ? "border-transparent bg-surface hairline animate-pop" : "border-dashed border-line-strong"}`}>
+              <li key={seat} className={`flex min-h-[136px] min-w-0 flex-col rounded-panel border-[1.5px] px-5 py-4 transition-[box-shadow,background-color] duration-300 xl:px-4 ${p ? "border-transparent bg-surface hairline animate-pop motion-reduce:animate-none" : "border-dashed border-line-strong"}`}>
                 <p className="t-caption text-ink-3">Seat {seat + 1}</p>
                 {p ? (
                   <div className="mt-3 min-w-0 flex-1">

@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { Card } from "@/lib/game/types";
+import { EASE_IN_OUT, EASE_OUT, ENTER_MS, FLIP_MS, STAGGER_MS } from "@/lib/client/motion";
+import { useEntrance } from "@/lib/client/useEntrance";
 import { useModalFocus } from "@/lib/client/useModalFocus";
 import { CardBack, FaceCard } from "./cards";
 import { Button } from "./ui";
@@ -49,10 +52,10 @@ export function Explainer({ onDone, onRules }: { onDone: () => void; onRules?: (
   }, [onDone]);
 
   return (
-    <div ref={dialogRef} tabIndex={-1} className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 outline-none animate-fade" role="dialog" aria-modal aria-label="How Cambio works">
-      <div className="max-h-[calc(100dvh-32px)] w-full max-w-[560px] animate-rise overflow-y-auto rounded-panel lg:grid lg:max-w-[900px] lg:grid-cols-[320px_minmax(0,1fr)] bg-surface shadow-float hairline">
+    <div ref={dialogRef} tabIndex={-1} className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 outline-none animate-fade motion-reduce:animate-none" role="dialog" aria-modal aria-label="How Cambio works">
+      <div className="max-h-[calc(100dvh-32px)] w-full max-w-[560px] animate-rise motion-reduce:animate-none overflow-y-auto rounded-panel lg:grid lg:max-w-[900px] lg:grid-cols-[320px_minmax(0,1fr)] bg-surface shadow-float hairline">
         <div className="flex h-[180px] items-center justify-center rounded-t-panel bg-bg px-4 sm:h-[220px] lg:h-full lg:min-h-[360px] lg:rounded-l-panel lg:rounded-tr-none" key={i}>
-          <div className="animate-pop">{step.art}</div>
+          <div className="animate-pop motion-reduce:animate-none">{step.art}</div>
         </div>
         <div className="flex min-h-[236px] flex-col px-5 pt-6 pb-7 sm:px-8 lg:pt-8">
           <p className="t-caption text-ink-3">{i + 1} of {STEPS.length}</p>
@@ -81,25 +84,52 @@ export function Explainer({ onDone, onRules }: { onDone: () => void; onRules?: (
   );
 }
 
+/** Four cards dealt from the middle, the first time this step is seen. */
 function Art1() {
+  const ref = useEntrance<HTMLDivElement>("explainer-deal", (grid) => [...grid.children].map((child, i) => {
+    const card = child as HTMLElement;
+    const dx = grid.clientWidth / 2 - (card.offsetLeft + card.offsetWidth / 2);
+    const dy = grid.clientHeight / 2 - (card.offsetTop + card.offsetHeight / 2);
+    return card.animate([
+      { transform: `translate(${dx}px, ${dy}px) scale(0.94)`, opacity: 0 },
+      { transform: "translate(0px, 0px) scale(1)", opacity: 1 },
+    ], { duration: ENTER_MS, delay: 120 + i * STAGGER_MS, easing: EASE_OUT, fill: "backwards" });
+  }));
   return (
-    <div className="grid grid-cols-2 gap-2.5">
+    <div ref={ref} className="relative grid grid-cols-2 gap-2.5">
       {[0, 1, 2, 3].map((k) => <CardBack key={k} size="md" />)}
     </div>
   );
 }
 
+/** A face up card that can turn over from its back, the way a table card does. */
+function Turned({ card }: { card: Card }) {
+  return (
+    <span className="flip relative block h-20 w-14" data-face="up">
+      <span data-turn className="flip-inner block">
+        <span className="flip-side front block"><CardBack size="md" /></span>
+        <span className="flip-side back block"><FaceCard size="md" card={card} /></span>
+      </span>
+    </span>
+  );
+}
+
+/** The bottom two cards turn up for their look, the first time this step is seen. */
 function Art2() {
+  const ref = useEntrance<HTMLDivElement>("explainer-peek", (grid) => [...grid.querySelectorAll<HTMLElement>("[data-turn]")].map((inner, i) =>
+    inner.animate([{ transform: "rotateY(0deg)" }, { transform: "rotateY(180deg)" }], {
+      duration: FLIP_MS, delay: 240 + i * 75, easing: EASE_IN_OUT, fill: "backwards",
+    })));
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className="grid grid-cols-2 gap-2.5">
+      <div ref={ref} className="grid grid-cols-2 gap-2.5">
         <CardBack size="md" />
         <CardBack size="md" />
-        <FaceCard size="md" card={{ id: "x1", rank: "7", suit: "S" }} />
-        <FaceCard size="md" card={{ id: "x2", rank: "K", suit: "H" }} />
+        <Turned card={{ id: "x1", rank: "7", suit: "S" }} />
+        <Turned card={{ id: "x2", rank: "K", suit: "H" }} />
       </div>
       <div className="h-[3px] w-[122px] overflow-hidden rounded-full bg-line-strong">
-        <div className="h-full origin-left rounded-full bg-ink" style={{ animation: "countdown 4s linear infinite" }} />
+        <div className="h-full origin-left rounded-full bg-ink animate-[countdown_4s_linear_infinite] motion-reduce:animate-none" />
       </div>
     </div>
   );
