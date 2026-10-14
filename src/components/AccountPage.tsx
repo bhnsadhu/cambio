@@ -6,6 +6,7 @@ import { backLabel, loginHref } from "@/lib/account/navigation";
 import { refreshProfile, useAccountReady, useStoredProfile } from "@/lib/client/profile";
 import { AccountSettings } from "./Account";
 import { AppHeader } from "./AppHeader";
+import { LogoLoader } from "./Logo";
 
 export function AccountPage({ back }: { back: string }) {
   const router = useRouter();
@@ -28,7 +29,7 @@ export function AccountPage({ back }: { back: string }) {
     <main className="site-shell min-h-screen pb-16">
       <AppHeader active="account" accountFrom={back} back={{ href: destination, label: backLabel(destination) }} />
       <div className="pt-8 lg:pt-12">
-        {!ready || !stored?.username ? <p role="status" className="t-sub text-ink-2">Checking your account</p> : <>
+        {!ready || !stored?.username ? <LogoLoader label="Checking your account" className="py-16" /> : <>
           <div className="mb-8"><h1 className="t-title">Account settings</h1><p className="t-body mt-3 text-ink-2">Manage your player profile and account access.</p></div>
           <AccountSettings key={stored.profile.id} stored={stored} onExit={exit} />
         </>}

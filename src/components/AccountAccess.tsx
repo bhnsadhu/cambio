@@ -7,6 +7,7 @@ import { useAccountReady, useStoredProfile } from "@/lib/client/profile";
 import { useStoredName } from "@/lib/client/useStoredName";
 import { AuthForm } from "./Account";
 import { AppHeader } from "./AppHeader";
+import { LogoLoader } from "./Logo";
 
 export function AccountAccess({ next, initialMode }: { next: string; initialMode: "login" | "register" }) {
   const router = useRouter();
@@ -32,7 +33,7 @@ export function AccountAccess({ next, initialMode }: { next: string; initialMode
           </dl>
         </aside>
         <div className="mx-auto min-w-0 w-full max-w-[480px] lg:mx-0">
-        {!ready || stored?.username ? <p role="status" className="t-sub text-ink-2">{ready ? "Taking you back" : "Checking your account"}</p>
+        {!ready || stored?.username ? <LogoLoader label={ready ? "Taking you back" : "Checking your account"} className="py-16" />
           : <AuthForm key={`${initialMode}:${next}`} initialMode={initialMode} initialName={name} legacy={!!stored} />}
         </div>
       </div>

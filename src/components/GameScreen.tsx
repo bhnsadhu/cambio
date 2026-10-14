@@ -27,6 +27,7 @@ import { TableSocialProvider } from "./PlayerSocial";
 import { GuestPlayerButton, GuestPlayerDialog, GuestSetup } from "./GuestPlayer";
 import { HeaderBar, HeaderButton, HeaderLink } from "./Header";
 import { Button, buttonClass, DotOff, Pip } from "./ui";
+import { LogoLoader } from "./Logo";
 import { Notification } from "./Notification";
 
 /**
@@ -303,7 +304,7 @@ function Empty({ title, body }: { title: string; body: string }) {
   );
 }
 
-/** The table's shape while the first state arrives, so nothing jumps. */
+/** The table's shape while the first state arrives, so nothing jumps. The quiet logo is the only thing moving. */
 function TableSkeleton() {
   return (
     <div className="grid gap-4 pb-4 lg:h-[calc(100dvh-96px)] lg:grid-cols-[minmax(0,1fr)_240px]" aria-busy aria-label="Finding the table">
@@ -312,34 +313,34 @@ function TableSkeleton() {
           {[0, 1, 2, 3].map((k) => (
             <div key={k} className="flex min-w-0 flex-col gap-4 rounded-panel bg-surface px-3 pt-4 pb-5 hairline xl:px-4">
               <div className="min-h-16 space-y-2">
-                <div className="skeleton h-4 w-24 max-w-full rounded-md" />
-                <div className="skeleton h-3 w-14 rounded-md" />
+                <div className="bg-surface-2 h-4 w-24 max-w-full rounded-md" />
+                <div className="bg-surface-2 h-3 w-14 rounded-md" />
               </div>
               <div className="grid grid-cols-2 gap-2 justify-items-center xl:gap-3">
-                {[0, 1, 2, 3].map((i) => <div key={i} className="skeleton h-[var(--tile-h)] w-[var(--tile-w)] rounded-[var(--tile-r)]" />)}
+                {[0, 1, 2, 3].map((i) => <div key={i} className="bg-surface-2 h-[var(--tile-h)] w-[var(--tile-w)] rounded-[var(--tile-r)]" />)}
               </div>
-              <div className="skeleton h-3 w-12 rounded-md" />
+              <div className="bg-surface-2 h-3 w-12 rounded-md" />
             </div>
           ))}
         </div>
         <div className="mt-auto flex min-h-[92px] items-center rounded-panel bg-surface px-6 hairline">
           <div className="space-y-2">
-            <div className="skeleton h-4 w-40 rounded-md" />
-            <div className="skeleton h-3 w-48 max-w-full rounded-md sm:w-64" />
+            <div className="bg-surface-2 h-4 w-40 rounded-md" />
+            <div className="bg-surface-2 h-3 w-48 max-w-full rounded-md sm:w-64" />
           </div>
         </div>
       </div>
       <div className="flex min-h-0 flex-col gap-4">
         <div className="flex flex-col gap-4 rounded-panel bg-surface px-4 pt-4 pb-5 hairline">
-          <div className="skeleton h-4 w-14 rounded-md" />
+          <div className="bg-surface-2 h-4 w-14 rounded-md" />
           <div className="flex justify-center gap-5">
-            <div className="skeleton h-[var(--tile-h)] w-[var(--tile-w)] rounded-[var(--tile-r)]" />
-            <div className="skeleton h-[var(--tile-h)] w-[var(--tile-w)] rounded-[var(--tile-r)]" />
+            <div className="bg-surface-2 h-[var(--tile-h)] w-[var(--tile-w)] rounded-[var(--tile-r)]" />
+            <div className="bg-surface-2 h-[var(--tile-h)] w-[var(--tile-w)] rounded-[var(--tile-r)]" />
           </div>
         </div>
         <div className="flex-1 rounded-panel bg-surface px-5 pt-4 pb-5 hairline">
-          <div className="skeleton h-4 w-20 rounded-md" />
-          <p className="t-sub mt-4 inline-flex items-center gap-2 text-ink-3"><Pip />Finding the table</p>
+          <div className="bg-surface-2 h-4 w-20 rounded-md" />
+          <LogoLoader label="Finding the table" className="mt-10" />
         </div>
       </div>
     </div>

@@ -162,6 +162,12 @@ a:focus-visible, summary:focus-visible { outline: 2px solid var(--color-accent);
   opacity: 0.85;
 }
 
+/*
+ * On a card narrower than a few stripes, the hatch is drawn as the tone it
+ * averages to, which is what it would blur into anyway. Used by small logos.
+ */
+[data-logo-flat] .card-back::after { background-image: none; background-color: rgb(26 26 31 / 0.222); }
+
 /* Two sided card that turns on its own axis. */
 .flip { perspective: 900px; }
 .flip-inner {

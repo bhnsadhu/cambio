@@ -13,6 +13,7 @@ import { Notifications } from "./Friends";
 import { Notification } from "./Notification";
 import { AppHeader } from "./AppHeader";
 import { Button, buttonClass } from "./ui";
+import { LogoLoader } from "./Logo";
 
 export function Leaderboard({ initialScope }: { initialScope: LeaderboardScope | null }) {
   const ready = useAccountReady();
@@ -37,7 +38,7 @@ export function Leaderboard({ initialScope }: { initialScope: LeaderboardScope |
           ))}
         </nav>
       </div>
-      {!ready ? <p role="status" className="t-sub text-ink-2">Loading the leaderboard</p>
+      {!ready ? <LogoLoader label="Loading the leaderboard" className="py-16" />
         : scope === "friends" && !stored ? <section className="rounded-panel bg-surface p-6 hairline">
           <h2 className="t-headline">Compare scores with your friends</h2>
           <p className="t-body mt-2 text-ink-2">Log in or create an account to add friends and see your rank together.</p>
@@ -79,7 +80,7 @@ function Standings({ scope }: { scope: LeaderboardScope }) {
   return (
     <section aria-label={scope === "friends" ? "Friends standings" : "All player standings"}>
       {error ? <Notification title="Leaderboard" tone="bad" actions={<Button size="sm" onClick={() => { setError(null); setAttempt((value) => value + 1); }}>Try again</Button>}>{error}</Notification> : null}
-      {!data ? !error ? <p role="status" className="t-sub text-ink-2">Loading the leaderboard</p> : null : <>
+      {!data ? !error ? <LogoLoader label="Loading the leaderboard" className="py-16" /> : null : <>
         {data.me ? <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-panel bg-surface px-5 py-5 hairline sm:px-6" aria-label="Your standing">
           <div>
             <p className="text-xs text-ink-3">Your rank {scope === "friends" ? "among friends" : "among all players"}</p>

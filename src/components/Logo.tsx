@@ -14,6 +14,8 @@ import { CardBack, FaceCard } from "./cards";
  * on top of it and leaves it untouched when done.
  */
 const FACE_REF = 66;
+/** Card width below which the card back's stripe is drawn as its average tone. */
+const FLAT_BELOW = 12;
 const ACE: Card = { id: "logo-ace", rank: "A", suit: "S" };
 
 function metrics(size: number) {
@@ -145,6 +147,7 @@ export function Logo({ size, mode = "static", tile = false, decorative = false, 
       aria-hidden={decorative || undefined}
       data-logo={mode}
       data-logo-intro={intro}
+      data-logo-flat={m.w < FLAT_BELOW || undefined}
       onClick={mode === "animated" ? replay : undefined}
       className={`relative inline-block shrink-0 align-middle ${className}`}
       style={{ width: size, height: size, visibility: visible ? undefined : "hidden" }}

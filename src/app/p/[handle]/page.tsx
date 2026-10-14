@@ -6,6 +6,7 @@ import { AskToJoin, Notifications } from "@/components/Friends";
 import { Notification } from "@/components/Notification";
 import { ProfileCard } from "@/components/Profile";
 import { Button, buttonClass } from "@/components/ui";
+import { LogoLoader } from "@/components/Logo";
 import { callProfile, profileGeneration, useAccountReady, useStoredProfile } from "@/lib/client/profile";
 import { loginHref } from "@/lib/account/navigation";
 import { useSocial } from "@/lib/client/social";
@@ -71,7 +72,7 @@ function PlayerRecord({ handle }: { handle: string }) {
           <div className="mt-5 flex flex-wrap gap-3"><Button onClick={() => void load()}>Try again</Button><Link href="/" className={buttonClass({ variant: "ghost" })}>Back to play</Link></div>
         </div>
       ) : !state ? (
-        <div className="skeleton mt-8 h-[320px] rounded-panel" aria-busy />
+        <div className="mt-8 flex h-[320px] items-center justify-center rounded-panel bg-surface hairline"><LogoLoader label="Loading the player record" /></div>
       ) : (
         <div className="pt-8 animate-rise lg:pt-12">
           <p className="t-overline mb-6 text-ink-3">Player record</p>
