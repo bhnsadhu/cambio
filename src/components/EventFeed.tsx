@@ -78,7 +78,6 @@ function Line({
     <li
       className={[
         "animate-fade -mx-2 rounded-[10px] px-2 py-1 transition-colors duration-150",
-        loud ? "relative pl-4 before:absolute before:left-1 before:top-3 before:size-1.5 before:rounded-full before:bg-accent before:shadow-[0_0_8px_var(--color-accent)]" : "",
         traceable ? "cursor-help hover:bg-surface-2" : "",
       ].join(" ")}
       onMouseEnter={traceable ? () => onTrace(cards) : undefined}
