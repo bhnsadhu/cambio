@@ -136,8 +136,22 @@ export function Logo({ size, mode = "static", tile = false, decorative = false, 
 
   useEffect(() => {
     if (mode !== "animated") return;
-    if (claimed.current === null) claimed.current = intro ? takeIntro(intro) : !prefersReducedMotion();
-    if (claimed.current) deal();
+    const el = ref.current;
+    const start = () => {
+      if (claimed.current === null) claimed.current = intro ? takeIntro(intro) : !prefersReducedMotion();
+      if (claimed.current) deal();
+    };
+    // A logo on a view that is not displayed yet keeps its intro until it is.
+    if (el && el.getClientRects().length === 0 && typeof ResizeObserver !== "undefined") {
+      const watch = new ResizeObserver(() => {
+        if (!el.getClientRects().length) return;
+        watch.disconnect();
+        start();
+      });
+      watch.observe(el);
+      return () => { watch.disconnect(); stop(); };
+    }
+    start();
     return stop;
   }, [mode, intro, deal, stop]);
 

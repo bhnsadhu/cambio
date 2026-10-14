@@ -174,3 +174,31 @@ test("saves the final logo at every icon size in light and dark themes", async (
     await context.close();
   }
 });
+
+test("an account holder never sees the guest view before their own", async ({ page }) => {
+  const profile = {
+    id: "00000000-0000-4000-8000-000000000001", handle: "tester", displayName: "Tester", avatarId: null,
+    createdAt: "2026-01-01T00:00:00.000Z", lastSeenAt: "2026-01-01T00:00:00.000Z", lastPlayedAt: null,
+    points: 0, rank: 1, totalPlayers: 1, roundsPlayed: 0, roundsWon: 0, tablesPlayed: 0, scoreTotal: 0, bestScore: null,
+    cambioCalls: 0, cambioWins: 0, sticksHit: 0, sticksMissed: 0, currentStreak: 0, bestStreak: 0,
+  };
+  await page.addInitScript((stored) => {
+    localStorage.setItem("cambio:profile", JSON.stringify(stored));
+    const seen = { guest: false };
+    (window as unknown as { seen: typeof seen }).seen = seen;
+    const look = () => {
+      const guest = document.querySelector("[data-guest-view]");
+      if (guest && guest.getClientRects().length) seen.guest = true;
+      requestAnimationFrame(look);
+    };
+    requestAnimationFrame(look);
+  }, { token: `account:${profile.id}`, profile, username: "tester" });
+  // Keep the saved account: the placeholder backend would otherwise end the session.
+  await page.route("**/api/**", hang);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Ready for a round?" })).toBeVisible();
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => (window as unknown as { seen: { guest: boolean } }).seen.guest)).toBe(false);
+  // The hero intro is still waiting for whenever a guest view is shown.
+  expect(await page.evaluate(() => sessionStorage.getItem("cambio:seen:hero"))).toBeNull();
+});

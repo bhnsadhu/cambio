@@ -11,6 +11,7 @@ import { saveSession, storeName } from "@/lib/client/session";
 import { useSocial } from "@/lib/client/social";
 import { useStoredName } from "@/lib/client/useStoredName";
 import { storeGuestIdentity, useGuestIdentity } from "@/lib/client/guest";
+import { useHydrated } from "@/lib/client/useHydrated";
 import { Logo } from "./Logo";
 import { FriendsPanel, Notifications } from "./Friends";
 import { AppHeader } from "./AppHeader";
@@ -30,6 +31,7 @@ export function Landing() {
   const [busy, setBusy] = useState<"create" | "join" | null>(null);
   const [error, setError] = useState<{ mode: "create" | "join"; message: string } | null>(null);
   const profile = social.profile;
+  const hydrated = useHydrated();
   const next = code.length === 5 ? `/g/${code}` : "/";
   const rememberGuest = () => { if (!profile) storeGuestIdentity({ name: name.trim(), avatarId: guestAvatarId }); };
 
@@ -92,7 +94,7 @@ export function Landing() {
           {play}
           <FriendsPanel social={social} />
         </div>
-      </> : <section className="grid items-start gap-10 pt-10 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:pt-16">
+      </> : <section data-guest-view data-prehydration={hydrated ? undefined : ""} className="grid items-start gap-10 pt-10 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:pt-16">
         <div>
           {/* Deals itself once per session; a click deals it again. */}
           <Logo size={112} mode="animated" intro="hero" className="mb-8" />

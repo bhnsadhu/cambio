@@ -194,6 +194,9 @@ a:focus-visible, summary:focus-visible { outline: 2px solid var(--color-accent);
 html[data-intro~="hero"] [data-logo-intro="hero"] [data-logo-card] { opacity: 0; animation: intro-fallback 0s 2s forwards; }
 @keyframes intro-fallback { to { opacity: 1; } }
 
+/* An account holder never sees the server rendered guest view flash before their own. */
+html[data-account] [data-guest-view][data-prehydration] { display: none; }
+
 .hairline { box-shadow: 0 0 0 1px var(--color-line); }
 .hairline-strong { box-shadow: 0 0 0 1px var(--color-line-strong); }
 .ring-turn { box-shadow: 0 0 0 1.5px var(--color-ink), var(--shadow-card); }
