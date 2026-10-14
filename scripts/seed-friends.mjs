@@ -13,7 +13,6 @@
 import { createHash, randomBytes, scrypt } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
-const SEED = 228;
 const PARENT = 'bhnsadhu';
 
 /** Usernames already in use when the plan was designed. Live checks still run. */
@@ -24,7 +23,7 @@ const BOT_NAMES = ['cameron', 'camila', 'cami', 'camille'];
 const MAX_ROUNDS = 34;
 const MAX_POINTS = 147;
 
-const PEOPLE = [
+const FIRST_BATCH = [
   { first: 'Ayushi', last: 'Patel', nicks: ['ayu', 'ayushp'] },
   { first: 'Kaashish', last: 'Venkataramanan', nicks: ['kash', 'kaash'] },
   { first: 'Krishna', last: 'Charidwar', nicks: ['kc', 'krishu'] },
@@ -36,6 +35,22 @@ const PEOPLE = [
   { first: 'Serena', last: 'Malhan', nicks: ['rena', 'sm'] },
   { first: 'Yana', last: 'Kapoor', nicks: ['yanu', 'yk'] },
 ];
+const SECOND_BATCH = [
+  { first: 'Krish', last: 'Patel', nicks: ['kp', 'krishp'] },
+  { first: 'Riya', last: 'Kesari', nicks: ['ri', 'riyak'] },
+  { first: 'Samarth', last: 'Desai', nicks: ['sam', 'samd'] },
+  { first: 'Ruhan', last: 'Sahasi', nicks: ['ruhi', 'rus'] },
+];
+
+/**
+ * Each batch has its own fixed seed, so adding a batch never changes the names
+ * or numbers of an earlier one. Append new batches, never edit old ones.
+ */
+const BATCHES = [
+  { seed: 228, people: FIRST_BATCH },
+  { seed: 125, people: SECOND_BATCH },
+];
+
 const JOKE_SUFFIXES = ['ftw', 'ongod', 'islit', 'theman', 'wins', 'nocap'];
 
 /* ------------------------------ random ------------------------------ */
@@ -208,22 +223,24 @@ function assertConsistent(s) {
   if (!ok) throw new Error(`Inconsistent record ${JSON.stringify(s)}`);
 }
 
-export function buildPlan(seed = SEED) {
-  const r = make(mulberry32(seed));
+export function buildPlan(seeds = BATCHES.map((batch) => batch.seed)) {
   const taken = new Set(RESERVED);
-  const jokesUsed = { count: 0 };
   const accounts = [];
   const unusable = [];
-  for (const person of PEOPLE) {
-    const identity = chooseIdentity(person, r, taken, jokesUsed);
-    if (!identity) { unusable.push(`${person.first} ${person.last}`); continue; }
-    const { rows, stats } = chooseRecord(r);
-    assertConsistent(stats);
-    // Most real accounts picked a head; a couple never did.
-    const avatarId = r.beta(1, 1) < 0.8 ? Math.floor(r.beta(1, 1) * 36) : null;
-    const password = clean(person.short ?? person.first.split(' ')[0]);
-    accounts.push({ person, ...identity, password, avatarId, rows, stats });
-  }
+  BATCHES.forEach((batch, index) => {
+    const r = make(mulberry32(seeds[index]));
+    const jokesUsed = { count: 0 };
+    for (const person of batch.people) {
+      const identity = chooseIdentity(person, r, taken, jokesUsed);
+      if (!identity) { unusable.push(`${person.first} ${person.last}`); continue; }
+      const { rows, stats } = chooseRecord(r);
+      assertConsistent(stats);
+      // Most real accounts picked a head; a couple never did.
+      const avatarId = r.beta(1, 1) < 0.8 ? Math.floor(r.beta(1, 1) * 36) : null;
+      const password = clean(person.short ?? person.first.split(' ')[0]);
+      accounts.push({ person, ...identity, password, avatarId, rows, stats });
+    }
+  });
   return { accounts, unusable };
 }
 
