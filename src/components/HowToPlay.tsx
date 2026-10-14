@@ -34,14 +34,14 @@ export function HowToPlay({ open, onClose, onReplay }: { open: boolean; onClose:
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-6 sm:px-6 lg:grid lg:grid-cols-2 lg:gap-x-8 lg:px-8">
           {SECTIONS.map((s) => (
-            <section key={s.title} className="py-4">
+            <section key={s.title} className="border-t border-line py-4">
               <h3 className="t-caption text-ink-3">{s.title}</h3>
               <ul className="mt-2 space-y-1.5">
                 {s.lines.map((l) => <li key={l} className="t-sub text-ink-2">{l}</li>)}
               </ul>
             </section>
           ))}
-          <div className="pt-5 lg:col-span-2">
+          <div className="border-t border-line pt-5 lg:col-span-2">
             <Button variant="secondary" size="sm" onClick={onReplay}>Show walkthrough again</Button>
           </div>
         </div>

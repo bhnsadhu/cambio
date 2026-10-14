@@ -8,7 +8,7 @@ export function GuestTableStats({ view, playerId }: { view: PublicView; playerId
     ["Sticks landed", stats.sticksHit], ["Cambio calls", stats.cambioCalls], ["Cambio wins", stats.cambioWins],
   ] as const;
 
-  return <section aria-label="Your stats at this table" className="min-w-0 pt-6">
+  return <section aria-label="Your stats at this table" className="min-w-0 border-t border-line pt-5">
     <h3 className="t-headline">This table</h3>
     {stats.roundsPlayed ? <>
       <p className="t-footnote mt-1 text-ink-3">Completed rounds in your current seat. Tied wins count.</p>

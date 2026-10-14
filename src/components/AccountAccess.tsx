@@ -26,10 +26,10 @@ export function AccountAccess({ next, initialMode }: { next: string; initialMode
           <p className="t-overline text-accent">Your Cambio account</p>
           <p className="mt-5 max-w-md text-[42px] font-medium leading-[1.1] tracking-tight">Pick up where you left off.</p>
           <p className="t-body mt-5 max-w-md text-ink-2">A familiar seat at every table. Keep your record, find your friends, and make your profile your own.</p>
-          <dl className="mt-10 max-w-md space-y-6">
-            <div><dt className="font-medium">Your record</dt><dd className="t-sub mt-1 text-ink-2">Track your rounds, points, and progress through the ranks.</dd></div>
-            <div><dt className="font-medium">Your friends</dt><dd className="t-sub mt-1 text-ink-2">See who is online and join them at the table.</dd></div>
-            <div><dt className="font-medium">Your profile</dt><dd className="t-sub mt-1 text-ink-2">Choose your avatar and the name other players see.</dd></div>
+          <dl className="mt-10 max-w-md divide-y divide-line border-y border-line">
+            <div className="py-5"><dt className="font-medium">Your record</dt><dd className="t-sub mt-1 text-ink-2">Track your rounds, points, and progress through the ranks.</dd></div>
+            <div className="py-5"><dt className="font-medium">Your friends</dt><dd className="t-sub mt-1 text-ink-2">See who is online and join them at the table.</dd></div>
+            <div className="py-5"><dt className="font-medium">Your profile</dt><dd className="t-sub mt-1 text-ink-2">Choose your avatar and the name other players see.</dd></div>
           </dl>
         </aside>
         <div className="mx-auto min-w-0 w-full max-w-[480px] lg:mx-0">
