@@ -24,20 +24,20 @@ const MAX_ROUNDS = 34;
 const MAX_POINTS = 147;
 
 const FIRST_BATCH = [
-  { first: 'Ayushi', last: 'Patel', nicks: ['ayu', 'ayushp'] },
+  { girl: true, first: 'Ayushi', last: 'Patel', nicks: ['ayu', 'ayushp'] },
   { first: 'Kaashish', last: 'Venkataramanan', nicks: ['kash', 'kaash'] },
   { first: 'Krishna', last: 'Charidwar', nicks: ['kc', 'krishu'] },
   { first: 'Pranav', last: 'Subramaniyan', nicks: ['pran', 'pv'] },
-  { first: 'Ramya Sree', last: 'Paniyappa', short: 'Ramya', nicks: ['ramz', 'rs'] },
+  { girl: true, first: 'Ramya Sree', last: 'Paniyappa', short: 'Ramya', nicks: ['ramz', 'rs'] },
   { first: 'Rishi', last: 'Vemuri', nicks: ['rish', 'rv'] },
-  { first: 'Ruhi', last: 'Kamdar', nicks: ['ruru', 'rukam'] },
+  { girl: true, first: 'Ruhi', last: 'Kamdar', nicks: ['ruru', 'rukam'] },
   { first: 'Sanjay', last: 'Lakshmanan', nicks: ['sanj', 'sanju'] },
-  { first: 'Serena', last: 'Malhan', nicks: ['rena', 'sm'] },
-  { first: 'Yana', last: 'Kapoor', nicks: ['yanu', 'yk'] },
+  { girl: true, first: 'Serena', last: 'Malhan', nicks: ['rena', 'sm'] },
+  { girl: true, first: 'Yana', last: 'Kapoor', nicks: ['yanu', 'yk'] },
 ];
 const SECOND_BATCH = [
   { first: 'Krish', last: 'Patel', nicks: ['kp', 'krishp'] },
-  { first: 'Riya', last: 'Kesari', nicks: ['ri', 'riyak'] },
+  { girl: true, first: 'Riya', last: 'Kesari', nicks: ['ri', 'riyak'] },
   { first: 'Samarth', last: 'Desai', nicks: ['sam', 'samd'] },
   { first: 'Ruhan', last: 'Sahasi', nicks: ['ruhi', 'rus'] },
 ];
@@ -223,6 +223,17 @@ function assertConsistent(s) {
   if (!ok) throw new Error(`Inconsistent record ${JSON.stringify(s)}`);
 }
 
+/**
+ * Everyone in the group is a light skinned Indian teenager, so only the Light
+ * and Light medium tones are used, never the grey haired bearded head (style 4).
+ * Girls draw from Curls, Bob and Ponytail; boys from Quiff and Close crop.
+ */
+function avatarFor(person, u) {
+  const styles = person.girl ? [1, 3, 5] : [0, 2];
+  const k = Math.floor(u * 6);
+  return (1 + (Math.floor(k / styles.length) % 2)) * 6 + styles[k % styles.length];
+}
+
 export function buildPlan(seeds = BATCHES.map((batch) => batch.seed)) {
   const taken = new Set(RESERVED);
   const accounts = [];
@@ -236,7 +247,7 @@ export function buildPlan(seeds = BATCHES.map((batch) => batch.seed)) {
       const { rows, stats } = chooseRecord(r);
       assertConsistent(stats);
       // Most real accounts picked a head; a couple never did.
-      const avatarId = r.beta(1, 1) < 0.8 ? Math.floor(r.beta(1, 1) * 36) : null;
+      const avatarId = r.beta(1, 1) < 0.8 ? avatarFor(person, r.beta(1, 1)) : null;
       const password = clean(person.short ?? person.first.split(' ')[0]);
       accounts.push({ person, ...identity, password, avatarId, rows, stats });
     }
