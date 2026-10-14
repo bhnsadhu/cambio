@@ -11,9 +11,8 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { chromium } from '@playwright/test';
-import { logoSvg } from '../src/lib/logo/mark.ts';
+import { LOGO, logoSvg } from '../src/lib/logo/mark.ts';
 
-const SITE_HOST = 'cambio.bhanusadhu.com';
 const HEADLINE = ['The memory card game,', 'live with friends.'];
 const TAGLINE = 'One code. Your friends. Game on.';
 
@@ -47,6 +46,30 @@ function ico(pngs) {
 
 const sized = (svg, size) => svg.replace('<svg ', `<svg width="${size}" height="${size}" `);
 
+/** The cards' own outline, outlines included, so layouts align to the cards and not to the tile's padding. */
+function markBounds() {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const hw = LOGO.width / 2 + LOGO.gap / 2;
+  const hh = LOGO.height / 2 + LOGO.gap / 2;
+  for (const c of LOGO.cards) {
+    const r = (c.rotate * Math.PI) / 180;
+    for (const [dx, dy] of [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]]) {
+      const x = c.x + dx * Math.cos(r) - dy * Math.sin(r);
+      const y = c.y + dx * Math.sin(r) + dy * Math.cos(r);
+      x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
+    }
+  }
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+}
+
+/** The bare mark cropped to its cards, `height` pixels tall. */
+function tightMark(height, id) {
+  const b = markBounds();
+  const width = Math.round((height * b.w) / b.h);
+  const svg = logoSvg({ tile: false, id }).replace('viewBox="0 0 100 100"', `viewBox="${b.x} ${b.y} ${b.w} ${b.h}" width="${width}" height="${height}"`);
+  return { svg, width, height };
+}
+
 const browser = await chromium.launch();
 const page = await browser.newPage({ deviceScaleFactor: 1 });
 
@@ -71,22 +94,22 @@ write('public/icons/icon-192.png', await icon(192));
 write('public/icons/icon-512.png', await icon(512));
 write('docs/brand/logo.svg', svg + '\n');
 
-// Share image: the existing headline and tagline beside the mark, on the app's black.
+// Share image: the mark on the left, its opening toward the name, headline and tagline,
+// the pair centered as one group on the app's black.
 const fonts = '<link rel="preconnect" href="https://fonts.gstatic.com"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&display=block" rel="stylesheet">';
 // Single quoted, because these go inside double quoted style attributes.
 const sans = "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Helvetica, Arial, sans-serif";
 const display = `'Plus Jakarta Sans', ${sans}`;
+const shareMark = tightMark(452, 'share');
 const share = `${fonts}
-<div style="position:relative;width:1200px;height:630px;background:#000;color:#fff;font-family:${sans}">
-  <div style="position:absolute;left:72px;top:84px;display:flex;align-items:center;gap:14px">
-    <div style="width:40px;height:40px">${sized(logoSvg({ tile: false, id: 'kicker' }), 40)}</div>
-    <span style="color:#4ff0a8;font-size:21px;font-weight:600;letter-spacing:3px">LET’S PLAY</span>
+<div style="width:1200px;height:630px;background:#000;color:#fff;font-family:${sans};display:flex;align-items:center;justify-content:center;gap:76px;padding-right:10px;box-sizing:border-box">
+  <div style="width:${shareMark.width}px;height:${shareMark.height}px;flex:none">${shareMark.svg}</div>
+  <div style="display:flex;flex-direction:column;align-items:flex-start;padding-top:4px">
+    <div style="color:#4ff0a8;font-size:21px;font-weight:600;letter-spacing:3px;line-height:1">LET’S PLAY</div>
+    <div style="margin-top:22px;margin-left:-4px;font-family:${display};font-size:108px;font-weight:700;letter-spacing:-5px;line-height:1">Cambio</div>
+    <div style="margin-top:24px;font-family:${display};font-size:38px;font-weight:600;letter-spacing:-0.8px;line-height:1.25">${HEADLINE.join('<br>')}</div>
+    <div style="margin-top:22px;font-size:23px;line-height:1.3;color:#a6a6af">${TAGLINE}</div>
   </div>
-  <div style="position:absolute;left:68px;top:162px;font-family:${display};font-size:108px;font-weight:700;letter-spacing:-5px;line-height:1">Cambio</div>
-  <div style="position:absolute;left:72px;top:292px;font-family:${display};font-size:38px;font-weight:600;letter-spacing:-0.8px;line-height:1.25">${HEADLINE.join('<br>')}</div>
-  <div style="position:absolute;left:72px;top:412px;font-size:23px;color:#a6a6af">${TAGLINE}</div>
-  <div style="position:absolute;left:72px;top:518px;display:flex;align-items:center;gap:13px;font-size:21px;color:#a6a6af"><span style="width:28px;height:3px;border-radius:2px;background:#4ff0a8"></span>${SITE_HOST}</div>
-  <div style="position:absolute;left:690px;top:75px;width:480px;height:480px">${sized(logoSvg({ tile: false, id: 'hero' }), 480)}</div>
 </div>`;
 write('public/social/cambio-share.png', await png(share, 1200, 630));
 

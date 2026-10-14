@@ -48,7 +48,7 @@ test("the logo renders with its name, decorative cards, and every icon wired", a
 
   await expect(page.locator('link[rel="icon"][type="image/svg+xml"]')).toHaveCount(1);
   await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute("sizes", "180x180");
-  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute("content", /\/social\/cambio-share\.png$/);
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute("content", /\/social\/cambio-share\.png(\?v=\d+)?$/);
   await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute("content", "summary_large_image");
   for (const path of ["/favicon.ico", "/icon.svg", "/icon1.png", "/icon2.png", "/apple-icon.png", "/icons/icon-192.png", "/icons/icon-512.png", "/manifest.webmanifest", "/social/cambio-share.png"]) {
     expect((await page.request.get(path)).status(), path).toBe(200);
