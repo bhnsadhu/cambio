@@ -162,7 +162,7 @@ export function Announcer({ announcement, players, me }: { announcement: Announc
       <p className="t-title2 mt-2.5 text-ink"><Sentence entry={entry} players={players} me={me} /></p>
     </> : <>
       <span className={`t-caption shrink-0 ${labelTone}`}>{KICKER[entry.kind]}</span>
-      <span className="h-6 w-px shrink-0 bg-line-strong" aria-hidden />
+      <span className={`size-1.5 shrink-0 rotate-45 rounded-[1px] bg-current opacity-60 ${labelTone}`} aria-hidden />
       <p className="t-callout text-ink-2"><Sentence entry={entry} players={players} me={me} /></p>
       {touched.length ? <span className="ml-auto flex max-w-full flex-wrap items-center gap-1.5">
         {touched.map((p) => <span key={p.id} className="inline-flex h-[22px] items-center rounded-full bg-accent-soft px-2 text-[11.5px] font-medium text-accent-ink">{p.id === me ? "You" : <PlayerName name={p.name} isBot={p.isBot} />}</span>)}

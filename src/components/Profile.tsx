@@ -23,7 +23,7 @@ export function ProfileCard({ profile, compact = false, actions }: { profile: Pr
         </div>
       </header>
 
-      <div className="rounded-2xl border border-line-strong bg-[#111113] px-5 py-5">
+      <div className="rounded-2xl bg-surface-2 hairline px-5 py-5">
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
           <div className="flex min-w-0 items-center gap-3">
             <RankBadge points={profile.points} size={36} decorative />
