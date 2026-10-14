@@ -53,8 +53,9 @@ export function Landing() {
 
   const play = (
     <section className={profile ? "grid min-w-0 gap-5 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2" : "flex min-w-0 flex-col gap-4"} aria-label="Play Cambio">
-      {!accountReady ? <p role="status" className="t-sub text-ink-2">Checking your account</p>
-        : profile ? null
+      {/* A saved account already knows its layout; a status line here would take a grid cell and shift it. */}
+      {profile ? null
+        : !accountReady ? <p role="status" className="t-sub text-ink-2">Checking your account</p>
           : <GuestSetup name={name} onNameChange={setName} disabled={!!busy} next={next} />}
       <form onSubmit={(event) => void submit(event, "create")} className="flex min-w-0 flex-col gap-4 rounded-panel bg-surface p-5 hairline sm:p-6" aria-label="New table">
         <div>
@@ -63,7 +64,7 @@ export function Landing() {
         </div>
         {profile ? <p className="t-sub break-words text-ink-2">Playing as <strong className="text-ink">{name}</strong></p> : null}
         {error?.mode === "create" ? <Notification title="New table" tone="bad" onDismiss={() => setError(null)}>{error.message}</Notification> : null}
-        <Button type="submit" variant="primary" className="mt-auto sm:self-start" disabled={!accountReady || !!busy || !name.trim()}>
+        <Button type="submit" variant="primary" className="mt-auto sm:self-start" disabled={(!accountReady && !profile) || !!busy || !name.trim()}>
           {busy === "create" ? "Opening" : "Open a table"}
         </Button>
       </form>
@@ -76,7 +77,7 @@ export function Landing() {
           <input className={`${inputClass} tnum tracking-[0.14em]`} value={code} onChange={(event) => { setCode(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5)); setError(null); }} placeholder="ABCDE" minLength={5} maxLength={5} autoCapitalize="characters" spellCheck={false} autoComplete="off" required disabled={!!busy} />
         </Field>
         {error?.mode === "join" ? <Notification title="Join table" tone="bad" onDismiss={() => setError(null)}>{error.message}</Notification> : null}
-        <Button type="submit" variant="secondary" className="mt-auto sm:self-start" disabled={!accountReady || !!busy || !name.trim() || code.length !== 5}>
+        <Button type="submit" variant="secondary" className="mt-auto sm:self-start" disabled={(!accountReady && !profile) || !!busy || !name.trim() || code.length !== 5}>
           {busy === "join" ? "Joining" : "Join table"}
         </Button>
       </form>

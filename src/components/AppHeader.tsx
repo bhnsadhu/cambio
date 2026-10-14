@@ -18,7 +18,8 @@ export function AppHeader({ active, accountFrom = "/", loginNext = "/", onLogin,
   return <HeaderBar label="Main navigation">
     <HeaderLink href="/" aria-current={active === "tables" ? "page" : undefined}>Tables</HeaderLink>
     <HeaderLink href="/leaderboard" aria-current={active === "leaderboard" ? "page" : undefined}>Leaderboard</HeaderLink>
-    {ready && stored ? <>
+    {/* A saved account shows its links at once; the check that follows only confirms them. */}
+    {stored ? <>
       <HeaderLink href={`/p/${stored.profile.handle}`} aria-current={active === "profile" ? "page" : undefined}>Your record</HeaderLink>
       <HeaderLink href={accountFrom === "/" ? "/me" : `/me?${new URLSearchParams({ from: accountFrom })}`} aria-label="Account settings" aria-current={active === "account" ? "page" : undefined}>Account</HeaderLink>
     </> : ready ? <HeaderLink href={loginHref(loginNext)} onClick={onLogin} aria-current={active === "login" ? "page" : undefined}>Log in</HeaderLink> : null}

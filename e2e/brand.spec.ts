@@ -202,3 +202,31 @@ test("an account holder never sees the guest view before their own", async ({ pa
   // The hero intro is still waiting for whenever a guest view is shown.
   expect(await page.evaluate(() => sessionStorage.getItem("cambio:seen:hero"))).toBeNull();
 });
+
+test("an account holder's landing does not rearrange when the account check returns", async ({ page }) => {
+  const profile = {
+    id: "00000000-0000-4000-8000-000000000002", handle: "steady", displayName: "Steady", avatarId: null,
+    createdAt: "2026-01-01T00:00:00.000Z", lastSeenAt: "2026-01-01T00:00:00.000Z", lastPlayedAt: null,
+    points: 0, rank: 1, totalPlayers: 1, roundsPlayed: 0, roundsWon: 0, tablesPlayed: 0, scoreTotal: 0, bestScore: null,
+    cambioCalls: 0, cambioWins: 0, sticksHit: 0, sticksMissed: 0, currentStreak: 0, bestStreak: 0,
+  };
+  await page.addInitScript((stored) => localStorage.setItem("cambio:profile", JSON.stringify(stored)), { token: `account:${profile.id}`, profile, username: profile.handle });
+  let release = () => {};
+  const checked = new Promise<void>((resolve) => { release = resolve; });
+  await page.route("**/api/account", async (route) => {
+    await checked;
+    await route.fulfill({ json: { profile, username: profile.handle } });
+  });
+  await page.route("**/api/social", (route) => route.fulfill({ json: { profile, social: { friends: [], incoming: [], outgoing: [], invites: [], sent: [], joinRequests: [], sentJoinRequests: [], opponents: [] }, channel: null } }));
+  await page.route(/\/api\/(presence|games)/, hang);
+  await page.goto("/");
+  const card = page.getByRole("form", { name: "New table" });
+  await expect(card).toBeVisible();
+  const before = await card.boundingBox();
+  await expect(page.getByRole("link", { name: "Your record" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open a table" })).toBeEnabled();
+  release();
+  await page.waitForResponse("**/api/account");
+  await page.waitForTimeout(200);
+  expect(await card.boundingBox()).toEqual(before);
+});
