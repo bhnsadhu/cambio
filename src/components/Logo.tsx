@@ -69,6 +69,7 @@ export function Logo({ size, mode = "static", tile = false, decorative = false, 
   const running = useRef<Animation[]>([]);
   // Decided once per mounted logo, so a remount in development still plays it.
   const claimed = useRef<boolean | null>(null);
+  const [generation, setGeneration] = useState(0);
   const m = metrics(size);
   const u = m.u;
 
@@ -99,6 +100,15 @@ export function Logo({ size, mode = "static", tile = false, decorative = false, 
         duration: FLIP_MS, delay: (cards.length - 1) * STAGGER_MS + ENTER_MS, easing: EASE_IN_OUT, fill: "backwards",
       }));
     }
+    // Once dealt, release the animations and paint fresh cards. The browser
+    // rasterizes nodes it has animated slightly differently, and the final
+    // frame must match the static logo pixel for pixel.
+    const dealt = running.current;
+    void Promise.all(dealt.map((a) => a.finished)).then(() => {
+      if (running.current !== dealt) return;
+      stop();
+      setGeneration((g) => g + 1);
+    }, () => {});
   }, [stop, u]);
 
   const loop = useCallback(() => {
@@ -153,7 +163,7 @@ export function Logo({ size, mode = "static", tile = false, decorative = false, 
       style={{ width: size, height: size, visibility: visible ? undefined : "hidden" }}
     >
       {tile ? <span aria-hidden className="absolute inset-0 bg-bg" style={{ borderRadius: `${TILE_RADIUS}%` }} /> : null}
-      <span aria-hidden className="absolute inset-0 block" style={m.vars}>
+      <span key={generation} aria-hidden className="absolute inset-0 block" style={m.vars}>
         {LOGO.cards.map((c, i) => (
           <span
             key={i}

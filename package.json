@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:accounts": "node scripts/test-accounts.mjs",
     "seed:friends": "node --env-file=.env.local scripts/seed-friends.mjs",
-    "brand:assets": "node scripts/brand-assets.mjs"
+    "brand:assets": "node scripts/brand-assets.mjs",
+    "test:brand": "playwright test -c playwright.brand.config.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
