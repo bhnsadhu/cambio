@@ -149,8 +149,8 @@ export function Scoreboard({
               const wins = roundsWon.get(player.id) ?? 0;
               return (
                 <tr key={player.id} className={isMe ? "bg-surface-2/60" : ""}>
-                  <td className={`t-money border-t border-line py-3.5 pl-2 align-middle text-[17px] ${won ? "text-accent" : "text-ink-3"}`}>{rank}</td>
-                  <td className="border-t border-line py-3.5 pr-4 align-middle">
+                  <td className={`t-money py-3.5 pl-2 align-middle text-[17px] ${won ? "text-accent" : "text-ink-3"}`}>{rank}</td>
+                  <td className="py-3.5 pr-4 align-middle">
                     <div className="flex min-w-0 items-center gap-2 text-[15px] font-medium">
                       <Avatar identity={player.profileId ?? player.name} avatarId={player.avatarId} size={36} />
                       <div className="min-w-0 [overflow-wrap:anywhere]">
@@ -163,7 +163,7 @@ export function Scoreboard({
                       </div>
                     </div>
                   </td>
-                  <td className="border-t border-line py-3.5 pr-3 align-middle">
+                  <td className="py-3.5 pr-3 align-middle">
                     <div className="flex flex-wrap gap-1.5">
                       {cards.length ? cards.map((c, i) => (
                         <div key={c.id} className="flex shrink-0 flex-col items-center gap-1">
@@ -173,10 +173,10 @@ export function Scoreboard({
                       )) : <span className="t-sub text-ink-3">No cards</span>}
                     </div>
                   </td>
-                  <td className={`t-money border-t border-line px-3 py-3.5 text-right align-middle text-[26px] ${won ? "text-accent" : ""}`}>
+                  <td className={`t-money px-3 py-3.5 text-right align-middle text-[26px] ${won ? "text-accent" : ""}`}>
                     {score}
                   </td>
-                  <td className="t-money border-t border-line px-4 py-3.5 text-right align-middle text-[17px] text-ink-2">
+                  <td className="t-money px-4 py-3.5 text-right align-middle text-[17px] text-ink-2">
                     {wins}<span className="t-sub text-ink-3"> of {view.results.length}</span>
                   </td>
                 </tr>

@@ -117,7 +117,7 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
     <div className="grid items-start gap-8 lg:grid-cols-2" aria-label="Account settings">
       <div className="min-w-0">
       <h2 className="mb-4 text-lg font-medium">Player profile</h2>
-      <div className="divide-y divide-ink/10 rounded-panel bg-surface hairline">
+      <div className="rounded-panel bg-surface hairline">
         <section className="p-5 sm:p-6" aria-labelledby="avatar-heading">
           <div className={row}>
             <div className="flex min-w-0 items-center gap-3">
@@ -154,7 +154,7 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
       </div>
       <div className="min-w-0">
       <h2 className="mb-4 text-lg font-medium">Security &amp; access</h2>
-      <div className="divide-y divide-ink/10 rounded-panel bg-surface hairline">
+      <div className="rounded-panel bg-surface hairline">
         <section className="p-5 sm:p-6" aria-labelledby="username-heading">
           <div className={row}>
             <div className="min-w-0"><h3 id="username-heading" className="t-headline">Username</h3>{editing !== "username" ? <p className="t-body mt-1 break-all">@{stored.username}</p> : null}</div>
@@ -193,7 +193,7 @@ export function AccountSettings({ stored, onExit }: { stored: StoredProfile; onE
           {feedback("password")}
         </section>
       </div>
-      <div className="mt-5 divide-y divide-ink/10 rounded-panel bg-surface hairline">
+      <div className="mt-5 rounded-panel bg-surface hairline">
         <section className="p-5 sm:p-6" aria-label="Sign out">
           <h3 className="t-headline">Sign out</h3>
           <p className="t-sub mt-2 text-ink-2">Sign out of this browser. Your stats and friends stay saved.</p>

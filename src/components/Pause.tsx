@@ -157,13 +157,13 @@ export function PauseOverlay({ view, me, busy, onRequest, onVote, onKick, onLeav
             ) : null}
           </div>
         )}
-        {seated ? <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+        {seated ? <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             {me === view.hostId ? <TablePlayers view={view} busy={busy} onKick={onKick} /> : null}
             {playerControl}
           </div>
           <Button variant="ghost" size="sm" disabled={busy} onClick={onLeave}>Leave table</Button>
-        </div> : <div className="mt-5 flex justify-end border-t border-line pt-4">
+        </div> : <div className="mt-6 flex justify-end">
           <Link href="/" className={buttonClass({ variant: "secondary", size: "sm" })}>Home</Link>
         </div>}
       </div>
