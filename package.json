@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:accounts": "node scripts/test-accounts.mjs",
-    "seed:friends": "node --env-file=.env.local scripts/seed-friends.mjs"
+    "seed:friends": "node --env-file=.env.local scripts/seed-friends.mjs",
+    "brand:assets": "node scripts/brand-assets.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

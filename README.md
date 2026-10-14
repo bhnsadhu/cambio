@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/brand/logo.svg" width="112" height="112" alt="Cambio logo, a C dealt from playing cards with the ace of spades on top"></p>
+
 # Cambio
 
 A real time multiplayer web app for the card game Cambio, also known as Cabo. It seats four players, and three house bots fill any seat that is empty. Share a five character code and play in the browser. Play as a guest, or create an account to keep your record. No installs.
