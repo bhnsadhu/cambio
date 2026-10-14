@@ -224,14 +224,18 @@ function assertConsistent(s) {
 }
 
 /**
- * Everyone in the group is a light skinned Indian teenager, so only the Light
- * and Light medium tones are used, never the grey haired bearded head (style 4).
- * Girls draw from Curls, Bob and Ponytail; boys from Quiff and Close crop.
+ * Skin tones follow the real accounts: Light, Light medium and Medium, with
+ * Medium and Light medium the most common. Never the grey haired bearded head
+ * (style 4). Girls draw from Curls, Bob and Ponytail; boys from Quiff and
+ * Close crop. One draw feeds both choices, so the random stream is unchanged.
  */
 function avatarFor(person, u) {
   const styles = person.girl ? [1, 3, 5] : [0, 2];
-  const k = Math.floor(u * 6);
-  return (1 + (Math.floor(k / styles.length) % 2)) * 6 + styles[k % styles.length];
+  const scaled = u * 6;
+  const k = Math.floor(scaled);
+  const f = scaled - k;
+  const tone = f < 0.125 ? 1 : f < 0.5 ? 2 : 3;
+  return tone * 6 + styles[k % styles.length];
 }
 
 export function buildPlan(seeds = BATCHES.map((batch) => batch.seed)) {
