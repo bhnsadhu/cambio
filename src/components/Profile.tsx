@@ -40,7 +40,7 @@ export function ProfileCard({ profile, compact = false, actions }: { profile: Pr
       {actions ? <div className="mt-6 flex flex-col gap-4">{actions}</div> : null}
       </div>
 
-      {compact ? null : <div className="min-w-0 border-t border-line pt-7 lg:border-t-0 lg:border-l lg:pl-10 lg:pt-0">
+      {compact ? null : <div className="min-w-0 pt-8 lg:pl-12 lg:pt-0">
         <div className="mb-5 flex flex-wrap items-baseline justify-between gap-2"><h2 className="text-2xl font-medium tracking-tight">Statistics</h2><p className="t-sub text-ink-3">Lifetime record</p></div>
         <dl className="grid grid-cols-2 gap-3">
           <div className="stat-group"><Stat k="Tables played" v={profile.tablesPlayed} /></div>

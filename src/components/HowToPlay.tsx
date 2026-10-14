@@ -41,7 +41,7 @@ export function HowToPlay({ open, onClose, onReplay }: { open: boolean; onClose:
               </ul>
             </section>
           ))}
-          <div className="border-t border-line pt-5 lg:col-span-2">
+          <div className="pt-5 lg:col-span-2">
             <Button variant="secondary" size="sm" onClick={onReplay}>Show walkthrough again</Button>
           </div>
         </div>

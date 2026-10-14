@@ -138,7 +138,7 @@ function GameShell({ code }: { code: string }) {
     <TableSocialProvider code={code} view={view?.public ?? null} social={social}>
       <main className="mx-auto min-h-screen w-full max-w-[1600px] px-5 sm:px-8 lg:flex lg:h-dvh lg:flex-col">
         <HeaderBar label="Table controls" className="mb-4" context={view ? (
-              <div className="t-sub flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-l border-line-strong pl-4 text-ink-2">
+              <div className="t-sub flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 pl-4 text-ink-2">
                 <span className="sr-only text-ink-3 sm:not-sr-only">Table</span>
                 <span className="tnum font-semibold tracking-[0.08em] text-ink">{view.public.code}</span>
                 {view.public.round > 0 ? <span className="text-ink-3">· Round {view.public.round}</span> : null}
