@@ -27,6 +27,12 @@ export const avatarStyle = (id: number): number => id % AVATAR_OPTIONS.length;
 export const avatarTone = (id: number): number => Math.floor(id / AVATAR_OPTIONS.length);
 export const avatarChoice = (style: number, tone: number): number => tone * AVATAR_OPTIONS.length + style;
 
+/** A new player starts as the Quiff until they choose a head of their own. */
+export const DEFAULT_AVATAR_ID = 0;
+export function newPlayerAvatar(avatarId?: number | null): number {
+  return isAvatarId(avatarId) ? avatarId : DEFAULT_AVATAR_ID;
+}
+
 /** Existing profiles retain their familiar head until they select another. */
 export function avatarIndex(identity: string, avatarId?: number | null): number {
   if (isAvatarId(avatarId)) return avatarId;

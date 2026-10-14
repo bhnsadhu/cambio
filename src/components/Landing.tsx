@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { loginHref } from "@/lib/account/navigation";
-import { avatarIndex } from "@/lib/avatars";
+import { newPlayerAvatar } from "@/lib/avatars";
 import { api, RequestError } from "@/lib/client/api";
 import { useAccountReady } from "@/lib/client/profile";
 import { saveSession, storeName } from "@/lib/client/session";
@@ -26,7 +26,7 @@ export function Landing() {
   const accountReady = useAccountReady();
   const [name, setName] = useStoredName("Guest");
   const guest = useGuestIdentity();
-  const guestAvatarId = avatarIndex(name || "Guest", guest?.avatarId);
+  const guestAvatarId = newPlayerAvatar(guest?.avatarId);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState<"create" | "join" | null>(null);
   const [error, setError] = useState<{ mode: "create" | "join"; message: string } | null>(null);

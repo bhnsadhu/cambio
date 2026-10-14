@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useAccountReady, useStoredProfile } from "@/lib/client/profile";
 import { loginHref } from "@/lib/account/navigation";
-import { avatarIndex } from "@/lib/avatars";
+import { newPlayerAvatar } from "@/lib/avatars";
 import { guestIdentity, storeGuestIdentity, useGuestIdentity } from "@/lib/client/guest";
 import { useGame } from "@/lib/client/useGame";
 import { api, RequestError } from "@/lib/client/api";
@@ -76,7 +76,7 @@ function GameShell({ code }: { code: string }) {
     if (!guestId || guestName === undefined) return;
     // A reopened tab still owns its saved seat, even after its temporary
     // appearance expired. Carry the actual seat through every signup route.
-    const avatarId = avatarIndex(guestName, guestAvatar);
+    const avatarId = newPlayerAvatar(guestAvatar);
     const saved = guestIdentity();
     if (saved?.name !== guestName || saved.avatarId !== avatarId) storeGuestIdentity({ name: guestName, avatarId });
   }, [guestId, guestName, guestAvatar]);
@@ -179,7 +179,7 @@ function GameShell({ code }: { code: string }) {
         /> : null}
         {myGuest && view && guestEditorFor === myGuest.id ? <GuestPlayerDialog
           key={myGuest.id}
-          initial={{ name: myGuest.name, avatarId: avatarIndex(myGuest.name, myGuest.avatarId) }}
+          initial={{ name: myGuest.name, avatarId: newPlayerAvatar(myGuest.avatarId) }}
           view={view.public}
           playerId={myGuest.id}
           next={`/g/${code}`}
@@ -242,7 +242,7 @@ function WithFriends({ social, code, seated, children }: { social: ReturnType<ty
 function JoinForm({ code, onJoined }: { code: string; onJoined: (s: { playerId: string; token: string; name: string }) => void }) {
   const [name, setName] = useStoredName("Guest");
   const guest = useGuestIdentity();
-  const guestAvatarId = avatarIndex(name || "Guest", guest?.avatarId);
+  const guestAvatarId = newPlayerAvatar(guest?.avatarId);
   const profile = useStoredProfile();
   const accountReady = useAccountReady();
   const [error, setError] = useState<string | null>(null);

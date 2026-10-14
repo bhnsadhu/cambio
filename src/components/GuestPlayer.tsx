@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
-import { avatarIndex } from "@/lib/avatars";
+import { newPlayerAvatar } from "@/lib/avatars";
 import { loginHref } from "@/lib/account/navigation";
 import { displayNameValue } from "@/lib/account/validation";
 import { storeGuestIdentity, useGuestIdentity, type GuestIdentity } from "@/lib/client/guest";
@@ -25,7 +25,7 @@ export function GuestSetup({ name, onNameChange, disabled = false, next = "/" }:
 }) {
   const guest = useGuestIdentity();
   const [editing, setEditing] = useState(false);
-  const avatarId = avatarIndex(name || "Guest", guest?.avatarId);
+  const avatarId = newPlayerAvatar(guest?.avatarId);
   return <div className="min-w-0 space-y-2.5">
     <div className="grid grid-cols-[44px_minmax(0,1fr)] items-end gap-3">
       <button type="button" disabled={disabled} onClick={() => setEditing(true)} aria-label="Customize guest player" title="Customize your guest player" className="flex size-11 items-center justify-center rounded-xl bg-surface-2 ring-1 ring-line-strong transition-colors hover:bg-surface-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent disabled:opacity-40">
@@ -66,7 +66,7 @@ export function GuestPlayerDialog({ initial, next, view, playerId, onClose, onAp
 }) {
   const dialogRef = useModalFocus(true, returnFocusRef);
   const [name, setName] = useState(initial.name);
-  const [avatarId, setAvatarId] = useState(avatarIndex(initial.name || "Guest", initial.avatarId));
+  const [avatarId, setAvatarId] = useState(newPlayerAvatar(initial.avatarId));
   const [busy, setBusy] = useState(false);
   const working = useRef(false);
   const [error, setError] = useState<string | null>(null);
