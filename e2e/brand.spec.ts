@@ -3,34 +3,45 @@ import { mkdirSync } from "node:fs";
 
 const HERO = '[data-logo-intro="hero"]';
 const SCREENS = "docs/logo/screens";
+/** The hero renders one logo per breakpoint; this is the one on screen. */
+const hero = (page: Page) => page.locator(`${HERO} >> visible=true`);
 
 /**
  * Motion still playing on elements inside `scope`, ignoring development
- * overlays and hover color fades, which do not move anything.
+ * overlays and hover color fades, which do not move anything. `once` counts
+ * only motion that ends, leaving out loops such as the hero's breathing.
  */
-function running(page: Page, scope: string) {
-  return page.evaluate((selector) => {
+function running(page: Page, scope: string, kind: "all" | "once" = "all") {
+  return page.evaluate(([selector, which]) => {
     const roots = [...document.querySelectorAll(selector)];
     return document.getAnimations().filter((a) => {
       const target = (a.effect as KeyframeEffect | null)?.target;
       if (a instanceof CSSTransition && !["transform", "translate", "rotate", "scale"].includes(a.transitionProperty)) return false;
+      if (which === "once" && a.effect?.getTiming().iterations === Infinity) return false;
       return a.playState !== "finished" && a.playState !== "idle" && target instanceof Element
         && target.getRootNode() === document && roots.some((root) => root.contains(target));
     }).length;
-  }, scope);
+  }, [scope, kind] as const);
 }
 
-const settled = (page: Page, scope: string) => expect.poll(() => running(page, scope), { timeout: 10_000 }).toBe(0);
-const dealing = (page: Page, scope: string) => expect.poll(() => running(page, scope), { timeout: 15_000, intervals: [25] }).toBeGreaterThan(0);
+const settled = (page: Page, scope: string) => expect.poll(() => running(page, scope, "once"), { timeout: 15_000 }).toBe(0);
+const dealing = (page: Page, scope: string) => expect.poll(() => running(page, scope, "once"), { timeout: 15_000, intervals: [25] }).toBeGreaterThan(0);
+const looping = (page: Page, scope: string) => expect.poll(() => running(page, scope), { timeout: 15_000, intervals: [25] }).toBeGreaterThan(0);
+/** Holds every loop at rest and hides the drifting background, so a frame can be compared. */
+async function still(page: Page) {
+  await page.addStyleTag({ content: "[data-hero-drift] { visibility: hidden !important; }" });
+  await page.evaluate(() => { for (const a of document.getAnimations()) if (a.effect?.getTiming().iterations === Infinity) a.cancel(); });
+  await page.waitForTimeout(100);
+}
 const hang = () => { /* Leave the request open, so the page stays in its loading state. */ };
 
 test("the logo renders with its name, decorative cards, and every icon wired", async ({ page }) => {
   await page.goto("/");
-  const hero = page.getByRole("img", { name: "Cambio" });
-  await expect(hero).toBeVisible();
-  await expect(hero.locator("[data-logo-card]")).toHaveCount(8);
-  await expect(hero.locator("[data-logo-card]").first()).not.toHaveAttribute("role");
-  expect(await hero.evaluate((el) => [...el.children].every((child) => child.getAttribute("aria-hidden") === "true"))).toBe(true);
+  const mark = page.getByRole("img", { name: "Cambio" });
+  await expect(mark).toBeVisible();
+  await expect(mark.locator("[data-logo-card]")).toHaveCount(8);
+  await expect(mark.locator("[data-logo-card]").first()).not.toHaveAttribute("role");
+  expect(await mark.evaluate((el) => [...el.children].every((child) => child.getAttribute("aria-hidden") === "true"))).toBe(true);
   // Beside the word Cambio, the mark is decoration and is not announced twice.
   const header = page.getByRole("link", { name: "Cambio home" }).locator("[data-logo]");
   await expect(header).toHaveAttribute("aria-hidden", "true");
@@ -46,16 +57,17 @@ test("the logo renders with its name, decorative cards, and every icon wired", a
 
 test("the dealt logo ends exactly on the static logo", async ({ page }) => {
   await page.goto("/");
-  const hero = page.locator(HERO);
   await dealing(page, HERO);
   await settled(page, HERO);
-  const dealt = await hero.screenshot();
+  await still(page);
+  const dealt = await hero(page).screenshot();
   // Same session: the intro has played, so this is the static mode.
   await page.reload();
-  await expect(hero).toBeVisible();
-  expect(await running(page, HERO)).toBe(0);
-  const still = await hero.screenshot();
-  expect(dealt.equals(still)).toBe(true);
+  await expect(hero(page)).toBeVisible();
+  expect(await running(page, HERO, "once")).toBe(0);
+  await still(page);
+  const rest = await hero(page).screenshot();
+  expect(dealt.equals(rest)).toBe(true);
 });
 
 test("one time entrances do not replay later in the same session", async ({ page }) => {
@@ -64,9 +76,11 @@ test("one time entrances do not replay later in the same session", async ({ page
   await settled(page, HERO);
   await page.goto("/leaderboard");
   await page.goto("/");
-  await expect(page.locator(HERO)).toBeVisible();
+  await expect(hero(page)).toBeVisible();
   await page.waitForTimeout(400);
-  expect(await running(page, HERO)).toBe(0);
+  expect(await running(page, HERO, "once")).toBe(0);
+  // It still breathes; only the deal is once per session.
+  await looping(page, HERO);
   await expect(page.locator("html")).not.toHaveAttribute("data-intro");
 
   // The walkthrough deals its first step once.
@@ -100,13 +114,19 @@ test("reduced motion skips every logo and card animation", async ({ browser }) =
   const context = await browser.newContext({ reducedMotion: "reduce" });
   const page = await context.newPage();
   await page.goto("/");
-  await expect(page.locator(HERO)).toBeVisible();
+  await expect(hero(page)).toBeVisible();
   await page.waitForTimeout(500);
   expect(await running(page, "[data-logo]")).toBe(0);
-  const opacities = await page.locator(`${HERO} [data-logo-card]`).evaluateAll((cards) => cards.map((c) => getComputedStyle(c).opacity));
+  expect(await running(page, "[data-hero-drift]")).toBe(0);
+  expect(await running(page, '[aria-labelledby="hero-title"]')).toBe(0);
+  const opacities = await hero(page).locator("[data-logo-card]").evaluateAll((cards) => cards.map((c) => getComputedStyle(c).opacity));
   expect(opacities).toEqual(Array(8).fill("1"));
-  await page.locator(HERO).click();
+  const line = page.locator('[aria-labelledby="hero-title"] p[aria-hidden]').first();
+  const typed = await line.textContent();
+  await hero(page).click();
   expect(await running(page, "[data-logo]")).toBe(0);
+  await page.waitForTimeout(1500);
+  expect(await line.textContent()).toBe(typed);
 
   await page.getByRole("button", { name: "How to play" }).click();
   const dialog = page.getByRole("dialog", { name: "How Cambio works" });
@@ -144,16 +164,15 @@ test("the loading logo stays hidden for fast loads and never shifts layout", asy
   await expect(loader).toBeHidden();
   const before = await loader.boundingBox();
   await expect(loader).toBeVisible();
-  await dealing(page, '[data-logo="loading"]');
+  await looping(page, '[data-logo="loading"]');
   expect(await loader.boundingBox()).toEqual(before);
 
   await page.unroute("**/api/**");
   await page.goto("/");
-  const hero = page.locator(HERO);
-  const start = await hero.boundingBox();
+  const start = await hero(page).boundingBox();
   await dealing(page, HERO);
   await settled(page, HERO);
-  expect(await hero.boundingBox()).toEqual(start);
+  expect(await hero(page).boundingBox()).toEqual(start);
   expect(await page.evaluate(() => (window as unknown as { shifts: string[] }).shifts.filter((s) => s === "logo"))).toEqual([]);
 });
 
@@ -196,11 +215,11 @@ test("an account holder never sees the guest view before their own", async ({ pa
   // Keep the saved account: the placeholder backend would otherwise end the session.
   await page.route("**/api/**", hang);
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Ready for a round?" })).toBeVisible();
+  await expect(page.getByText("Playing as")).toBeVisible();
   await page.waitForTimeout(300);
   expect(await page.evaluate(() => (window as unknown as { seen: { guest: boolean } }).seen.guest)).toBe(false);
-  // The hero intro is still waiting for whenever a guest view is shown.
-  expect(await page.evaluate(() => sessionStorage.getItem("cambio:seen:hero"))).toBeNull();
+  // The hero is shared, so account holders get the deal too.
+  expect(await page.evaluate(() => sessionStorage.getItem("cambio:seen:hero"))).toBe("1");
 });
 
 test("an account holder's landing does not rearrange when the account check returns", async ({ page }) => {

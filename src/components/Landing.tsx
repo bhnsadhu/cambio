@@ -12,13 +12,17 @@ import { useSocial } from "@/lib/client/social";
 import { useStoredName } from "@/lib/client/useStoredName";
 import { storeGuestIdentity, useGuestIdentity } from "@/lib/client/guest";
 import { useHydrated } from "@/lib/client/useHydrated";
-import { Logo } from "./Logo";
+import { Hero } from "./Hero";
 import { FriendsPanel, Notifications } from "./Friends";
 import { AppHeader } from "./AppHeader";
 import { RecentTable } from "./RecentTable";
 import { Notification } from "./Notification";
 import { GuestSetup } from "./GuestPlayer";
 import { Button, Field, inputClass, PlayerName } from "./ui";
+
+/** What the hero's live line types. Shown in capitals; no dashes. */
+const GUEST_PHRASES = ["let’s play", "lowest hand wins", "remember your cards", "call cambio when you’re low", "one code, your friends, game on"];
+const accountPhrases = (name: string) => [`welcome back, ${name}`, "ready for a round?", "lowest hand wins", "call cambio when you’re low"];
 
 export function Landing() {
   const router = useRouter();
@@ -52,11 +56,11 @@ export function Landing() {
   };
 
   const play = (
-    <section className={profile ? "grid min-w-0 gap-5 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2" : "flex min-w-0 flex-col gap-4"} aria-label="Play Cambio">
+    <section className={profile ? "grid min-w-0 gap-5 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2" : "grid min-w-0 gap-4 sm:grid-cols-2"} aria-label="Play Cambio">
       {/* A saved account already knows its layout; a status line here would take a grid cell and shift it. */}
       {profile ? null
-        : !accountReady ? <p role="status" className="t-sub text-ink-2">Checking your account</p>
-          : <GuestSetup name={name} onNameChange={setName} disabled={!!busy} next={next} />}
+        : !accountReady ? <p role="status" className="t-sub text-ink-2 sm:col-span-2">Checking your account</p>
+          : <div className="min-w-0 sm:col-span-2"><GuestSetup name={name} onNameChange={setName} disabled={!!busy} next={next} /></div>}
       <form onSubmit={(event) => void submit(event, "create")} className="flex min-w-0 flex-col gap-4 rounded-panel bg-surface p-5 hairline sm:p-6" aria-label="New table">
         <div>
           <h2 className="t-headline">New table</h2>
@@ -81,7 +85,7 @@ export function Landing() {
           {busy === "join" ? "Joining" : "Join table"}
         </Button>
       </form>
-      {accountReady && !profile ? <p className="t-sub text-ink-2">No account needed to play. <Link href={loginHref(next, "register")} onClick={rememberGuest} className="font-medium text-ink hover:text-ink-2">Create an account to keep your profile and stats</Link></p> : null}
+      {accountReady && !profile ? <p className="t-sub text-ink-2 sm:col-span-2 sm:text-center">No account needed to play. <Link href={loginHref(next, "register")} onClick={rememberGuest} className="font-medium text-ink hover:text-ink-2">Create an account to keep your profile and stats</Link></p> : null}
     </section>
   );
 
@@ -89,24 +93,22 @@ export function Landing() {
     <main className="site-shell">
       <AppHeader active="tables" loginNext={next} onLogin={rememberGuest} />
       <RecentTable />
-      {profile ? <>
-        <header className="pt-10 pb-7"><h1 className="t-title">Ready for a round?</h1><p className="t-body mt-2 text-ink-2">Open a table, share the code, and invite your friends.</p></header>
+      <Hero phrases={profile ? accountPhrases(profile.displayName) : GUEST_PHRASES}>
+        <p className="t-body mt-5 max-w-[520px] text-ink-2">
+          Remember your cards. Finish with the lowest hand. Play with friends, or let the house bots{" "}
+          <PlayerName name="Cameron" isBot />, <PlayerName name="Camila" isBot /> and <PlayerName name="Cami" isBot /> take the empty seats.
+        </p>
+      </Hero>
+      {profile ? (
         <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1fr)_300px] lg:grid-cols-[minmax(0,1fr)_340px] xl:gap-8">
           {play}
           <FriendsPanel social={social} />
         </div>
-      </> : <section data-guest-view data-prehydration={hydrated ? undefined : ""} className="grid items-start gap-10 pt-10 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:pt-16">
-        <div>
-          {/* Deals itself once per session; a click deals it again. */}
-          <Logo size={112} mode="animated" intro="hero" className="mb-8" />
-          <h1 className="t-display">The memory card game,<br />live with friends.</h1>
-          <p className="t-body mt-5 max-w-[440px] text-ink-2">
-            Remember your cards. Finish with the lowest hand. Play with friends, or let the house bots{" "}
-            <PlayerName name="Cameron" isBot />, <PlayerName name="Camila" isBot /> and <PlayerName name="Cami" isBot /> take the empty seats.
-          </p>
+      ) : (
+        <div data-guest-view data-prehydration={hydrated ? undefined : ""} className="mx-auto w-full max-w-[880px]">
+          {play}
         </div>
-        {play}
-      </section>}
+      )}
       <Notifications social={social} />
     </main>
   );

@@ -223,8 +223,13 @@ html[data-account] [data-guest-view][data-prehydration] { display: none; }
   animation: spotlight 1.5s var(--ease-out) infinite;
 }
 
+/* The hero's live line: a blinking caret, and drifting cards that fade out at the edges. */
+@keyframes caret { 50% { opacity: 0; } }
+.caret { animation: caret 1.05s steps(1) infinite; }
+.hero-drift { mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent); }
+
 @media (prefers-reduced-motion: reduce) {
-  .spotlight, .pip, .skeleton { animation: none; }
+  .spotlight, .pip, .skeleton, .caret { animation: none; }
   .spotlight { box-shadow: 0 0 0 1.5px var(--color-accent); }
 }
 
