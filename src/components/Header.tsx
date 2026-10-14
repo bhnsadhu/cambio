@@ -22,13 +22,13 @@ export function HeaderBar({ children, context, status, label, className = "" }: 
   label: string;
   className?: string;
 }) {
-  return <header data-app-header className={`flex min-h-20 shrink-0 flex-wrap items-center gap-x-6 gap-y-3 py-4 ${className}`}>
+  return <header data-app-header className={`flex min-h-20 shrink-0 flex-wrap items-center gap-x-6 gap-y-3 py-4 xl:grid xl:grid-cols-[1fr_auto_1fr] ${className}`}>
     <div className="flex min-w-0 max-w-full flex-wrap items-center gap-x-4 gap-y-2">
       <Link href="/" aria-label="Cambio home" className="inline-flex h-10 shrink-0 items-center rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"><Wordmark /></Link>
       {context}
       {status}
     </div>
-    <nav aria-label={label} className="flex min-w-0 basis-full flex-wrap items-center gap-2 xl:flex-1 xl:basis-auto">
+    <nav aria-label={label} className="flex min-w-0 basis-full flex-wrap items-center justify-center gap-2 xl:basis-auto">
       {children}
     </nav>
   </header>;
