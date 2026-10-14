@@ -33,7 +33,7 @@ async function websiteNavigation(page: Page, account: boolean, active: string | 
   const labels = await nav.locator("[data-header-control]").evaluateAll((elements) => elements.map((element) =>
     element.getAttribute("aria-label") ?? element.textContent?.trim()));
   expect(labels).toEqual([
-    "Tables", "Leaderboard", ...(account ? ["Your record", "Account settings"] : ["Log in"]), "How to play", ...(back ? [back] : []),
+    "Tables", "Leaderboard", ...(account ? ["Your record", "Account settings"] : ["Log in"]), "How to play", "Repository", ...(back ? [back] : []),
   ]);
   const current = nav.locator('[aria-current="page"]');
   await expect(current).toHaveCount(active ? 1 : 0);
