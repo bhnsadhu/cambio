@@ -25,10 +25,7 @@ export function AppHeader({ active, accountFrom = "/", loginNext = "/", onLogin,
       <HeaderLink href={accountFrom === "/" ? "/me" : `/me?${new URLSearchParams({ from: accountFrom })}`} aria-label="Account settings" aria-current={active === "account" ? "page" : undefined}>Account</HeaderLink>
     </> : ready ? <HeaderLink href={loginHref(loginNext)} onClick={onLogin} aria-current={active === "login" ? "page" : undefined}>Log in</HeaderLink> : null}
     <HowToPlayButton />
-    <HeaderLink href={REPO_URL} target="_blank" rel="noreferrer">
-      Repository
-      <svg aria-hidden viewBox="0 0 12 12" className="h-3 w-3 opacity-60" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 2h6v6M10 2 3 9" /></svg>
-    </HeaderLink>
+    <HeaderLink href={REPO_URL} target="_blank" rel="noreferrer" className="ring-1 ring-inset ring-line-strong">Repository</HeaderLink>
     {back ? <HeaderLink href={back.href}>{back.label}</HeaderLink> : null}
   </HeaderBar>;
 }
