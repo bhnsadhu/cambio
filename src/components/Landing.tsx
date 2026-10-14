@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { loginHref } from "@/lib/account/navigation";
 import { newPlayerAvatar } from "@/lib/avatars";
+import { botAvatarId } from "@/lib/bot-identity";
 import { api, RequestError } from "@/lib/client/api";
 import { useAccountReady } from "@/lib/client/profile";
 import { saveSession, storeName } from "@/lib/client/session";
@@ -12,6 +13,7 @@ import { useSocial } from "@/lib/client/social";
 import { useStoredName } from "@/lib/client/useStoredName";
 import { storeGuestIdentity, useGuestIdentity } from "@/lib/client/guest";
 import { useHydrated } from "@/lib/client/useHydrated";
+import { Avatar } from "./Avatar";
 import { Hero } from "./Hero";
 import { FriendsPanel, Notifications } from "./Friends";
 import { AppHeader } from "./AppHeader";
@@ -66,7 +68,7 @@ export function Landing() {
           <h2 className="t-headline">New table</h2>
           <p className="t-sub mt-2 text-ink-2">Host a game with friends, or try a round with the house bots.</p>
         </div>
-        {profile ? <p className="t-sub break-words text-ink-2">Playing as <strong className="text-ink">{name}</strong></p> : null}
+        <SeatPreview identity={profile ? profile.id : name || "Guest"} avatarId={profile ? profile.avatarId : guestAvatarId} name={name} />
         {error?.mode === "create" ? <Notification title="New table" tone="bad" onDismiss={() => setError(null)}>{error.message}</Notification> : null}
         <Button type="submit" variant="primary" className="mt-auto sm:self-start" disabled={(!accountReady && !profile) || !!busy || !name.trim()}>
           {busy === "create" ? "Opening" : "Open a table"}
@@ -78,8 +80,10 @@ export function Landing() {
           <p className="t-sub mt-2 text-ink-2">Enter the five character code your friend shared.</p>
         </div>
         <Field label="Table code">
-          <input className={`${inputClass} tnum tracking-[0.14em]`} value={code} onChange={(event) => { setCode(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5)); setError(null); }} placeholder="ABCDE" minLength={5} maxLength={5} autoCapitalize="characters" spellCheck={false} autoComplete="off" required disabled={!!busy} />
+          {/* Large and spaced like the code on the host's screen; the leading pad balances the trailing tracking. */}
+          <input className={`${inputClass} tnum h-16! pl-[calc(0.875rem+0.4em)]! text-center text-[26px]! font-medium tracking-[0.4em]`} value={code} onChange={(event) => { setCode(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5)); setError(null); }} placeholder="ABCDE" minLength={5} maxLength={5} autoCapitalize="characters" spellCheck={false} autoComplete="off" required disabled={!!busy} />
         </Field>
+        <p className="t-footnote -mt-1.5 text-ink-3">Your host sees it at the top of their table.</p>
         {error?.mode === "join" ? <Notification title="Join table" tone="bad" onDismiss={() => setError(null)}>{error.message}</Notification> : null}
         <Button type="submit" variant="secondary" className="mt-auto sm:self-start" disabled={(!accountReady && !profile) || !!busy || !name.trim() || code.length !== 5}>
           {busy === "join" ? "Joining" : "Join table"}
@@ -111,5 +115,28 @@ export function Landing() {
       )}
       <Notifications social={social} />
     </main>
+  );
+}
+
+const HOUSE_BOTS = ["Cameron", "Camila", "Cami"] as const;
+
+/** The four seats a new table opens with: you, and the house bots keeping the rest warm for your friends. */
+function SeatPreview({ identity, avatarId, name }: { identity: string; avatarId?: number | null; name: string }) {
+  return (
+    <div>
+      <ul className="grid grid-cols-4 gap-2" aria-label="Seats at a new table">
+        <li className="flex min-w-0 flex-col items-center gap-1.5 rounded-xl bg-surface-2 px-1 pt-3 pb-2.5">
+          <Avatar identity={identity} avatarId={avatarId} size={36} />
+          <span className="t-footnote w-full truncate text-center font-medium text-ink" title={name.trim() || "You"}>{name.trim() || "You"}</span>
+        </li>
+        {HOUSE_BOTS.map((bot) => (
+          <li key={bot} className="flex min-w-0 flex-col items-center gap-1.5 rounded-xl bg-surface-2 px-1 pt-3 pb-2.5">
+            <Avatar identity={bot} avatarId={botAvatarId(bot)} size={36} />
+            <span className="t-footnote w-full truncate text-center text-ink-2"><PlayerName name={bot} isBot /></span>
+          </li>
+        ))}
+      </ul>
+      <p className="t-footnote mt-2.5 text-ink-3">Seats your friends don’t take go to the house bots.</p>
+    </div>
   );
 }

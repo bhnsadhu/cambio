@@ -363,7 +363,7 @@ test("account access, tables, and help keep clear copy and responsive settings",
   const username = `layout${suffix()}`;
   expect((await post(context, "/api/account", { username, displayName: "Casey ONeil", password: firstPassword })).status()).toBe(201);
   await page.goto("/");
-  await expect(page.getByRole("region", { name: "Play Cambio" })).toContainText("Playing as Casey ONeil");
+  await expect(page.getByRole("list", { name: "Seats at a new table" })).toContainText("Casey ONeil");
   await expect(page.getByLabel("Display name", { exact: true })).toHaveCount(0);
   await noPunctuationDashes(page);
   await page.getByRole("button", { name: "Open a table", exact: true }).click();

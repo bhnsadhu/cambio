@@ -215,7 +215,7 @@ test("an account holder never sees the guest view before their own", async ({ pa
   // Keep the saved account: the placeholder backend would otherwise end the session.
   await page.route("**/api/**", hang);
   await page.goto("/");
-  await expect(page.getByText("Playing as")).toBeVisible();
+  await expect(page.getByRole("list", { name: "Seats at a new table" })).toContainText("Tester");
   await page.waitForTimeout(300);
   expect(await page.evaluate(() => (window as unknown as { seen: { guest: boolean } }).seen.guest)).toBe(false);
   // The hero is shared, so account holders get the deal too.
