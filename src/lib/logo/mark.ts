@@ -66,26 +66,43 @@ const round = (n: number) => Math.round(n * 1000) / 1000;
 /** Same orientation either way round; keep the turn under half a circle so the ace reads upright. */
 const upright = (deg: number) => ((deg + 540) % 360) - 180;
 
+/** Axis aligned bounds of the cards, outlines included, for cards at the given centers. */
+export function cardBounds(cards: readonly { x: number; y: number; rotate: number }[], width: number, height: number, gap: number) {
+  const hw = width / 2 + gap / 2;
+  const hh = height / 2 + gap / 2;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const c of cards) {
+    const r = (c.rotate * Math.PI) / 180;
+    for (const [dx, dy] of [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]]) {
+      const x = c.x + dx * Math.cos(r) - dy * Math.sin(r);
+      const y = c.y + dx * Math.sin(r) + dy * Math.cos(r);
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+    }
+  }
+  return { x0, y0, x1, y1, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, w: x1 - x0, h: y1 - y0 };
+}
+
+/**
+ * The arc is laid out, then shifted so the cards' visible shape, not the
+ * arc's circle, is centered in the tile. Wherever the mark sits beside other
+ * centered things, its ink is what lines up.
+ */
 export const LOGO: LogoGeometry = (() => {
-  const cards: LogoCard[] = [];
+  const height = round(ARC.width * CARD_ASPECT);
+  const raw: LogoCard[] = [];
   for (let i = 0; i < LOGO_COUNT; i++) {
     const angle = ARC.start + i * (ARC.sweep / (LOGO_COUNT - 1));
     const rad = (angle * Math.PI) / 180;
-    cards.push({
-      x: round(ARC.cx + ARC.radius * Math.cos(rad)),
-      y: round(ARC.cy + ARC.radius * Math.sin(rad)),
+    raw.push({
+      x: ARC.cx + ARC.radius * Math.cos(rad),
+      y: ARC.cy + ARC.radius * Math.sin(rad),
       rotate: round(upright(angle)),
       ace: i === LOGO_COUNT - 1,
     });
   }
-  return {
-    width: ARC.width,
-    height: round(ARC.width * CARD_ASPECT),
-    radius: round(ARC.width * CARD_RADIUS),
-    gap: ARC.gap,
-    cards,
-    deck: { x: ARC.cx, y: ARC.cy },
-  };
+  const box = cardBounds(raw, ARC.width, height, ARC.gap);
+  const cards = raw.map((c) => ({ ...c, x: round(c.x + 50 - box.cx), y: round(c.y + 50 - box.cy) }));
+  return { width: ARC.width, height, radius: round(ARC.width * CARD_RADIUS), gap: ARC.gap, cards, deck: { x: 50, y: 50 } };
 })();
 
 /** The font stack the face card uses (--font-sans), for the ace in standalone SVGs. */

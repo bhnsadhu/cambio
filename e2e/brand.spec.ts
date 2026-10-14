@@ -249,3 +249,57 @@ test("an account holder's landing does not rearrange when the account check retu
   await page.waitForTimeout(200);
   expect(await card.boundingBox()).toEqual(before);
 });
+
+/**
+ * The landing page's alignment contract: the mark, the live line, the
+ * headline and the blurb share one center axis; cards in a row share their top
+ * and bottom edges; nothing leaves the viewport. Checked for guests and
+ * account holders at phone, tablet and desktop widths.
+ */
+for (const account of [false, true]) {
+  for (const width of [390, 768, 1024, 1440]) {
+    test(`landing alignment holds for ${account ? "an account holder" : "a guest"} at ${width}px`, async ({ browser }) => {
+      const context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: "reduce" });
+      const profile = {
+        id: "00000000-0000-4000-8000-000000000003", handle: "aligned", displayName: "Aligned", avatarId: 0,
+        createdAt: "2026-01-01T00:00:00.000Z", lastSeenAt: "2026-01-01T00:00:00.000Z", lastPlayedAt: null,
+        points: 0, rank: 1, totalPlayers: 1, roundsPlayed: 0, roundsWon: 0, tablesPlayed: 0, scoreTotal: 0, bestScore: null,
+        cambioCalls: 0, cambioWins: 0, sticksHit: 0, sticksMissed: 0, currentStreak: 0, bestStreak: 0,
+      };
+      const social = { friends: [], incoming: [], outgoing: [], invites: [], sent: [], joinRequests: [], sentJoinRequests: [], opponents: [] };
+      if (account) await context.addInitScript((stored) => localStorage.setItem("cambio:profile", JSON.stringify(stored)), { token: `account:${profile.id}`, profile, username: profile.handle });
+      await context.route("**/api/**", (route) => {
+        const path = new URL(route.request().url()).pathname;
+        return route.fulfill({ json: !account ? {} : path === "/api/account" ? { profile, username: profile.handle } : path === "/api/social" ? { profile, social, channel: null } : {} });
+      });
+      const page = await context.newPage();
+      await page.goto("/");
+      await expect(page.getByRole("list", { name: "Seats at a new table" })).toBeVisible();
+      await page.waitForTimeout(300);
+      const m = await page.evaluate(() => {
+        const rect = (el: Element | null) => { const r = el!.getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, cx: (r.left + r.right) / 2 }; };
+        const heroSection = document.querySelector('section[aria-labelledby="hero-title"]')!;
+        const logo = [...heroSection.querySelectorAll("[data-logo]")].find((el) => el.getClientRects().length)!;
+        const forms = [...document.querySelectorAll('[aria-label="Play Cambio"] > form')].map(rect);
+        return {
+          axis: rect(heroSection).cx,
+          logo: rect(logo).cx,
+          line: rect(heroSection.querySelector("p[aria-hidden]")).cx,
+          title: rect(heroSection.querySelector("h1")).cx,
+          forms,
+          overflow: document.documentElement.scrollWidth > innerWidth,
+          vw: innerWidth,
+        };
+      });
+      expect(m.overflow).toBe(false);
+      for (const key of ["logo", "line", "title"] as const) expect(Math.abs(m[key] - m.axis), key).toBeLessThanOrEqual(0.6);
+      expect(m.forms).toHaveLength(2);
+      for (const f of m.forms) { expect(f.l).toBeGreaterThanOrEqual(0); expect(f.r).toBeLessThanOrEqual(m.vw); }
+      // Side by side: equal tops and bottoms. Stacked: same left and right edges.
+      const [a, b] = m.forms;
+      if (Math.abs(a.t - b.t) < 2) expect(Math.abs(a.b - b.b)).toBeLessThanOrEqual(0.6);
+      else { expect(Math.abs(a.l - b.l)).toBeLessThanOrEqual(0.6); expect(Math.abs(a.r - b.r)).toBeLessThanOrEqual(0.6); }
+      await context.close();
+    });
+  }
+}

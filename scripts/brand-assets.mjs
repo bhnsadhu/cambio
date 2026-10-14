@@ -11,7 +11,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { chromium } from '@playwright/test';
-import { LOGO, logoSvg } from '../src/lib/logo/mark.ts';
+import { LOGO, cardBounds, logoSvg } from '../src/lib/logo/mark.ts';
 
 const HEADLINE = ['The memory card game,', 'live with friends.'];
 const TAGLINE = 'One code. Your friends. Game on.';
@@ -47,20 +47,10 @@ function ico(pngs) {
 const sized = (svg, size) => svg.replace('<svg ', `<svg width="${size}" height="${size}" `);
 
 /** The cards' own outline, outlines included, so layouts align to the cards and not to the tile's padding. */
-function markBounds() {
-  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-  const hw = LOGO.width / 2 + LOGO.gap / 2;
-  const hh = LOGO.height / 2 + LOGO.gap / 2;
-  for (const c of LOGO.cards) {
-    const r = (c.rotate * Math.PI) / 180;
-    for (const [dx, dy] of [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]]) {
-      const x = c.x + dx * Math.cos(r) - dy * Math.sin(r);
-      const y = c.y + dx * Math.sin(r) + dy * Math.cos(r);
-      x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
-    }
-  }
-  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
-}
+const markBounds = () => {
+  const b = cardBounds(LOGO.cards, LOGO.width, LOGO.height, LOGO.gap);
+  return { x: b.x0, y: b.y0, w: b.w, h: b.h };
+};
 
 /** The bare mark cropped to its cards, `height` pixels tall. */
 function tightMark(height, id) {
