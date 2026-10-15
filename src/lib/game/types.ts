@@ -37,6 +37,21 @@ export type BotDifficulty = "easy" | "medium" | "hard";
 
 export const BOT_DIFFICULTIES: BotDifficulty[] = ["easy", "medium", "hard"];
 
+/**
+ * Strategy ablations for the bot evaluation. Real tables never set one, and
+ * every field left out plays exactly as the shipped bots do.
+ */
+export interface BotStrategy {
+  /** Remember at most this many observed faces. Default: the difficulty's memory. */
+  memory?: number;
+  /** Take seen discards and remembered cards out of the unseen pool. Default true. */
+  counting?: boolean;
+  /** Weigh opponents' public keeps and pushes of drawn cards. Default true. */
+  inference?: boolean;
+  /** Require the belief thresholds before calling Cambio. Default true. */
+  callGate?: boolean;
+}
+
 export interface Player {
   id: string;
   seat: number; // 0..3
@@ -45,6 +60,8 @@ export interface Player {
   isHost: boolean;
   /** bots only: how hard this seat plays */
   difficulty?: BotDifficulty;
+  /** bots only, evaluation only: abilities removed for an ablation run */
+  strategy?: BotStrategy;
   /** the saved profile playing this seat, when the player has one */
   profileId?: string | null;
   avatarId?: number | null;

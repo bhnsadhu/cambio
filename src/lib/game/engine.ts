@@ -1430,7 +1430,11 @@ function remember(state: GameState, botId: string, cardIds: string[]) {
   const bot = state.players.find((p) => p.id === botId)!;
   const incoming = new Set(cardIds);
   const known = [...(state.botKnown[botId] ?? []).filter((id) => !incoming.has(id)), ...incoming];
-  if (bot.difficulty === "easy") {
+  const cap = bot.strategy?.memory;
+  if (cap !== undefined) {
+    // Evaluation only: a fixed memory length in place of the difficulty's.
+    state.botKnown[botId] = known.slice(Math.max(0, known.length - cap));
+  } else if (bot.difficulty === "easy") {
     // Limited short-term memory: a new draw or peek can displace an opening card.
     state.botKnown[botId] = known.slice(-2);
   } else if (bot.difficulty === "hard") {

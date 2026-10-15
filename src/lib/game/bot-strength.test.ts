@@ -1,67 +1,27 @@
 import { describe, expect, it } from "vitest";
 import { assessCambio, planBots } from "./bots";
+import { jitterFor, playRound } from "./bot-harness";
 import { observeBot } from "./bot-observation";
-import { applyAction, createGame } from "./engine";
+import { createGame } from "./engine";
 import { act, card, makeCtx, player, rig } from "./testkit";
 import type { BotDifficulty, GameState, Rank, Suit } from "./types";
 
-/** Intent-local randomness makes a replay stable without coupling it to planner iteration order. */
-function jitterFor(seed: number) {
-  return (intent: string) => {
-    let hash = 2166136261 ^ seed;
-    for (const character of intent) hash = Math.imul(hash ^ character.charCodeAt(0), 16777619) >>> 0;
-    return hash / 2 ** 32;
-  };
-}
-
 /**
- * Keep intent clocks across moves, as the runner does. Equal action delays
- * isolate the quality of decisions from hard bots' faster reactions.
+ * Rounds come from the shared seeded harness, which keeps intent clocks
+ * across moves as the runner does and checks card conservation after every
+ * action. Equal action delays isolate the quality of decisions from hard
+ * bots' faster reactions.
  */
 function completeRound(seed: number, levels: BotDifficulty[]) {
-  const ctx = makeCtx(seed);
-  const initial = createGame(`STRENGTH${seed}`, "Host", ctx);
-  let state = initial.state;
-  state.players[0].isBot = true;
-  state.players[0].difficulty = levels[0];
-  state.botDifficulty = levels.slice();
-  state = applyAction(state, { actionId: `start-${seed}`, playerId: initial.hostId, action: { type: "start" } }, ctx).state;
-  const jitter = jitterFor(seed);
-  const waiting = new Map<string, number>();
-  let steps = 0;
-  for (; state.phase !== "scoring" && steps < 1500; steps++) {
-    const plans = planBots(state, ctx.now, jitter);
-    expect(plans.length, `seed ${seed}: no move in ${state.phase}`).toBeGreaterThan(0);
-    for (const intent of waiting.keys()) if (!plans.some((plan) => plan.intent === intent)) waiting.delete(intent);
-    const scheduled = plans.map((plan) => {
-      if (!waiting.has(plan.intent)) waiting.set(plan.intent, ctx.now);
-      const isDeadline = plan.action.type === "advance" || plan.action.type === "timeout";
-      return { ...plan, due: isDeadline ? ctx.now + plan.delayMs : waiting.get(plan.intent)! + 1000 };
-    }).sort((a, b) => a.due - b.due);
-    const plan = scheduled[0];
-    if (plan.action.type === "callCambio") {
-      const belief = assessCambio(state, plan.playerId);
-      const context = `seed ${seed}, ${state.players.find((seat) => seat.id === plan.playerId)!.difficulty} call: ${JSON.stringify(belief)}`;
-      expect(belief.call, context).toBe(true);
-      expect(belief.ownEstimate, context).toBeLessThanOrEqual(belief.strongestOpponent);
-      expect(belief.winChance, context).toBeGreaterThanOrEqual(0.64);
-      expect(belief.nearWinChance, context).toBeGreaterThanOrEqual(0.8);
-    }
-    ctx.tick(Math.max(700, plan.due - ctx.now + 1));
-    const result = applyAction(state, { actionId: `strength-${seed}-${steps}`, playerId: plan.playerId, action: plan.action }, ctx);
-    state = result.state;
-    waiting.delete(plan.intent);
-    const cards = [
-      ...state.deck,
-      ...state.discard,
-      ...state.players.flatMap((player) => player.hand.filter((id): id is string => id !== null)),
-      ...(state.turn?.drawnCardId ? [state.turn.drawnCardId] : []),
-    ];
-    expect(cards.length, `seed ${seed}, step ${steps}: card conservation`).toBe(54);
-    expect(new Set(cards).size, `seed ${seed}, step ${steps}: duplicate card`).toBe(54);
-    expect(Object.keys(state.cards).sort()).toEqual(cards.slice().sort());
+  const { state, calls } = playRound(seed, levels);
+  for (const { belief, playerId } of calls) {
+    const context = `seed ${seed}, ${state.players.find((seat) => seat.id === playerId)!.difficulty} call: ${JSON.stringify(belief)}`;
+    expect(belief.call, context).toBe(true);
+    expect(belief.ownEstimate, context).toBeLessThanOrEqual(belief.strongestOpponent);
+    expect(belief.winChance, context).toBeGreaterThanOrEqual(0.64);
+    expect(belief.nearWinChance, context).toBeGreaterThanOrEqual(0.8);
   }
-  expect(state.phase, `seed ${seed} and levels ${levels.join("/")} did not finish after ${steps} legal actions`).toBe("scoring");
+  expect(state.phase, `seed ${seed} and levels ${levels.join("/")} did not finish`).toBe("scoring");
   expect(state.results).toHaveLength(1);
   return state;
 }

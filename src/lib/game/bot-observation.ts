@@ -5,7 +5,7 @@ export type BotObservation = Pick<GameState,
   "phase" | "round" | "turnsTaken" | "turn" | "pendingPower" | "pendingGives" |
   "discard" | "botKnown" | "botHints" | "botMissedTop"
 > & {
-  players: Pick<Player, "id" | "seat" | "name" | "isBot" | "isHost" | "difficulty" | "hand">[];
+  players: Pick<Player, "id" | "seat" | "name" | "isBot" | "isHost" | "difficulty" | "strategy" | "hand">[];
   /** Unobserved faces are absent, including the bot's own unpeeked cards. */
   cards: Partial<Record<string, Card>>;
 };
@@ -25,8 +25,9 @@ export function observeBot(state: GameState, botId: string): BotObservation {
     phase: state.phase,
     round: state.round,
     turnsTaken: state.turnsTaken,
-    players: state.players.map(({ id, seat, name, isBot, isHost, difficulty, hand }) => ({
+    players: state.players.map(({ id, seat, name, isBot, isHost, difficulty, strategy, hand }) => ({
       id, seat, name, isBot, isHost, difficulty, hand: [...hand],
+      ...(strategy ? { strategy: { ...strategy } } : {}),
     })),
     cards,
     discard: [...state.discard],

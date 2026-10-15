@@ -10,6 +10,8 @@ const DECK_VALUES = [
 /** Only legitimately observed faces enter the belief model. */
 export function unseenValues(state: Pick<BotObservation, "cards" | "discard" | "botKnown">, bot: Player): number[] {
   const pool = DECK_VALUES.slice();
+  // Evaluation only: without counting, every unseen card comes from a full deck.
+  if (bot.strategy?.counting === false) return pool;
   for (const id of new Set([...state.discard, ...(state.botKnown[bot.id] ?? [])])) {
     const card = state.cards[id];
     if (!card) continue;
@@ -19,7 +21,8 @@ export function unseenValues(state: Pick<BotObservation, "cards" | "discard" | "
   return pool.length ? pool : DECK_VALUES.slice();
 }
 
-function weight(state: Pick<BotObservation, "botHints">, id: string, value: number): number {
+function weight(state: Pick<BotObservation, "botHints">, id: string, value: number, inference = true): number {
+  if (!inference) return 1;
   // A keep/push is evidence of intent, not proof of a face. Even a high kept
   // card or a low pushed card retains probability, so opponents can bluff.
   const clue = state.botHints?.[id];
@@ -31,8 +34,9 @@ function weight(state: Pick<BotObservation, "botHints">, id: string, value: numb
 export function expectedCard(state: BotObservation, bot: Player, id: string, pool = unseenValues(state, bot)): number {
   if ((state.botKnown[bot.id] ?? []).includes(id) && state.cards[id]) return cardValue(state.cards[id]);
   let total = 0, weights = 0;
+  const inference = bot.strategy?.inference !== false;
   for (const value of pool) {
-    const w = weight(state, id, value);
+    const w = weight(state, id, value, inference);
     total += value * w;
     weights += w;
   }
@@ -65,6 +69,7 @@ export function assessObservedCambio(state: BotObservation, botId: string): Camb
   const bot = state.players.find((p) => p.id === botId)!;
   const known = new Set(state.botKnown[bot.id] ?? []);
   const pool = unseenValues(state, bot);
+  const inference = bot.strategy?.inference !== false;
   const hands = state.players.map((p) => p.hand.filter((id): id is string => !!id));
   const me = state.players.indexOf(bot);
   const sums = state.players.map(() => 0);
@@ -80,10 +85,10 @@ export function assessObservedCambio(state: BotObservation, botId: string): Camb
     const remaining = pool.slice();
     const take = (id: string) => {
       const available = remaining.length ? remaining : pool;
-      let cursor = random() * available.reduce((sum, value) => sum + weight(state, id, value), 0);
+      let cursor = random() * available.reduce((sum, value) => sum + weight(state, id, value, inference), 0);
       let index = available.length - 1;
       for (let i = 0; i < available.length; i++) {
-        cursor -= weight(state, id, available[i]);
+        cursor -= weight(state, id, available[i], inference);
         if (cursor <= 0) { index = i; break; }
       }
       const value = available[index];
@@ -104,9 +109,11 @@ export function assessObservedCambio(state: BotObservation, botId: string): Camb
   const ownEstimate = sums[me] / samples;
   const strongestOpponent = Math.min(...sums.filter((_, index) => index !== me).map((sum) => sum / samples));
   const winChance = wins / samples, nearWinChance = near / samples;
+  // Evaluation only: with the gate off, an estimated lead alone is enough.
+  const believed = bot.strategy?.callGate === false || (winChance >= 0.64 && nearWinChance >= 0.8);
   return {
     call: state.phase === "playing" && state.turnsTaken >= state.players.length &&
-      winChance >= 0.64 && nearWinChance >= 0.8 && ownEstimate <= strongestOpponent,
+      believed && ownEstimate <= strongestOpponent,
     ownEstimate, strongestOpponent, winChance, nearWinChance,
     unknownOwn: hands[me].filter((id) => !known.has(id)).length,
   };
