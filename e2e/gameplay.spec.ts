@@ -40,7 +40,7 @@ for (const mode of ["guest", "account"] as const) {
     await expect(page.getByRole("switch", { name: "Do not disturb" })).toHaveCount(1);
     await page.evaluate(() => { navigator.clipboard.writeText = () => Promise.reject(new Error("Clipboard unavailable")); });
     await page.getByRole("button", { name: "Copy link" }).click();
-    await expect(page.getByText("Copying is unavailable. Share the code above instead.")).toBeVisible();
+    await expect(page.getByText("Copying is unavailable. Share the table code instead.")).toBeVisible();
     await page.getByRole("button", { name: "How to play", exact: true }).click();
     await expect(page.getByRole("dialog", { name: "How to play", exact: true })).toBeVisible();
     await fits(page, 320);

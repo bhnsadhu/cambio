@@ -81,7 +81,9 @@ test("table setup asks once and carries the chosen table through signup", async 
   const joinTable = page.getByRole("form", { name: "Join with code" });
   await expect(newTable).toBeVisible();
   await expect(joinTable).toBeVisible();
-  expect((await joinTable.boundingBox())!.y).toBeGreaterThan((await newTable.boundingBox())!.y);
+  // New table reads first, whether the forms stack or sit side by side.
+  const [created, joined] = [(await newTable.boundingBox())!, (await joinTable.boundingBox())!];
+  expect(joined.y > created.y || (joined.y === created.y && joined.x > created.x)).toBe(true);
   await expect(page.getByRole("group", { name: "Table options" })).toHaveCount(0);
   await expect(page.getByLabel("Display name", { exact: true })).toHaveCount(1);
   await expect(page.getByRole("form", { name: "Create account", exact: true })).toHaveCount(0);

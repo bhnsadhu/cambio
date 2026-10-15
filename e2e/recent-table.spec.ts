@@ -177,7 +177,7 @@ test("signing out clears the shortcut and another account never inherits it", as
   await expect(recent(page)).toHaveCount(0);
   await register("Second Account");
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Ready for a round?", exact: true })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Seats at a new table" })).toContainText("Second Account");
   await expect(recent(page)).toHaveCount(0);
   expect(await pointer(page)).toBeNull();
   expect(await page.evaluate((code) => localStorage.getItem(`cambio:seat:${code}`), first.code)).toBeNull();
