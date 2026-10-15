@@ -27,12 +27,13 @@ function metrics(size: number) {
   return {
     u, w, h,
     vars: { "--tile-w": `${w}px`, "--tile-h": `${h}px`, "--tile-r": `${LOGO.radius * u}px` } as CSSProperties,
-    card: { boxShadow: `0 0 0 ${ring}px var(--color-bg), var(--shadow-card)` } as CSSProperties,
+    // On a light page the white cards also need an edge beyond the ring (see --logo-edge).
+    card: { boxShadow: `0 0 0 ${ring}px var(--color-bg), 0 0 0 ${ring + 1}px var(--logo-edge), var(--shadow-card)` } as CSSProperties,
     face: {
       "--tile-w": `${FACE_REF}px`, "--tile-h": `${FACE_REF * (LOGO.height / LOGO.width)}px`, "--tile-r": `${FACE_REF * (LOGO.radius / LOGO.width)}px`,
       width: FACE_REF, height: FACE_REF * (LOGO.height / LOGO.width), transform: `scale(${w / FACE_REF})`,
     } as CSSProperties,
-    faceRing: { boxShadow: `0 0 0 ${ring * (FACE_REF / w)}px var(--color-bg), var(--shadow-card)` } as CSSProperties,
+    faceRing: { boxShadow: `0 0 0 ${ring * (FACE_REF / w)}px var(--color-bg), 0 0 0 ${(ring + 1) * (FACE_REF / w)}px var(--logo-edge), var(--shadow-card)` } as CSSProperties,
   };
 }
 

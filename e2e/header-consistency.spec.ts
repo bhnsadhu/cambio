@@ -65,6 +65,7 @@ async function auditHeader(page: Page, surface: string) {
           const style = getComputedStyle(control);
           return {
             label: control.getAttribute("aria-label") ?? control.textContent?.trim(),
+            inNav: !!control.closest("nav"),
             left: box.left, right: box.right, top: box.top, bottom: box.bottom, height: box.height,
             clipped: control.scrollWidth > control.clientWidth + 1,
             fontSize: style.fontSize, fontWeight: style.fontWeight, radius: style.borderRadius,
@@ -94,7 +95,8 @@ async function auditHeader(page: Page, surface: string) {
         expect(overlapX > 1 && overlapY > 1, `${surface}: ${control.label} overlaps ${other.label} at ${width}px`).toBe(false);
       }
       const next = geometry.controls[index + 1];
-      if (next && Math.abs(control.top - next.top) < 1) expect(next.left - control.right).toBeCloseTo(8, 0);
+      // The theme switch stands apart at the far edge; only the navigation keeps the 8px rhythm.
+      if (next && control.inNav && next.inNav && Math.abs(control.top - next.top) < 1) expect(next.left - control.right).toBeCloseTo(8, 0);
     }
     if (width === 390 || width === 1440) await page.screenshot({ path: `test-results/header-consistency/${surface}-${width}.png`, animations: "disabled" });
   }

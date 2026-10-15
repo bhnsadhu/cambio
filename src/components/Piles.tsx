@@ -44,7 +44,7 @@ export function Piles({
             {deckCount > 0 ? (
               <span aria-hidden className={`card-back absolute inset-0 rounded-[var(--tile-r)] ${canDraw ? "ring-turn" : ""}`} />
             ) : (
-              <span aria-hidden className="absolute inset-0 rounded-[var(--tile-r)] border-[1.5px] border-dashed border-white/20" />
+              <span aria-hidden className="absolute inset-0 rounded-[var(--tile-r)] border-[1.5px] border-dashed border-ink/20" />
             )}
           </button>
           <span className="t-footnote tnum text-ink-3">{deckCount === 0 ? "Deck empty" : `${deckCount} in deck`}</span>
@@ -54,7 +54,7 @@ export function Piles({
             {discardTop && !hideDiscard ? (
               <FaceCard key={discardTop.id} card={discardTop} size="lg" className="animate-settle" />
             ) : discardTop ? null : (
-              <div className="flex h-full w-full items-center justify-center rounded-[var(--tile-r)] border-[1.5px] border-dashed border-white/20">
+              <div className="flex h-full w-full items-center justify-center rounded-[var(--tile-r)] border-[1.5px] border-dashed border-ink/20">
                 <span className="t-footnote text-center text-ink-3">Nothing played yet</span>
               </div>
             )}

@@ -32,7 +32,7 @@ export function AvatarPicker({ identity, value, onChange, disabled = false, auto
         {SKIN_TONE_OPTIONS.map((option) => <label key={option.id} className="group relative min-w-0 cursor-pointer">
           <input className="peer absolute inset-0 z-10 size-full cursor-pointer opacity-0 disabled:cursor-wait" type="radio" name="skinTone" value={option.id} checked={selectedTone === option.id} onChange={() => onChange(avatarChoice(selectedStyle, option.id))} />
           <span className="flex h-full min-w-0 flex-col items-center gap-2 rounded-xl border border-transparent bg-surface-2 px-1 pt-3 pb-2 transition-colors group-hover:bg-ink/5 peer-checked:border-accent peer-checked:bg-accent/10 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent peer-disabled:cursor-wait peer-disabled:opacity-60">
-            <span aria-hidden="true" className="size-6 shrink-0 rounded-full ring-1 ring-white/15" style={{ background: option.color ?? "conic-gradient(#f1c6a7, #dca27b, #ba7b53, #895337, #593725, #f1c6a7)" }} />
+            <span aria-hidden="true" className="size-6 shrink-0 rounded-full ring-1 ring-ink/15" style={{ background: option.color ?? "conic-gradient(#f1c6a7, #dca27b, #ba7b53, #895337, #593725, #f1c6a7)" }} />
             <span className="flex min-h-7 items-center justify-center text-center text-[11px] leading-tight text-ink-2">{option.label}</span>
           </span>
         </label>)}

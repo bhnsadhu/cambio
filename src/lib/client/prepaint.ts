@@ -1,4 +1,5 @@
 import { INTRO_SCRIPT } from "./motion";
+import { THEME_SCRIPT } from "./theme";
 
 /**
  * Marks a browser that holds a saved account (the profile key in
@@ -9,4 +10,4 @@ import { INTRO_SCRIPT } from "./motion";
 const ACCOUNT_SCRIPT = `try{if(localStorage.getItem("cambio:profile"))document.documentElement.setAttribute("data-account","")}catch(e){}`;
 
 /** Inlined into the document head; runs before anything paints. */
-export const PREPAINT_SCRIPT = INTRO_SCRIPT + ACCOUNT_SCRIPT;
+export const PREPAINT_SCRIPT = THEME_SCRIPT + INTRO_SCRIPT + ACCOUNT_SCRIPT;

@@ -425,7 +425,7 @@ function TurnTimer({ deadline, skew, mine, frozenAt }: { deadline: number; skew:
   return (
     <div className="flex items-center gap-2" aria-label={`${secs} seconds left on this turn`}>
       <span className={`t-money text-[15px] ${urgent ? "text-accent" : "text-ink-3"}`}>{secs}s</span>
-      <span className="h-[3px] w-12 overflow-hidden rounded-full bg-white/10">
+      <span className="h-[3px] w-12 overflow-hidden rounded-full bg-ink/10">
         <span className={`block h-full rounded-full ${urgent ? "bg-accent" : "bg-ink-3"}`} style={{ width: `${Math.min(100, (left / 30_000) * 100)}%`, transition: "width 250ms linear" }} />
       </span>
       {mine && urgent ? <span className="t-footnote text-ink-3">or the turn is skipped</span> : null}

@@ -93,7 +93,7 @@ export function CardTile({ position, empty, selectable, selected, cue, onClick, 
     return (
       <div
         ref={slotRef}
-        className="h-[var(--tile-h)] w-[var(--tile-w)] rounded-[var(--tile-r)] border-[1.5px] border-dashed border-white/20"
+        className="h-[var(--tile-h)] w-[var(--tile-w)] rounded-[var(--tile-r)] border-[1.5px] border-dashed border-ink/20"
         aria-label={position ? `empty slot, position ${position}` : "empty slot"}
       />
     );

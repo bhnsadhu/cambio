@@ -18,12 +18,12 @@ const BUTTON_SIZES: Record<Size, string> = {
 };
 
 const BUTTON_VARIANTS: Record<Variant, string> = {
-  primary: "bg-ink text-bg hover:bg-tile-2",
+  primary: "bg-ink text-bg hover:bg-ink-hover",
   secondary: "bg-surface-2 text-ink hover:bg-surface-3",
   accent: "bg-accent text-bg hover:brightness-110",
   ghost: "bg-transparent text-ink-2 hover:text-ink hover:bg-surface-2",
   /** The one destructive look. Red is never used for anything reversible. */
-  danger: "bg-red text-ink hover:brightness-110",
+  danger: "bg-red text-white hover:brightness-110",
 };
 
 /**

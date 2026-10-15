@@ -31,7 +31,7 @@ export function ProfileCard({ profile, compact = false, actions }: { profile: Pr
           </div>
           <div className="ml-auto shrink-0 text-right"><p className="tnum text-[24px] font-medium leading-tight">{profile.points.toLocaleString()}</p><p className="mt-0.5 text-xs text-ink-3">Points</p></div>
         </div>
-        <div className="mt-5 h-1 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-label="Progress to next rank" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(standing.progress * 100)}>
+        <div className="mt-5 h-1 overflow-hidden rounded-full bg-ink/10" role="progressbar" aria-label="Progress to next rank" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(standing.progress * 100)}>
           <span className="block h-full rounded-full bg-accent" style={{ width: `${Math.round(standing.progress * 100)}%` }} />
         </div>
         <p className="mt-2 text-xs text-ink-3">{standing.next ? `${standing.toNext} points to ${standing.next.name}` : "Highest rank reached"}</p>

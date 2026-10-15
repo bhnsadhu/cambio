@@ -68,7 +68,7 @@ export function RevealBanner({
 
               </div>
               {pct !== null ? (
-                <div className="mt-3 h-[3px] w-full overflow-hidden rounded-full bg-white/10" aria-hidden>
+                <div className="mt-3 h-[3px] w-full overflow-hidden rounded-full bg-ink/10" aria-hidden>
                   <div className="h-full rounded-full bg-accent transition-[width] duration-100 ease-linear" style={{ width: `${pct}%` }} />
                 </div>
               ) : null}
