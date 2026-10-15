@@ -16,35 +16,42 @@ const esc = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").
 
 interface Row { label: string; sub: string; mean: number; low: number; high: number }
 
-/** A dot and interval chart on a 0 to 100% axis with an even split reference. */
+/**
+ * A dot and interval chart on a 0 to 100% axis with an even split reference.
+ * Grid lines are drawn only behind each group's rows, so group headings sit
+ * in clear space instead of being crossed by the axis.
+ */
 function intervalChart(title: string, subtitle: string, groups: { heading: string; rows: Row[] }[]): string {
-  const width = 820, left = 250, right = 620, rowHeight = 46, top = 96;
+  const width = 820, left = 260, right = 620, rowHeight = 46, headingGap = 30, groupGap = 18;
   const x = (value: number) => left + (right - left) * value;
-  let y = top;
   const body: string[] = [];
+  const bands: { from: number; to: number }[] = [];
+  let y = 100;
   for (const group of groups) {
-    body.push(`<text x="24" y="${y + 4}" font-size="13" font-weight="600" fill="${C.ink2}">${esc(group.heading)}</text>`);
-    y += 22;
+    body.push(`<text x="24" y="${y}" font-size="13" font-weight="600" fill="${C.ink2}">${esc(group.heading)}</text>`);
+    y += headingGap - 12;
+    const from = y;
     for (const row of group.rows) {
-      const cy = y + rowHeight / 2 - 6;
-      body.push(`<text x="24" y="${cy - 2}" font-size="14" fill="${C.ink}">${esc(row.label)}</text>`);
-      body.push(`<text x="24" y="${cy + 15}" font-size="12" fill="${C.ink2}">${esc(row.sub)}</text>`);
+      const cy = y + rowHeight / 2;
+      body.push(`<text x="24" y="${cy - 3}" font-size="14" fill="${C.ink}">${esc(row.label)}</text>`);
+      body.push(`<text x="24" y="${cy + 14}" font-size="12" fill="${C.ink2}">${esc(row.sub)}</text>`);
       body.push(`<line x1="${x(row.low).toFixed(1)}" x2="${x(row.high).toFixed(1)}" y1="${cy}" y2="${cy}" stroke="${C.series1}" stroke-width="2" stroke-linecap="round"/>`);
       for (const end of [row.low, row.high]) body.push(`<line x1="${x(end).toFixed(1)}" x2="${x(end).toFixed(1)}" y1="${cy - 6}" y2="${cy + 6}" stroke="${C.series1}" stroke-width="2" stroke-linecap="round"/>`);
       body.push(`<circle cx="${x(row.mean).toFixed(1)}" cy="${cy}" r="5.5" fill="${C.series1}" stroke="${C.surface}" stroke-width="2"/>`);
       body.push(`<text x="${right + 18}" y="${cy + 5}" font-size="13" fill="${C.ink}">${pct(row.mean)} <tspan fill="${C.ink2}">(${pct(row.low)} to ${pct(row.high)})</tspan></text>`);
       y += rowHeight;
     }
-    y += 10;
+    bands.push({ from, to: y });
+    y += groupGap + 12;
   }
-  const height = y + 40;
-  const axis: string[] = [];
-  for (const tick of [0, 0.25, 0.5, 0.75, 1]) {
-    axis.push(`<line x1="${x(tick)}" x2="${x(tick)}" y1="${top - 6}" y2="${y - 6}" stroke="${tick === 0.5 ? C.ink3 : C.grid}" stroke-width="1"${tick === 0.5 ? ' stroke-dasharray="4 4"' : ""}/>`);
-    axis.push(`<text x="${x(tick)}" y="${y + 12}" font-size="12" fill="${C.ink2}" text-anchor="middle">${pct(tick, 0)}</text>`);
+  const axisY = bands.at(-1)!.to + 20;
+  const grid: string[] = [];
+  for (const band of bands) for (const tick of [0, 0.25, 0.5, 0.75, 1]) {
+    grid.push(`<line x1="${x(tick)}" x2="${x(tick)}" y1="${band.from}" y2="${band.to}" stroke="${tick === 0.5 ? C.ink3 : C.grid}" stroke-width="1"${tick === 0.5 ? ' stroke-dasharray="4 4"' : ""}/>`);
   }
-  axis.push(`<text x="${x(0.5)}" y="${top - 12}" font-size="12" fill="${C.ink2}" text-anchor="middle">even split</text>`);
-  return svg(width, height, title, subtitle, [...axis, ...body]);
+  for (const tick of [0, 0.25, 0.5, 0.75, 1]) grid.push(`<text x="${x(tick)}" y="${axisY}" font-size="12" fill="${C.ink2}" text-anchor="middle">${pct(tick, 0)}</text>`);
+  grid.push(`<text x="${x(0.5)}" y="${100}" font-size="12" fill="${C.ink2}" text-anchor="middle">even split</text>`);
+  return svg(width, axisY + 24, title, subtitle, [...grid, ...body]);
 }
 
 function svg(width: number, height: number, title: string, subtitle: string, body: string[]): string {
@@ -60,22 +67,23 @@ ${body.join("\n")}
 }
 
 function winShareChart(matchups: MatchupSummary[]): string {
-  const rows = (group: MatchupSummary["group"], sub: (m: MatchupSummary) => string) => matchups.filter((m) => m.group === group).map((m) => ({
-    label: m.title, sub: sub(m), mean: m.shareA.mean, low: m.shareA.low, high: m.shareA.high,
+  const rows = (group: MatchupSummary["group"]) => matchups.filter((m) => m.group === group).map((m) => ({
+    label: m.title, sub: `${m.note}, ${m.rounds} rounds`, mean: m.shareA.mean, low: m.shareA.low, high: m.shareA.high,
   }));
   return intervalChart("Win share by matchup, with 95% intervals",
-    `Two seats each, reversed seatings, ${matchups[0].rounds} rounds per matchup over two seed sets. Ties split the win.`, [
-      { heading: "Levels", rows: rows("levels", (m) => m.note) },
-      { heading: `Controls: four copies of one level, ${matchups.find((m) => m.group === "controls")?.rounds ?? 0} rounds each`, rows: rows("controls", (m) => m.note) },
+    "Each side holds two of the four seats. Seatings reversed, two seed sets, ties split the win.", [
+      { heading: "Levels", rows: rows("levels") },
+      { heading: "Controls: copies of one level", rows: rows("controls") },
     ]);
 }
 
 function ablationChart(matchups: MatchupSummary[]): string {
-  const rows = matchups.filter((m) => m.group === "ablations").map((m) => ({
+  const ablations = matchups.filter((m) => m.group === "ablations");
+  const rows = ablations.map((m) => ({
     label: m.title, sub: m.note, mean: m.shareA.mean, low: m.shareA.low, high: m.shareA.high,
   }));
   return intervalChart("Hard with one ability removed, against full hard",
-    `Win share of the reduced bot, ${rows.length ? matchups.find((m) => m.group === "ablations")!.rounds : 0} rounds each. Below 50% means the ability adds strength.`, [
+    `Win share of the reduced bot, ${ablations[0]?.rounds ?? 0} rounds each. Below 50% means the ability adds strength.`, [
       { heading: "Ability removed", rows },
     ]);
 }
