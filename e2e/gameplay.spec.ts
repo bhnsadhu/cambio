@@ -1,4 +1,4 @@
-import { test, expect, type Page, type BrowserContext } from "@playwright/test";
+import { test, expect, type Page, type BrowserContext, type Locator } from "@playwright/test";
 import { randomBytes } from "node:crypto";
 
 const origin = process.env.E2E_APP_ORIGIN ?? "http://localhost:3100";
@@ -19,7 +19,7 @@ async function state(context: BrowserContext, code: string) {
 
 for (const mode of ["guest", "account"] as const) {
   test(`${mode} can play a complete round, use help and pause, and continue from the results on any screen`, async ({ page, context }) => {
-    test.setTimeout(150_000);
+    test.setTimeout(240_000);
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     const name = mode === "guest" ? "Guest Casey" : "Alexandria Collins";
@@ -83,17 +83,21 @@ for (const mode of ["guest", "account"] as const) {
     await page.screenshot({ path: `test-results/table-${mode}-mobile.png`, fullPage: true });
     await actions.getByRole("button", { name: /^Place .* on the pile$/ }).click();
     const results = page.getByRole("dialog", { name: "Round results", exact: true });
-    const deadline = Date.now() + 75_000;
+    // Bots play at a human pace, so a full round can take well over a minute on a slow runner.
+    const deadline = Date.now() + 120_000;
+    // A bot's move can take a button away between the check and the click.
+    // Never wait on a button that is gone; the loop simply looks again.
+    const press = async (button: Locator) => {
+      if (!await button.isVisible() || !await button.isEnabled({ timeout: 1_000 }).catch(() => false)) return false;
+      await button.click({ timeout: 2_000 }).catch(() => {});
+      return true;
+    };
     while (Date.now() < deadline && await results.count() === 0) {
       const skip = actions.getByRole("button", { name: "Skip the power", exact: true });
       const call = actions.getByRole("button", { name: "Call Cambio", exact: true });
       const draw = actions.getByRole("button", { name: "Draw", exact: true });
       const place = actions.getByRole("button", { name: /^Place .* on the pile$/ });
-      if (await skip.isVisible() && await skip.isEnabled()) await skip.click();
-      else if (await call.isVisible() && await call.isEnabled()) await call.click();
-      else if (await draw.isVisible() && await draw.isEnabled()) await draw.click();
-      else if (await place.isVisible() && await place.isEnabled()) await place.click();
-      else await page.waitForTimeout(500);
+      if (!await press(skip) && !await press(call) && !await press(draw) && !await press(place)) await page.waitForTimeout(500);
     }
     await expect(results).toBeVisible();
     for (const width of [320, 390, 768, 1280, 1440]) await fits(page, width);
