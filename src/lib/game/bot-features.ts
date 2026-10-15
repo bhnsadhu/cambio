@@ -39,7 +39,7 @@ export const ACTION_FEATURES: string[] = [
 ];
 
 /** At most this many candidates are valued per decision: the passive choice, the rule's choice, then the best scored. */
-export const MAX_CANDIDATES = 8;
+export const MAX_CANDIDATES = 6;
 
 export function mindOf(state: BotObservation, botId: string): Mind {
   const bot = state.players.find((p) => p.id === botId)!;
