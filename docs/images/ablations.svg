@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="820" height="352" viewBox="0 0 820 352" role="img" aria-labelledby="t d" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
 <title id="t">Hard with one ability removed, against full hard</title>
 <desc id="d">Win share of the reduced bot, 800 rounds each. Below 50% means the ability adds strength.</desc>
-<rect width="820" height="352" rx="12" fill="#fcfcfb"/>
+<rect x="0.5" y="0.5" width="819" height="351" rx="12" fill="#fcfcfb" stroke="#e6e5e0"/>
 <text x="24" y="34" font-size="18" font-weight="600" fill="#0b0b0b">Hard with one ability removed, against full hard</text>
 <text x="24" y="56" font-size="13" fill="#52514e">Win share of the reduced bot, 800 rounds each. Below 50% means the ability adds strength.</text>
 <line x1="250" x2="250" y1="90" y2="306" stroke="#e6e5e0" stroke-width="1"/>

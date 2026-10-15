@@ -28,21 +28,21 @@ The hypotheses were committed before any evaluation code. The full write up, wit
 ## Architecture
 
 ```mermaid
-flowchart LR
-  browser["Browser<br/>anon key only"]
-  functions["Vercel Functions<br/>Next.js route handlers<br/>pure rules engine"]
-  games[("Postgres games<br/>full secret state<br/>RLS on, no policies")]
-  views[("game_views<br/>redacted public view")]
-  realtime["Supabase Realtime<br/>Postgres Changes"]
+flowchart TB
+  browser["Browser<br/>holds only the anon key"]
+  functions["Vercel Functions<br/>route handlers run the pure rules engine<br/>bot turns run after the response, via waitUntil"]
+  subgraph postgres["Supabase Postgres"]
+    games[("games<br/>full secret state<br/>RLS on, no policies")]
+    views[("game_views<br/>redacted public view")]
+  end
+  realtime["Supabase Realtime"]
 
-  browser -->|"action with a client action ID"| functions
-  functions -->|"game_load: state and version"| games
-  functions -->|"game_commit: version checked, retried on conflict"| games
-  games -->|"same commit writes the redacted view"| views
-  views --> realtime
-  realtime -->|"new view for every seat"| browser
-  functions -->|"private view: own drawn card and reveals"| browser
-  functions -.->|"waitUntil bot runner under a 20 second lease"| functions
+  browser -->|"Step 1: action with a client action ID"| functions
+  functions -->|"Step 2: game_load, then game_commit,<br/>version checked and retried on conflict"| games
+  games -->|"Step 3: the same commit writes the redacted view"| views
+  views -->|"Step 4: Postgres Changes"| realtime
+  realtime -->|"Step 5: new view for every seat"| browser
+  functions -.->|"private view: own drawn card and reveals"| browser
 ```
 
 Every move is a pure function over the current state. The server loads the state and its version, runs the action through the engine, and commits only if the version is unchanged; a losing commit reloads and runs again, so the rules decide every late arrival. More in [docs/architecture.md](docs/architecture.md).

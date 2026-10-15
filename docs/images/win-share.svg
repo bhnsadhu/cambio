@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="820" height="476" viewBox="0 0 820 476" role="img" aria-labelledby="t d" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
 <title id="t">Win share by matchup, with 95% intervals</title>
 <desc id="d">Two seats each, reversed seatings, 800 rounds per matchup over two seed sets. Ties split the win.</desc>
-<rect width="820" height="476" rx="12" fill="#fcfcfb"/>
+<rect x="0.5" y="0.5" width="819" height="475" rx="12" fill="#fcfcfb" stroke="#e6e5e0"/>
 <text x="24" y="34" font-size="18" font-weight="600" fill="#0b0b0b">Win share by matchup, with 95% intervals</text>
 <text x="24" y="56" font-size="13" fill="#52514e">Two seats each, reversed seatings, 800 rounds per matchup over two seed sets. Ties split the win.</text>
 <line x1="250" x2="250" y1="90" y2="430" stroke="#e6e5e0" stroke-width="1"/>

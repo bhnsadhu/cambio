@@ -51,7 +51,7 @@ function svg(width: number, height: number, title: string, subtitle: string, bod
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="t d" ${FONT}>
 <title id="t">${esc(title)}</title>
 <desc id="d">${esc(subtitle)}</desc>
-<rect width="${width}" height="${height}" rx="12" fill="${C.surface}"/>
+<rect x="0.5" y="0.5" width="${width - 1}" height="${height - 1}" rx="12" fill="${C.surface}" stroke="${C.grid}"/>
 <text x="24" y="34" font-size="18" font-weight="600" fill="${C.ink}">${esc(title)}</text>
 <text x="24" y="56" font-size="13" fill="${C.ink2}">${esc(subtitle)}</text>
 ${body.join("\n")}

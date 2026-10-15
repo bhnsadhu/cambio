@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="820" height="560" viewBox="0 0 820 560" role="img" aria-labelledby="t d" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
 <title id="t">Do Cambio calls win as often as the bots believe?</title>
 <desc id="d">Calls by shipped bots and by hard with only the gate removed, grouped by the caller's win belief. 95% Wilson intervals.</desc>
-<rect width="820" height="560" rx="12" fill="#fcfcfb"/>
+<rect x="0.5" y="0.5" width="819" height="559" rx="12" fill="#fcfcfb" stroke="#e6e5e0"/>
 <text x="24" y="34" font-size="18" font-weight="600" fill="#0b0b0b">Do Cambio calls win as often as the bots believe?</text>
 <text x="24" y="56" font-size="13" fill="#52514e">Calls by shipped bots and by hard with only the gate removed, grouped by the caller's win belief. 95% Wilson intervals.</text>
 <line x1="80" x2="560" y1="480" y2="480" stroke="#e6e5e0"/>
