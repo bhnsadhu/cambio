@@ -4,11 +4,11 @@
 <rect x="0.5" y="0.5" width="819" height="345" rx="12" fill="#fcfcfb" stroke="#e6e5e0"/>
 <text x="24" y="34" font-size="18" font-weight="600" fill="#0b0b0b">Hard with one ability removed, against full hard</text>
 <text x="24" y="56" font-size="13" fill="#52514e">Win share of the reduced bot, 800 rounds each. Below 50% means the ability adds strength.</text>
-<line x1="260" x2="260" y1="118" y2="302" stroke="#e6e5e0" stroke-width="1"/>
-<line x1="350" x2="350" y1="118" y2="302" stroke="#e6e5e0" stroke-width="1"/>
-<line x1="440" x2="440" y1="118" y2="302" stroke="#8a8984" stroke-width="1" stroke-dasharray="4 4"/>
-<line x1="530" x2="530" y1="118" y2="302" stroke="#e6e5e0" stroke-width="1"/>
-<line x1="620" x2="620" y1="118" y2="302" stroke="#e6e5e0" stroke-width="1"/>
+<line x1="260" x2="260" y1="110" y2="302" stroke="#e6e5e0" stroke-width="1"/>
+<line x1="350" x2="350" y1="110" y2="302" stroke="#e6e5e0" stroke-width="1"/>
+<line x1="440" x2="440" y1="110" y2="302" stroke="#8a8984" stroke-width="1"/>
+<line x1="530" x2="530" y1="110" y2="302" stroke="#e6e5e0" stroke-width="1"/>
+<line x1="620" x2="620" y1="110" y2="302" stroke="#e6e5e0" stroke-width="1"/>
 <text x="260" y="322" font-size="12" fill="#52514e" text-anchor="middle">0%</text>
 <text x="350" y="322" font-size="12" fill="#52514e" text-anchor="middle">25%</text>
 <text x="440" y="322" font-size="12" fill="#52514e" text-anchor="middle">50%</text>
@@ -22,26 +22,26 @@
 <line x1="384.2" x2="384.2" y1="135" y2="147" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <line x1="406.8" x2="406.8" y1="135" y2="147" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <circle cx="395.5" cy="141" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
-<text x="638" y="146" font-size="13" fill="#0b0b0b">37.6% <tspan fill="#52514e">(34.5% to 40.8%)</tspan></text>
+<text x="638" y="146" font-size="13" fill="#0b0b0b" style="font-variant-numeric: tabular-nums">37.6% <tspan fill="#52514e">(34.5% to 40.8%)</tspan></text>
 <text x="24" y="184" font-size="14" fill="#0b0b0b">No card counting</text>
 <text x="24" y="201" font-size="12" fill="#52514e">ignores seen cards when estimating</text>
 <line x1="419.9" x2="439.0" y1="187" y2="187" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <line x1="419.9" x2="419.9" y1="181" y2="193" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <line x1="439.0" x2="439.0" y1="181" y2="193" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <circle cx="429.4" cy="187" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
-<text x="638" y="192" font-size="13" fill="#0b0b0b">47.1% <tspan fill="#52514e">(44.4% to 49.7%)</tspan></text>
+<text x="638" y="192" font-size="13" fill="#0b0b0b" style="font-variant-numeric: tabular-nums">47.1% <tspan fill="#52514e">(44.4% to 49.7%)</tspan></text>
 <text x="24" y="230" font-size="14" fill="#0b0b0b">No inference from keeps</text>
 <text x="24" y="247" font-size="12" fill="#52514e">ignores keeps and pushes</text>
 <line x1="409.9" x2="431.4" y1="233" y2="233" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <line x1="409.9" x2="409.9" y1="227" y2="239" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <line x1="431.4" x2="431.4" y1="227" y2="239" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <circle cx="420.6" cy="233" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
-<text x="638" y="238" font-size="13" fill="#0b0b0b">44.6% <tspan fill="#52514e">(41.6% to 47.6%)</tspan></text>
+<text x="638" y="238" font-size="13" fill="#0b0b0b" style="font-variant-numeric: tabular-nums">44.6% <tspan fill="#52514e">(41.6% to 47.6%)</tspan></text>
 <text x="24" y="276" font-size="14" fill="#0b0b0b">No Cambio gate</text>
 <text x="24" y="293" font-size="12" fill="#52514e">calls on any estimated lead</text>
 <line x1="409.3" x2="430.6" y1="279" y2="279" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <line x1="409.3" x2="409.3" y1="273" y2="285" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <line x1="430.6" x2="430.6" y1="273" y2="285" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <circle cx="420.0" cy="279" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
-<text x="638" y="284" font-size="13" fill="#0b0b0b">44.4% <tspan fill="#52514e">(41.5% to 47.4%)</tspan></text>
+<text x="638" y="284" font-size="13" fill="#0b0b0b" style="font-variant-numeric: tabular-nums">44.4% <tspan fill="#52514e">(41.5% to 47.4%)</tspan></text>
 </svg>

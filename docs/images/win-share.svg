@@ -4,16 +4,11 @@
 <rect x="0.5" y="0.5" width="819" height="485" rx="12" fill="#fcfcfb" stroke="#e6e5e0"/>
 <text x="24" y="34" font-size="18" font-weight="600" fill="#0b0b0b">Win share by matchup, with 95% intervals</text>
 <text x="24" y="56" font-size="13" fill="#52514e">Each side holds two of the four seats. Seatings reversed, two seed sets, ties split the win.</text>
-<line x1="260" x2="260" y1="118" y2="256" stroke="#e6e5e0" stroke-width="1"/>
-<line x1="350" x2="350" y1="118" y2="256" stroke="#e6e5e0" stroke-width="1"/>
-<line x1="440" x2="440" y1="118" y2="256" stroke="#8a8984" stroke-width="1" stroke-dasharray="4 4"/>
-<line x1="530" x2="530" y1="118" y2="256" stroke="#e6e5e0" stroke-width="1"/>
-<line x1="620" x2="620" y1="118" y2="256" stroke="#e6e5e0" stroke-width="1"/>
-<line x1="260" x2="260" y1="304" y2="442" stroke="#e6e5e0" stroke-width="1"/>
-<line x1="350" x2="350" y1="304" y2="442" stroke="#e6e5e0" stroke-width="1"/>
-<line x1="440" x2="440" y1="304" y2="442" stroke="#8a8984" stroke-width="1" stroke-dasharray="4 4"/>
-<line x1="530" x2="530" y1="304" y2="442" stroke="#e6e5e0" stroke-width="1"/>
-<line x1="620" x2="620" y1="304" y2="442" stroke="#e6e5e0" stroke-width="1"/>
+<line x1="260" x2="260" y1="110" y2="442" stroke="#e6e5e0" stroke-width="1"/>
+<line x1="350" x2="350" y1="110" y2="442" stroke="#e6e5e0" stroke-width="1"/>
+<line x1="440" x2="440" y1="110" y2="442" stroke="#8a8984" stroke-width="1"/>
+<line x1="530" x2="530" y1="110" y2="442" stroke="#e6e5e0" stroke-width="1"/>
+<line x1="620" x2="620" y1="110" y2="442" stroke="#e6e5e0" stroke-width="1"/>
 <text x="260" y="462" font-size="12" fill="#52514e" text-anchor="middle">0%</text>
 <text x="350" y="462" font-size="12" fill="#52514e" text-anchor="middle">25%</text>
 <text x="440" y="462" font-size="12" fill="#52514e" text-anchor="middle">50%</text>
@@ -27,21 +22,21 @@
 <line x1="476.8" x2="476.8" y1="135" y2="147" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <line x1="498.8" x2="498.8" y1="135" y2="147" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <circle cx="487.8" cy="141" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
-<text x="638" y="146" font-size="13" fill="#0b0b0b">63.3% <tspan fill="#52514e">(60.2% to 66.3%)</tspan></text>
+<text x="638" y="146" font-size="13" fill="#0b0b0b" style="font-variant-numeric: tabular-nums">63.3% <tspan fill="#52514e">(60.2% to 66.3%)</tspan></text>
 <text x="24" y="184" font-size="14" fill="#0b0b0b">Medium vs easy</text>
 <text x="24" y="201" font-size="12" fill="#52514e">share won by medium, 800 rounds</text>
 <line x1="532.3" x2="551.4" y1="187" y2="187" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <line x1="532.3" x2="532.3" y1="181" y2="193" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <line x1="551.4" x2="551.4" y1="181" y2="193" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <circle cx="541.9" cy="187" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
-<text x="638" y="192" font-size="13" fill="#0b0b0b">78.3% <tspan fill="#52514e">(75.6% to 81.0%)</tspan></text>
+<text x="638" y="192" font-size="13" fill="#0b0b0b" style="font-variant-numeric: tabular-nums">78.3% <tspan fill="#52514e">(75.6% to 81.0%)</tspan></text>
 <text x="24" y="230" font-size="14" fill="#0b0b0b">Hard vs easy</text>
 <text x="24" y="247" font-size="12" fill="#52514e">share won by hard, 800 rounds</text>
 <line x1="558.7" x2="575.7" y1="233" y2="233" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <line x1="558.7" x2="558.7" y1="227" y2="239" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <line x1="575.7" x2="575.7" y1="227" y2="239" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <circle cx="567.2" cy="233" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
-<text x="638" y="238" font-size="13" fill="#0b0b0b">85.3% <tspan fill="#52514e">(83.0% to 87.7%)</tspan></text>
+<text x="638" y="238" font-size="13" fill="#0b0b0b" style="font-variant-numeric: tabular-nums">85.3% <tspan fill="#52514e">(83.0% to 87.7%)</tspan></text>
 <text x="24" y="286" font-size="13" font-weight="600" fill="#52514e">Controls: copies of one level</text>
 <text x="24" y="324" font-size="14" fill="#0b0b0b">Easy copies</text>
 <text x="24" y="341" font-size="12" fill="#52514e">share won by seats 1 and 3, 400 rounds</text>
@@ -49,19 +44,19 @@
 <line x1="436.7" x2="436.7" y1="321" y2="333" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <line x1="470.6" x2="470.6" y1="321" y2="333" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <circle cx="453.6" cy="327" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
-<text x="638" y="332" font-size="13" fill="#0b0b0b">53.8% <tspan fill="#52514e">(49.1% to 58.5%)</tspan></text>
+<text x="638" y="332" font-size="13" fill="#0b0b0b" style="font-variant-numeric: tabular-nums">53.8% <tspan fill="#52514e">(49.1% to 58.5%)</tspan></text>
 <text x="24" y="370" font-size="14" fill="#0b0b0b">Medium copies</text>
 <text x="24" y="387" font-size="12" fill="#52514e">share won by seats 1 and 3, 400 rounds</text>
 <line x1="418.5" x2="452.5" y1="373" y2="373" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <line x1="418.5" x2="418.5" y1="367" y2="379" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <line x1="452.5" x2="452.5" y1="367" y2="379" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <circle cx="435.5" cy="373" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
-<text x="638" y="378" font-size="13" fill="#0b0b0b">48.8% <tspan fill="#52514e">(44.0% to 53.5%)</tspan></text>
+<text x="638" y="378" font-size="13" fill="#0b0b0b" style="font-variant-numeric: tabular-nums">48.8% <tspan fill="#52514e">(44.0% to 53.5%)</tspan></text>
 <text x="24" y="416" font-size="14" fill="#0b0b0b">Hard copies</text>
 <text x="24" y="433" font-size="12" fill="#52514e">share won by seats 1 and 3, 400 rounds</text>
 <line x1="425.3" x2="458.3" y1="419" y2="419" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <line x1="425.3" x2="425.3" y1="413" y2="425" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <line x1="458.3" x2="458.3" y1="413" y2="425" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <circle cx="441.8" cy="419" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
-<text x="638" y="424" font-size="13" fill="#0b0b0b">50.5% <tspan fill="#52514e">(45.9% to 55.1%)</tspan></text>
+<text x="638" y="424" font-size="13" fill="#0b0b0b" style="font-variant-numeric: tabular-nums">50.5% <tspan fill="#52514e">(45.9% to 55.1%)</tspan></text>
 </svg>

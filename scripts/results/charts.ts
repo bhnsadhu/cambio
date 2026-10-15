@@ -18,8 +18,8 @@ interface Row { label: string; sub: string; mean: number; low: number; high: num
 
 /**
  * A dot and interval chart on a 0 to 100% axis with an even split reference.
- * Grid lines are drawn only behind each group's rows, so group headings sit
- * in clear space instead of being crossed by the axis.
+ * Labels and group headings stay in the left column, clear of the plot, so
+ * the grid can run unbroken from the first row to the last.
  */
 function intervalChart(title: string, subtitle: string, groups: { heading: string; rows: Row[] }[]): string {
   const width = 820, left = 260, right = 620, rowHeight = 46, headingGap = 30, groupGap = 18;
@@ -38,7 +38,7 @@ function intervalChart(title: string, subtitle: string, groups: { heading: strin
       body.push(`<line x1="${x(row.low).toFixed(1)}" x2="${x(row.high).toFixed(1)}" y1="${cy}" y2="${cy}" stroke="${C.series1}" stroke-width="2" stroke-linecap="round"/>`);
       for (const end of [row.low, row.high]) body.push(`<line x1="${x(end).toFixed(1)}" x2="${x(end).toFixed(1)}" y1="${cy - 6}" y2="${cy + 6}" stroke="${C.series1}" stroke-width="2" stroke-linecap="round"/>`);
       body.push(`<circle cx="${x(row.mean).toFixed(1)}" cy="${cy}" r="5.5" fill="${C.series1}" stroke="${C.surface}" stroke-width="2"/>`);
-      body.push(`<text x="${right + 18}" y="${cy + 5}" font-size="13" fill="${C.ink}">${pct(row.mean)} <tspan fill="${C.ink2}">(${pct(row.low)} to ${pct(row.high)})</tspan></text>`);
+      body.push(`<text x="${right + 18}" y="${cy + 5}" font-size="13" fill="${C.ink}" style="font-variant-numeric: tabular-nums">${pct(row.mean)} <tspan fill="${C.ink2}">(${pct(row.low)} to ${pct(row.high)})</tspan></text>`);
       y += rowHeight;
     }
     bands.push({ from, to: y });
@@ -46,8 +46,9 @@ function intervalChart(title: string, subtitle: string, groups: { heading: strin
   }
   const axisY = bands.at(-1)!.to + 20;
   const grid: string[] = [];
-  for (const band of bands) for (const tick of [0, 0.25, 0.5, 0.75, 1]) {
-    grid.push(`<line x1="${x(tick)}" x2="${x(tick)}" y1="${band.from}" y2="${band.to}" stroke="${tick === 0.5 ? C.ink3 : C.grid}" stroke-width="1"${tick === 0.5 ? ' stroke-dasharray="4 4"' : ""}/>`);
+  // Solid hairlines; the even split is the same line one step darker.
+  for (const tick of [0, 0.25, 0.5, 0.75, 1]) {
+    grid.push(`<line x1="${x(tick)}" x2="${x(tick)}" y1="${bands[0].from - 8}" y2="${bands.at(-1)!.to}" stroke="${tick === 0.5 ? C.ink3 : C.grid}" stroke-width="1"/>`);
   }
   for (const tick of [0, 0.25, 0.5, 0.75, 1]) grid.push(`<text x="${x(tick)}" y="${axisY}" font-size="12" fill="${C.ink2}" text-anchor="middle">${pct(tick, 0)}</text>`);
   grid.push(`<text x="${x(0.5)}" y="${100}" font-size="12" fill="${C.ink2}" text-anchor="middle">even split</text>`);
