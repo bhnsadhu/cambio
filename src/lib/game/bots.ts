@@ -25,6 +25,7 @@ import { expectedCard, unseenValues } from "./bot-knowledge";
 import { bestTrade, discardGain, estimateOther, opponentsOf, ownSlots, powerGain, tacticalGain, tacticalSlots, tradeGain, type Mind, type Slot } from "./bot-tactics";
 export { assessCambio } from "./bot-beliefs";
 import { observeBot, type BotObservation } from "./bot-observation";
+import type { DecisionKind } from "./bot-features";
 import { actionPolicyOf } from "./bot-policies";
 import { canStick, TURN_TIMEOUT_MS } from "./engine";
 import type { Action, BotDifficulty, Card, GameState, Player } from "./types";
@@ -326,6 +327,25 @@ function pickGive(state: BotObservation, brain: Brain): string | null {
 
 function strategicGive(state: BotObservation, brain: Brain, slots: Slot[]): string {
   return slots.sort((a, b) => expectedCard(state, brain.bot, b.cardId, brain.pool) - expectedCard(state, brain.bot, a.cardId, brain.pool))[0].cardId;
+}
+
+/**
+ * What rules_v1 does at a decision when the seat is focused, whatever the
+ * seat's own policy. Model features compare every candidate against it.
+ */
+export function rulesV1Choice(state: BotObservation, botId: string, kind: DecisionKind): Action | null {
+  const bot = state.players.find((p) => p.id === botId)!;
+  const brain: Brain = { ...brainFor(state, bot, () => 0), rules: RULES_V1 };
+  switch (kind) {
+    case "decide": return strategicDrawn(state, brain, state.cards[state.turn!.drawnCardId!]!);
+    case "stick": {
+      const top = state.cards[state.discard[state.discard.length - 1]];
+      const target = top ? strategicStick(state, brain, top) : null;
+      return target ? { type: "stick", cardId: target } : null;
+    }
+    case "give": return { type: "give", cardId: strategicGive(state, brain, ownSlots(state, bot)) };
+    default: return strategicPower(state, brain);
+  }
 }
 
 /** rules_v1: the hand written tactical evaluator above, unchanged since the evaluation began. */

@@ -3,7 +3,7 @@ import { assessCambio, planBots } from "./bots";
 import { jitterFor, playRound } from "./bot-harness";
 import { observeBot } from "./bot-observation";
 import { createGame } from "./engine";
-import { act, card, makeCtx, player, rig } from "./testkit";
+import { act, card, forbidSecrets, makeCtx, permuteUnseen, player, rig } from "./testkit";
 import type { BotDifficulty, GameState, Rank, Suit } from "./types";
 
 /**
@@ -192,55 +192,6 @@ function decisionStates(level: BotDifficulty) {
     type: "kingLook", cardIdA: player(otherPower, next).hand[0]!, cardIdB: player(otherPower, me).hand[0]!,
   }, ctx) });
   return { cases, me, ctx };
-}
-
-function permuteUnseen(state: GameState, me: string, seed: number) {
-  const visible = new Set([...state.discard, ...(state.botKnown[me] ?? [])]);
-  if (state.turn?.playerId === me && state.turn.drawnCardId) visible.add(state.turn.drawnCardId);
-  const hiddenIds = Object.keys(state.cards).filter((id) => !visible.has(id));
-  const rankAndSuit = hiddenIds.map((id) => ({ rank: state.cards[id].rank, suit: state.cards[id].suit }));
-  const random = makeCtx(seed).rng;
-  for (let index = rankAndSuit.length - 1; index > 0; index--) {
-    const other = Math.floor(random() * (index + 1));
-    [rankAndSuit[index], rankAndSuit[other]] = [rankAndSuit[other], rankAndSuit[index]];
-  }
-  const altered = structuredClone(state);
-  hiddenIds.forEach((id, index) => { altered.cards[id] = { id, ...rankAndSuit[index] }; });
-  altered.deck.reverse();
-  for (const p of altered.players) if (p.id !== me) {
-    altered.botKnown[p.id] = [...hiddenIds];
-    altered.reveals.push({ id: `private-${p.id}`, toPlayerId: p.id, kind: "peekOther", cardIds: hiddenIds, until: Number.MAX_SAFE_INTEGER });
-  }
-  return altered;
-}
-
-/** Fail immediately on even an attempted read, not only a changed decision. */
-function forbidSecrets(state: GameState, me: string): GameState {
-  const allowed = new Set([...state.discard, ...(state.botKnown[me] ?? [])]);
-  if (state.turn?.playerId === me && state.turn.drawnCardId) allowed.add(state.turn.drawnCardId);
-  if (state.pendingPower?.playerId === me && state.pendingPower.looked) {
-    allowed.add(state.pendingPower.looked.a);
-    allowed.add(state.pendingPower.looked.b);
-  }
-  const cards = new Proxy(state.cards, {
-    get(target, id: string) {
-      if (!allowed.has(id)) throw new Error(`Read of unobserved card ${id}`);
-      return target[id];
-    },
-    ownKeys() { throw new Error("Inspected the full card registry"); },
-  });
-  const botKnown = new Proxy(state.botKnown, {
-    get(target, id: string) {
-      if (id !== me) throw new Error("Read another bot's memory");
-      return target[id];
-    },
-  });
-  return new Proxy({ ...state, cards, botKnown }, {
-    get(target, key: keyof GameState) {
-      if (["deck", "reveals", "results"].includes(key)) throw new Error(`Read private server field ${key}`);
-      return target[key];
-    },
-  });
 }
 
 describe("hidden ranks cannot influence bot decisions", () => {
