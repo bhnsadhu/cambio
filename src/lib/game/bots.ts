@@ -23,6 +23,7 @@ import { cardValue, powerOf } from "./cards";
 import { assessObservedCambio, expectedCard, unseenValues } from "./bot-beliefs";
 export { assessCambio } from "./bot-beliefs";
 import { observeBot, type BotObservation } from "./bot-observation";
+import { actionPolicyOf } from "./bot-policies";
 import { canStick, cardCount, TURN_TIMEOUT_MS } from "./engine";
 import type { Action, BotDifficulty, Card, GameState, Player } from "./types";
 
@@ -62,6 +63,20 @@ interface Brain {
   pool: number[];
   roll: (tag: string) => number;
   focused: (tag: string) => boolean;
+  /** What a focused bot does, by its action policy. */
+  rules: ActionRules;
+}
+
+/**
+ * The choices a focused bot makes. Lapses, effort rolls and memory belong to
+ * the level, not to the policy, so every policy keeps them.
+ */
+interface ActionRules {
+  drawn: (state: BotObservation, brain: Brain, drawn: Card) => Action;
+  power: (state: BotObservation, brain: Brain) => Action;
+  /** Which remembered match to stick on the top card, if any. */
+  stick: (state: BotObservation, brain: Brain, top: Card) => string | null;
+  give: (state: BotObservation, brain: Brain, slots: Slot[]) => string;
 }
 
 function brainFor(state: BotObservation, bot: Player, jitter: Jitter): Brain {
@@ -76,6 +91,7 @@ function brainFor(state: BotObservation, bot: Player, jitter: Jitter): Brain {
     // One stable roll per opportunity: polling the same position must not
     // turn a missed opportunity into repeated chances to notice it.
     focused: (tag: string) => diff === "hard" || roll(`skill:${tag}`) < BOT_SKILL[diff],
+    rules: actionRulesFor(bot),
   };
 }
 
@@ -227,7 +243,7 @@ function estimateOther(state: BotObservation, brain: Brain, other: Player): numb
 }
 
 function decideDrawn(state: BotObservation, brain: Brain, drawn: Card): Action {
-  if (brain.focused(`decide:${drawn.id}`)) return strategicDrawn(state, brain, drawn);
+  if (brain.focused(`decide:${drawn.id}`)) return brain.rules.drawn(state, brain, drawn);
   // A lapse is an actual weaker decision, not merely a longer animation.
   // Sometimes keep a mediocre draw without checking what it replaces;
   // otherwise discard it and miss a useful replacement or attack.
@@ -242,7 +258,7 @@ function decideDrawn(state: BotObservation, brain: Brain, drawn: Card): Action {
 function resolvePower(state: BotObservation, brain: Brain): Action {
   const pp = state.pendingPower!;
   const decision = pp.looked ? `decide:${pp.looked.a}:${pp.looked.b}` : "look";
-  if (brain.focused(`power:${pp.kind}:${decision}:${state.turnsTaken}`)) return strategicPower(state, brain);
+  if (brain.focused(`power:${pp.kind}:${decision}:${state.turnsTaken}`)) return brain.rules.power(state, brain);
   return pp.looked ? { type: "kingDecide", swap: false } : { type: "skipPower" };
 }
 
@@ -365,11 +381,16 @@ function pickStick(state: BotObservation, brain: Brain): string | null {
   const bot = brain.bot;
   const top = state.cards[state.discard[state.discard.length - 1]];
   if (!top) return null;
-  const known = state.botKnown[bot.id] ?? [];
-  const matches = (id: string | null): boolean => !!id && known.includes(id) && state.cards[id]?.rank === top.rank;
 
   if (state.botMissedTop?.[bot.id] === top.id) return null;
   if (!brain.focused(`stick:${top.id}`)) return null;
+  return brain.rules.stick(state, brain, top);
+}
+
+function strategicStick(state: BotObservation, brain: Brain, top: Card): string | null {
+  const bot = brain.bot;
+  const known = state.botKnown[bot.id] ?? [];
+  const matches = (id: string | null): boolean => !!id && known.includes(id) && state.cards[id]?.rank === top.rank;
 
   // Own cards first: sticking one costs nothing, sticking someone else's
   // costs a card out of this hand (but lets it choose which).
@@ -396,7 +417,20 @@ function pickGive(state: BotObservation, brain: Brain): string | null {
   if (!brain.focused(`give:${debt?.to ?? "stick"}:${state.turnsTaken}`)) {
     return slots[Math.floor(brain.roll(`give-slot:${state.turnsTaken}`) * slots.length)].cardId;
   }
+  return brain.rules.give(state, brain, slots);
+}
+
+function strategicGive(state: BotObservation, brain: Brain, slots: Slot[]): string {
   return slots.sort((a, b) => expectedCard(state, brain.bot, b.cardId, brain.pool) - expectedCard(state, brain.bot, a.cardId, brain.pool))[0].cardId;
+}
+
+/** rules_v1: the hand written tactical evaluator above, unchanged since the evaluation began. */
+const RULES_V1: ActionRules = { drawn: strategicDrawn, power: strategicPower, stick: strategicStick, give: strategicGive };
+
+function actionRulesFor(bot: Player): ActionRules {
+  switch (actionPolicyOf(bot.strategy)) {
+    case "rules_v1": return RULES_V1;
+  }
 }
 
 /** A human-like delay in the given window, stretched or cut by difficulty. */

@@ -50,7 +50,16 @@ export interface BotStrategy {
   inference?: boolean;
   /** Require the belief thresholds before calling Cambio. Default true. */
   callGate?: boolean;
+  /** How the bot decides to call Cambio. Default: the live call policy. */
+  callPolicy?: CallPolicy;
+  /** How a focused bot chooses its moves. Default: the live action policy. */
+  actionPolicy?: ActionPolicy;
 }
+
+/** gate_v1: the shared belief gate every level has used since the evaluation began. */
+export type CallPolicy = "gate_v1";
+/** rules_v1: the hand written tactical evaluator for draws, powers, sticks and gives. */
+export type ActionPolicy = "rules_v1";
 
 export interface Player {
   id: string;

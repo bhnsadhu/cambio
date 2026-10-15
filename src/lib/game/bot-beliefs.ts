@@ -1,5 +1,6 @@
 import { cardValue } from "./cards";
 import { observeBot, type BotObservation } from "./bot-observation";
+import { callPolicyOf } from "./bot-policies";
 import type { GameState, Player } from "./types";
 
 const DECK_VALUES = [
@@ -109,8 +110,13 @@ export function assessObservedCambio(state: BotObservation, botId: string): Camb
   const ownEstimate = sums[me] / samples;
   const strongestOpponent = Math.min(...sums.filter((_, index) => index !== me).map((sum) => sum / samples));
   const winChance = wins / samples, nearWinChance = near / samples;
-  // Evaluation only: with the gate off, an estimated lead alone is enough.
-  const believed = bot.strategy?.callGate === false || (winChance >= 0.64 && nearWinChance >= 0.8);
+  let believed: boolean;
+  switch (callPolicyOf(bot.strategy)) {
+    case "gate_v1":
+      // Evaluation only: with the gate off, an estimated lead alone is enough.
+      believed = bot.strategy?.callGate === false || (winChance >= 0.64 && nearWinChance >= 0.8);
+      break;
+  }
   return {
     call: state.phase === "playing" && state.turnsTaken >= state.players.length &&
       believed && ownEstimate <= strongestOpponent,
