@@ -1,0 +1,615 @@
+{
+ "data": {
+  "train": {
+   "split": "train",
+   "seeds": {
+    "from": 100001,
+    "to": 100200,
+    "count": 200
+   },
+   "commit": "18edbb07e799a7cc1be399bb03cd7037496daac2",
+   "sha256": "e119cc822dbec63c954d4cce252205ce905367acd33b1d404f9dadf464f9bda4",
+   "rollouts": {
+    "action": 4,
+    "call": 8,
+    "draw": 2
+   }
+  },
+  "validation": {
+   "split": "validation",
+   "seeds": {
+    "from": 200001,
+    "to": 200100,
+    "count": 100
+   },
+   "commit": "18edbb07e799a7cc1be399bb03cd7037496daac2",
+   "sha256": "f5b39031ccd43b48a708d2b55330f8d2a2e6534a589cda11e62ab7c1e1739579",
+   "rollouts": {
+    "action": 4,
+    "call": 8,
+    "draw": 2
+   }
+  }
+ },
+ "levels": {
+  "easy": {
+   "train_points": 606,
+   "validation_points": 256,
+   "rollouts": 8,
+   "train_win_rate": 0.09426567656765676,
+   "validation_win_rate": 0.0751953125,
+   "models": {
+    "gate": {
+     "validation": {
+      "log_loss": 0.3310270270062324,
+      "brier": 0.0713136461046007,
+      "ece": 0.03877766927083333,
+      "auroc": 0.5920884817400129
+     }
+    },
+    "gate_platt": {
+     "validation": {
+      "log_loss": 0.26632139079289796,
+      "brier": 0.06919841149263065,
+      "ece": 0.027619656779976513,
+      "auroc": 0.6020721622622361
+     }
+    },
+    "logistic": {
+     "C": 0.01,
+     "validation": {
+      "log_loss": 0.26717812290778886,
+      "brier": 0.06975805306051558,
+      "ece": 0.03625492371879909,
+      "auroc": 0.6150866029429916
+     }
+    },
+    "mlp": {
+     "hidden": [
+      8
+     ],
+     "alpha": 1.0,
+     "validation": {
+      "log_loss": 0.279940958299056,
+      "brier": 0.07199737092377126,
+      "ece": 0.05236739595005197,
+      "auroc": 0.6159094337552626
+     }
+    }
+   },
+   "chosen": "logistic",
+   "reliability": {
+    "gate": [
+     {
+      "from": 0.0,
+      "to": 0.1,
+      "weight": 1472.0,
+      "mean_prediction": 0.035439311594202896,
+      "observed": 0.06182065217391304
+     },
+     {
+      "from": 0.1,
+      "to": 0.2,
+      "weight": 416.0,
+      "mean_prediction": 0.14262820512820512,
+      "observed": 0.11298076923076923
+     },
+     {
+      "from": 0.2,
+      "to": 0.3,
+      "weight": 128.0,
+      "mean_prediction": 0.23763020833333337,
+      "observed": 0.0625
+     },
+     {
+      "from": 0.3,
+      "to": 0.4,
+      "weight": 16.0,
+      "mean_prediction": 0.3098958333333333,
+      "observed": 0.125
+     },
+     {
+      "from": 0.4,
+      "to": 0.5,
+      "weight": 8.0,
+      "mean_prediction": 0.4322916666666667,
+      "observed": 0.125
+     },
+     {
+      "from": 0.5,
+      "to": 0.6,
+      "weight": 8.0,
+      "mean_prediction": 0.5729166666666666,
+      "observed": 0.625
+     },
+     {
+      "from": 0.6,
+      "to": 0.7,
+      "weight": 0.0,
+      "mean_prediction": null,
+      "observed": null
+     },
+     {
+      "from": 0.7,
+      "to": 0.8,
+      "weight": 0.0,
+      "mean_prediction": null,
+      "observed": null
+     },
+     {
+      "from": 0.8,
+      "to": 0.9,
+      "weight": 0.0,
+      "mean_prediction": null,
+      "observed": null
+     },
+     {
+      "from": 0.9,
+      "to": 1.0,
+      "weight": 0.0,
+      "mean_prediction": null,
+      "observed": null
+     }
+    ],
+    "model": [
+     {
+      "from": 0.0,
+      "to": 0.1,
+      "weight": 1472.0,
+      "mean_prediction": 0.04696240142559104,
+      "observed": 0.06725543478260869
+     },
+     {
+      "from": 0.1,
+      "to": 0.2,
+      "weight": 448.0,
+      "mean_prediction": 0.13964801198265703,
+      "observed": 0.07142857142857142
+     },
+     {
+      "from": 0.2,
+      "to": 0.3,
+      "weight": 104.0,
+      "mean_prediction": 0.23638594196298465,
+      "observed": 0.1346153846153846
+     },
+     {
+      "from": 0.3,
+      "to": 0.4,
+      "weight": 8.0,
+      "mean_prediction": 0.38539324172182643,
+      "observed": 0.375
+     },
+     {
+      "from": 0.4,
+      "to": 0.5,
+      "weight": 8.0,
+      "mean_prediction": 0.4761605002827767,
+      "observed": 0.125
+     },
+     {
+      "from": 0.5,
+      "to": 0.6,
+      "weight": 8.0,
+      "mean_prediction": 0.5825173259083368,
+      "observed": 0.625
+     },
+     {
+      "from": 0.6,
+      "to": 0.7,
+      "weight": 0.0,
+      "mean_prediction": null,
+      "observed": null
+     },
+     {
+      "from": 0.7,
+      "to": 0.8,
+      "weight": 0.0,
+      "mean_prediction": null,
+      "observed": null
+     },
+     {
+      "from": 0.8,
+      "to": 0.9,
+      "weight": 0.0,
+      "mean_prediction": null,
+      "observed": null
+     },
+     {
+      "from": 0.9,
+      "to": 1.0,
+      "weight": 0.0,
+      "mean_prediction": null,
+      "observed": null
+     }
+    ]
+   }
+  },
+  "medium": {
+   "train_points": 517,
+   "validation_points": 246,
+   "rollouts": 8,
+   "train_win_rate": 0.1738394584139265,
+   "validation_win_rate": 0.15853658536585366,
+   "models": {
+    "gate": {
+     "validation": {
+      "log_loss": 0.5119932027447388,
+      "brier": 0.13412991104194896,
+      "ece": 0.07200626693766937,
+      "auroc": 0.6659776415211198
+     }
+    },
+    "gate_platt": {
+     "validation": {
+      "log_loss": 0.41232641453453134,
+      "brier": 0.12703380370021225,
+      "ece": 0.020454562872566643,
+      "auroc": 0.6694692183822618
+     }
+    },
+    "logistic": {
+     "C": 10.0,
+     "validation": {
+      "log_loss": 0.3978415739769496,
+      "brier": 0.12371018384593174,
+      "ece": 0.029666465428197487,
+      "auroc": 0.7192648333952681
+     }
+    },
+    "mlp": {
+     "hidden": [
+      8
+     ],
+     "alpha": 1.0,
+     "validation": {
+      "log_loss": 0.42000920232072786,
+      "brier": 0.13172177376883007,
+      "ece": 0.04627936711724578,
+      "auroc": 0.6915489904620339
+     }
+    }
+   },
+   "chosen": "logistic",
+   "reliability": {
+    "gate": [
+     {
+      "from": 0.0,
+      "to": 0.1,
+      "weight": 888.0,
+      "mean_prediction": 0.041807432432432436,
+      "observed": 0.08896396396396396
+     },
+     {
+      "from": 0.1,
+      "to": 0.2,
+      "weight": 488.0,
+      "mean_prediction": 0.1392588797814208,
+      "observed": 0.1864754098360656
+     },
+     {
+      "from": 0.2,
+      "to": 0.3,
+      "weight": 264.0,
+      "mean_prediction": 0.23847853535353533,
+      "observed": 0.16287878787878787
+     },
+     {
+      "from": 0.3,
+      "to": 0.4,
+      "weight": 136.0,
+      "mean_prediction": 0.33639705882352944,
+      "observed": 0.19117647058823528
+     },
+     {
+      "from": 0.4,
+      "to": 0.5,
+      "weight": 80.0,
+      "mean_prediction": 0.4447916666666667,
+      "observed": 0.2625
+     },
+     {
+      "from": 0.5,
+      "to": 0.6,
+      "weight": 64.0,
+      "mean_prediction": 0.5442708333333334,
+      "observed": 0.421875
+     },
+     {
+      "from": 0.6,
+      "to": 0.7,
+      "weight": 8.0,
+      "mean_prediction": 0.609375,
+      "observed": 0.375
+     },
+     {
+      "from": 0.7,
+      "to": 0.8,
+      "weight": 16.0,
+      "mean_prediction": 0.7526041666666667,
+      "observed": 0.6875
+     },
+     {
+      "from": 0.8,
+      "to": 0.9,
+      "weight": 8.0,
+      "mean_prediction": 0.84375,
+      "observed": 0.5
+     },
+     {
+      "from": 0.9,
+      "to": 1.0,
+      "weight": 16.0,
+      "mean_prediction": 1.0,
+      "observed": 0.4375
+     }
+    ],
+    "model": [
+     {
+      "from": 0.0,
+      "to": 0.1,
+      "weight": 816.0,
+      "mean_prediction": 0.057007123396772365,
+      "observed": 0.05514705882352941
+     },
+     {
+      "from": 0.1,
+      "to": 0.2,
+      "weight": 592.0,
+      "mean_prediction": 0.14625306412355962,
+      "observed": 0.1858108108108108
+     },
+     {
+      "from": 0.2,
+      "to": 0.3,
+      "weight": 304.0,
+      "mean_prediction": 0.24784645473777292,
+      "observed": 0.24013157894736842
+     },
+     {
+      "from": 0.3,
+      "to": 0.4,
+      "weight": 112.0,
+      "mean_prediction": 0.3385377438328775,
+      "observed": 0.25
+     },
+     {
+      "from": 0.4,
+      "to": 0.5,
+      "weight": 64.0,
+      "mean_prediction": 0.4368343429280058,
+      "observed": 0.25
+     },
+     {
+      "from": 0.5,
+      "to": 0.6,
+      "weight": 56.0,
+      "mean_prediction": 0.5451704530693048,
+      "observed": 0.42857142857142855
+     },
+     {
+      "from": 0.6,
+      "to": 0.7,
+      "weight": 16.0,
+      "mean_prediction": 0.694696273492238,
+      "observed": 0.75
+     },
+     {
+      "from": 0.7,
+      "to": 0.8,
+      "weight": 8.0,
+      "mean_prediction": 0.7267815948745178,
+      "observed": 0.5
+     },
+     {
+      "from": 0.8,
+      "to": 0.9,
+      "weight": 0.0,
+      "mean_prediction": null,
+      "observed": null
+     },
+     {
+      "from": 0.9,
+      "to": 1.0,
+      "weight": 0.0,
+      "mean_prediction": null,
+      "observed": null
+     }
+    ]
+   }
+  },
+  "hard": {
+   "train_points": 541,
+   "validation_points": 287,
+   "rollouts": 8,
+   "train_win_rate": 0.2396025878003697,
+   "validation_win_rate": 0.21297909407665505,
+   "models": {
+    "gate": {
+     "validation": {
+      "log_loss": 0.5603997318116424,
+      "brier": 0.15570566943113628,
+      "ece": 0.055186556329849014,
+      "auroc": 0.7009318453684433
+     }
+    },
+    "gate_platt": {
+     "validation": {
+      "log_loss": 0.48329315404676104,
+      "brier": 0.15502553792021845,
+      "ece": 0.04368098798165851,
+      "auroc": 0.7005380122518314
+     }
+    },
+    "logistic": {
+     "C": 0.01,
+     "validation": {
+      "log_loss": 0.4787827439878782,
+      "brier": 0.15493907922223624,
+      "ece": 0.04611731505202757,
+      "auroc": 0.7049380787960476
+     }
+    },
+    "mlp": {
+     "hidden": [
+      8
+     ],
+     "alpha": 1.0,
+     "validation": {
+      "log_loss": 0.5149607796484255,
+      "brier": 0.17002977418025986,
+      "ece": 0.05357983299466855,
+      "auroc": 0.6705523735801354
+     }
+    }
+   },
+   "chosen": "logistic",
+   "reliability": {
+    "gate": [
+     {
+      "from": 0.0,
+      "to": 0.1,
+      "weight": 728.0,
+      "mean_prediction": 0.05036630036630036,
+      "observed": 0.09752747252747253
+     },
+     {
+      "from": 0.1,
+      "to": 0.2,
+      "weight": 568.0,
+      "mean_prediction": 0.15184859154929578,
+      "observed": 0.1637323943661972
+     },
+     {
+      "from": 0.2,
+      "to": 0.3,
+      "weight": 384.0,
+      "mean_prediction": 0.24728732638888892,
+      "observed": 0.265625
+     },
+     {
+      "from": 0.3,
+      "to": 0.4,
+      "weight": 272.0,
+      "mean_prediction": 0.34880514705882354,
+      "observed": 0.2647058823529412
+     },
+     {
+      "from": 0.4,
+      "to": 0.5,
+      "weight": 136.0,
+      "mean_prediction": 0.4574142156862745,
+      "observed": 0.2426470588235294
+     },
+     {
+      "from": 0.5,
+      "to": 0.6,
+      "weight": 104.0,
+      "mean_prediction": 0.5480769230769231,
+      "observed": 0.4807692307692308
+     },
+     {
+      "from": 0.6,
+      "to": 0.7,
+      "weight": 32.0,
+      "mean_prediction": 0.6471354166666666,
+      "observed": 0.5
+     },
+     {
+      "from": 0.7,
+      "to": 0.8,
+      "weight": 32.0,
+      "mean_prediction": 0.73046875,
+      "observed": 0.8125
+     },
+     {
+      "from": 0.8,
+      "to": 0.9,
+      "weight": 8.0,
+      "mean_prediction": 0.8645833333333334,
+      "observed": 0.75
+     },
+     {
+      "from": 0.9,
+      "to": 1.0,
+      "weight": 32.0,
+      "mean_prediction": 0.9765625,
+      "observed": 0.625
+     }
+    ],
+    "model": [
+     {
+      "from": 0.0,
+      "to": 0.1,
+      "weight": 232.0,
+      "mean_prediction": 0.07896431931757321,
+      "observed": 0.034482758620689655
+     },
+     {
+      "from": 0.1,
+      "to": 0.2,
+      "weight": 824.0,
+      "mean_prediction": 0.1518028877087353,
+      "observed": 0.12742718446601942
+     },
+     {
+      "from": 0.2,
+      "to": 0.3,
+      "weight": 648.0,
+      "mean_prediction": 0.24579771493009847,
+      "observed": 0.21604938271604937
+     },
+     {
+      "from": 0.3,
+      "to": 0.4,
+      "weight": 312.0,
+      "mean_prediction": 0.3488962913905281,
+      "observed": 0.3269230769230769
+     },
+     {
+      "from": 0.4,
+      "to": 0.5,
+      "weight": 152.0,
+      "mean_prediction": 0.44712158492793613,
+      "observed": 0.5855263157894737
+     },
+     {
+      "from": 0.5,
+      "to": 0.6,
+      "weight": 104.0,
+      "mean_prediction": 0.5440687250430893,
+      "observed": 0.375
+     },
+     {
+      "from": 0.6,
+      "to": 0.7,
+      "weight": 16.0,
+      "mean_prediction": 0.6533223310047314,
+      "observed": 0.3125
+     },
+     {
+      "from": 0.7,
+      "to": 0.8,
+      "weight": 8.0,
+      "mean_prediction": 0.7842084828663552,
+      "observed": 0.125
+     },
+     {
+      "from": 0.8,
+      "to": 0.9,
+      "weight": 0.0,
+      "mean_prediction": null,
+      "observed": null
+     },
+     {
+      "from": 0.9,
+      "to": 1.0,
+      "weight": 0.0,
+      "mean_prediction": null,
+      "observed": null
+     }
+    ]
+   }
+  }
+ }
+}

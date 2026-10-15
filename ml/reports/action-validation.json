@@ -1,0 +1,3198 @@
+{
+ "data": {
+  "train": {
+   "split": "train",
+   "seeds": {
+    "from": 100001,
+    "to": 100200,
+    "count": 200
+   },
+   "commit": "18edbb07e799a7cc1be399bb03cd7037496daac2",
+   "sha256": "e119cc822dbec63c954d4cce252205ce905367acd33b1d404f9dadf464f9bda4",
+   "rollouts": {
+    "action": 4,
+    "call": 8,
+    "draw": 2
+   }
+  },
+  "validation": {
+   "split": "validation",
+   "seeds": {
+    "from": 200001,
+    "to": 200100,
+    "count": 100
+   },
+   "commit": "18edbb07e799a7cc1be399bb03cd7037496daac2",
+   "sha256": "f5b39031ccd43b48a708d2b55330f8d2a2e6534a589cda11e62ab7c1e1739579",
+   "rollouts": {
+    "action": 4,
+    "call": 8,
+    "draw": 2
+   }
+  }
+ },
+ "levels": {
+  "easy": {
+   "train_points": 1740,
+   "validation_points": 832,
+   "rule": {
+    "all": {
+     "points": 832,
+     "top_match": 0.33052884615384615,
+     "share_lost": 0.07837540064102563,
+     "margin_lost": 1.8644831730769231
+    },
+    "blindSwap": {
+     "points": 133,
+     "top_match": 0.18045112781954886,
+     "share_lost": 0.11027568922305764,
+     "margin_lost": 2.843984962406015
+    },
+    "decide": {
+     "points": 325,
+     "top_match": 0.2553846153846154,
+     "share_lost": 0.10807692307692307,
+     "margin_lost": 2.3223076923076924
+    },
+    "give": {
+     "points": 25,
+     "top_match": 0.32,
+     "share_lost": 0.06833333333333333,
+     "margin_lost": 2.15
+    },
+    "kingDecide": {
+     "points": 9,
+     "top_match": 0.6666666666666666,
+     "share_lost": 0.0,
+     "margin_lost": 0.9722222222222222
+    },
+    "kingLook": {
+     "points": 18,
+     "top_match": 0.16666666666666666,
+     "share_lost": 0.1087962962962963,
+     "margin_lost": 3.0
+    },
+    "peekOther": {
+     "points": 87,
+     "top_match": 0.14942528735632185,
+     "share_lost": 0.0639367816091954,
+     "margin_lost": 1.8218390804597702
+    },
+    "peekOwn": {
+     "points": 100,
+     "top_match": 0.29,
+     "share_lost": 0.029375,
+     "margin_lost": 0.8
+    },
+    "stick": {
+     "points": 135,
+     "top_match": 0.8074074074074075,
+     "share_lost": 0.024074074074074074,
+     "margin_lost": 0.4685185185185185
+    }
+   },
+   "tried": [
+    {
+     "type": "gbdt",
+     "margin_weight": 0.0,
+     "trees": 150,
+     "depth": 3,
+     "validation": {
+      "all": {
+       "points": 832,
+       "top_match": 0.2920673076923077,
+       "share_lost": 0.08385917467948717,
+       "margin_lost": 2.1346153846153846
+      },
+      "blindSwap": {
+       "points": 133,
+       "top_match": 0.17293233082706766,
+       "share_lost": 0.11278195488721804,
+       "margin_lost": 3.6240601503759398
+      },
+      "decide": {
+       "points": 325,
+       "top_match": 0.2,
+       "share_lost": 0.115,
+       "margin_lost": 2.5930769230769233
+      },
+      "give": {
+       "points": 25,
+       "top_match": 0.2,
+       "share_lost": 0.07333333333333333,
+       "margin_lost": 2.11
+      },
+      "kingDecide": {
+       "points": 9,
+       "top_match": 0.7777777777777778,
+       "share_lost": 0.0,
+       "margin_lost": 1.2222222222222223
+      },
+      "kingLook": {
+       "points": 18,
+       "top_match": 0.2222222222222222,
+       "share_lost": 0.12962962962962962,
+       "margin_lost": 2.8194444444444446
+      },
+      "peekOther": {
+       "points": 87,
+       "top_match": 0.16091954022988506,
+       "share_lost": 0.0625,
+       "margin_lost": 1.6896551724137931
+      },
+      "peekOwn": {
+       "points": 100,
+       "top_match": 0.18,
+       "share_lost": 0.05041666666666667,
+       "margin_lost": 1.27
+      },
+      "stick": {
+       "points": 135,
+       "top_match": 0.7925925925925926,
+       "share_lost": 0.020370370370370372,
+       "margin_lost": 0.4648148148148148
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.0,
+     "trees": 300,
+     "depth": 3,
+     "validation": {
+      "all": {
+       "points": 832,
+       "top_match": 0.31009615384615385,
+       "share_lost": 0.0842598157051282,
+       "margin_lost": 2.1216947115384617
+      },
+      "blindSwap": {
+       "points": 133,
+       "top_match": 0.17293233082706766,
+       "share_lost": 0.11842105263157894,
+       "margin_lost": 3.654135338345865
+      },
+      "decide": {
+       "points": 325,
+       "top_match": 0.2276923076923077,
+       "share_lost": 0.11307692307692307,
+       "margin_lost": 2.5184615384615383
+      },
+      "give": {
+       "points": 25,
+       "top_match": 0.2,
+       "share_lost": 0.07333333333333333,
+       "margin_lost": 2.48
+      },
+      "kingDecide": {
+       "points": 9,
+       "top_match": 0.7777777777777778,
+       "share_lost": 0.0,
+       "margin_lost": 1.2222222222222223
+      },
+      "kingLook": {
+       "points": 18,
+       "top_match": 0.2222222222222222,
+       "share_lost": 0.12962962962962962,
+       "margin_lost": 2.9027777777777777
+      },
+      "peekOther": {
+       "points": 87,
+       "top_match": 0.12643678160919541,
+       "share_lost": 0.07399425287356322,
+       "margin_lost": 1.8275862068965518
+      },
+      "peekOwn": {
+       "points": 100,
+       "top_match": 0.27,
+       "share_lost": 0.0375,
+       "margin_lost": 1.0225
+      },
+      "stick": {
+       "points": 135,
+       "top_match": 0.7925925925925926,
+       "share_lost": 0.024074074074074074,
+       "margin_lost": 0.55
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.0,
+     "trees": 200,
+     "depth": 4,
+     "validation": {
+      "all": {
+       "points": 832,
+       "top_match": 0.30528846153846156,
+       "share_lost": 0.08435997596153846,
+       "margin_lost": 2.097956730769231
+      },
+      "blindSwap": {
+       "points": 133,
+       "top_match": 0.16541353383458646,
+       "share_lost": 0.10902255639097744,
+       "margin_lost": 3.5150375939849625
+      },
+      "decide": {
+       "points": 325,
+       "top_match": 0.2123076923076923,
+       "share_lost": 0.11576923076923079,
+       "margin_lost": 2.5307692307692307
+      },
+      "give": {
+       "points": 25,
+       "top_match": 0.2,
+       "share_lost": 0.08333333333333331,
+       "margin_lost": 2.06
+      },
+      "kingDecide": {
+       "points": 9,
+       "top_match": 0.7777777777777778,
+       "share_lost": 0.0,
+       "margin_lost": 1.6388888888888888
+      },
+      "kingLook": {
+       "points": 18,
+       "top_match": 0.2777777777777778,
+       "share_lost": 0.12962962962962962,
+       "margin_lost": 2.8055555555555554
+      },
+      "peekOther": {
+       "points": 87,
+       "top_match": 0.13793103448275862,
+       "share_lost": 0.0763888888888889,
+       "margin_lost": 1.839080459770115
+      },
+      "peekOwn": {
+       "points": 100,
+       "top_match": 0.27,
+       "share_lost": 0.0375,
+       "margin_lost": 1.045
+      },
+      "stick": {
+       "points": 135,
+       "top_match": 0.7925925925925926,
+       "share_lost": 0.024074074074074074,
+       "margin_lost": 0.55
+      }
+     }
+    },
+    {
+     "type": "mlp",
+     "margin_weight": 0.0,
+     "alpha": 0.01,
+     "validation": {
+      "all": {
+       "points": 832,
+       "top_match": 0.2800480769230769,
+       "share_lost": 0.08418469551282054,
+       "margin_lost": 2.2845552884615383
+      },
+      "blindSwap": {
+       "points": 133,
+       "top_match": 0.24060150375939848,
+       "share_lost": 0.09335839598997493,
+       "margin_lost": 3.1353383458646618
+      },
+      "decide": {
+       "points": 325,
+       "top_match": 0.16923076923076924,
+       "share_lost": 0.11551282051282052,
+       "margin_lost": 2.796923076923077
+      },
+      "give": {
+       "points": 25,
+       "top_match": 0.2,
+       "share_lost": 0.09333333333333332,
+       "margin_lost": 2.3
+      },
+      "kingDecide": {
+       "points": 9,
+       "top_match": 0.6666666666666666,
+       "share_lost": 0.0,
+       "margin_lost": 1.5833333333333333
+      },
+      "kingLook": {
+       "points": 18,
+       "top_match": 0.16666666666666666,
+       "share_lost": 0.1087962962962963,
+       "margin_lost": 2.9722222222222223
+      },
+      "peekOther": {
+       "points": 87,
+       "top_match": 0.21839080459770116,
+       "share_lost": 0.0835727969348659,
+       "margin_lost": 1.7844827586206897
+      },
+      "peekOwn": {
+       "points": 100,
+       "top_match": 0.19,
+       "share_lost": 0.046875,
+       "margin_lost": 1.31
+      },
+      "stick": {
+       "points": 135,
+       "top_match": 0.6962962962962963,
+       "share_lost": 0.028395061728395062,
+       "margin_lost": 1.2092592592592593
+      }
+     }
+    },
+    {
+     "type": "mlp",
+     "margin_weight": 0.0,
+     "alpha": 0.1,
+     "validation": {
+      "all": {
+       "points": 832,
+       "top_match": 0.26802884615384615,
+       "share_lost": 0.08826622596153845,
+       "margin_lost": 2.378605769230769
+      },
+      "blindSwap": {
+       "points": 133,
+       "top_match": 0.19548872180451127,
+       "share_lost": 0.09899749373433583,
+       "margin_lost": 3.3157894736842106
+      },
+      "decide": {
+       "points": 325,
+       "top_match": 0.16615384615384615,
+       "share_lost": 0.11717948717948719,
+       "margin_lost": 2.9453846153846155
+      },
+      "give": {
+       "points": 25,
+       "top_match": 0.12,
+       "share_lost": 0.13666666666666666,
+       "margin_lost": 2.78
+      },
+      "kingDecide": {
+       "points": 9,
+       "top_match": 0.6666666666666666,
+       "share_lost": 0.0,
+       "margin_lost": 1.25
+      },
+      "kingLook": {
+       "points": 18,
+       "top_match": 0.2777777777777778,
+       "share_lost": 0.0949074074074074,
+       "margin_lost": 2.5277777777777777
+      },
+      "peekOther": {
+       "points": 87,
+       "top_match": 0.16091954022988506,
+       "share_lost": 0.0835727969348659,
+       "margin_lost": 1.956896551724138
+      },
+      "peekOwn": {
+       "points": 100,
+       "top_match": 0.22,
+       "share_lost": 0.04229166666666666,
+       "margin_lost": 1.305
+      },
+      "stick": {
+       "points": 135,
+       "top_match": 0.6888888888888889,
+       "share_lost": 0.0412037037037037,
+       "margin_lost": 1.1388888888888888
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.02,
+     "trees": 150,
+     "depth": 3,
+     "validation": {
+      "all": {
+       "points": 832,
+       "top_match": 0.3245192307692308,
+       "share_lost": 0.07677283653846154,
+       "margin_lost": 1.9326923076923077
+      },
+      "blindSwap": {
+       "points": 133,
+       "top_match": 0.18045112781954886,
+       "share_lost": 0.106203007518797,
+       "margin_lost": 3.2330827067669174
+      },
+      "decide": {
+       "points": 325,
+       "top_match": 0.2523076923076923,
+       "share_lost": 0.1037179487179487,
+       "margin_lost": 2.269230769230769
+      },
+      "give": {
+       "points": 25,
+       "top_match": 0.28,
+       "share_lost": 0.05333333333333333,
+       "margin_lost": 2.23
+      },
+      "kingDecide": {
+       "points": 9,
+       "top_match": 0.8888888888888888,
+       "share_lost": 0.0,
+       "margin_lost": 0.6666666666666666
+      },
+      "kingLook": {
+       "points": 18,
+       "top_match": 0.16666666666666666,
+       "share_lost": 0.13657407407407407,
+       "margin_lost": 3.2222222222222223
+      },
+      "peekOther": {
+       "points": 87,
+       "top_match": 0.14942528735632185,
+       "share_lost": 0.0653735632183908,
+       "margin_lost": 1.8304597701149425
+      },
+      "peekOwn": {
+       "points": 100,
+       "top_match": 0.25,
+       "share_lost": 0.038125,
+       "margin_lost": 1.0375
+      },
+      "stick": {
+       "points": 135,
+       "top_match": 0.8,
+       "share_lost": 0.020370370370370372,
+       "margin_lost": 0.42777777777777776
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.02,
+     "trees": 300,
+     "depth": 3,
+     "validation": {
+      "all": {
+       "points": 832,
+       "top_match": 0.31490384615384615,
+       "share_lost": 0.07662259615384616,
+       "margin_lost": 1.9966947115384615
+      },
+      "blindSwap": {
+       "points": 133,
+       "top_match": 0.17293233082706766,
+       "share_lost": 0.10902255639097744,
+       "margin_lost": 3.338345864661654
+      },
+      "decide": {
+       "points": 325,
+       "top_match": 0.23384615384615384,
+       "share_lost": 0.10256410256410257,
+       "margin_lost": 2.3715384615384614
+      },
+      "give": {
+       "points": 25,
+       "top_match": 0.24,
+       "share_lost": 0.06333333333333332,
+       "margin_lost": 2.37
+      },
+      "kingDecide": {
+       "points": 9,
+       "top_match": 0.8888888888888888,
+       "share_lost": 0.0,
+       "margin_lost": 0.6666666666666666
+      },
+      "kingLook": {
+       "points": 18,
+       "top_match": 0.16666666666666666,
+       "share_lost": 0.12962962962962962,
+       "margin_lost": 3.2222222222222223
+      },
+      "peekOther": {
+       "points": 87,
+       "top_match": 0.14942528735632185,
+       "share_lost": 0.0625,
+       "margin_lost": 1.8362068965517242
+      },
+      "peekOwn": {
+       "points": 100,
+       "top_match": 0.25,
+       "share_lost": 0.038125,
+       "margin_lost": 1.0575
+      },
+      "stick": {
+       "points": 135,
+       "top_match": 0.8,
+       "share_lost": 0.020370370370370372,
+       "margin_lost": 0.42777777777777776
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.02,
+     "trees": 200,
+     "depth": 4,
+     "validation": {
+      "all": {
+       "points": 832,
+       "top_match": 0.29927884615384615,
+       "share_lost": 0.07997796474358973,
+       "margin_lost": 2.0967548076923075
+      },
+      "blindSwap": {
+       "points": 133,
+       "top_match": 0.15789473684210525,
+       "share_lost": 0.106203007518797,
+       "margin_lost": 3.3176691729323307
+      },
+      "decide": {
+       "points": 325,
+       "top_match": 0.21846153846153846,
+       "share_lost": 0.11038461538461539,
+       "margin_lost": 2.5723076923076924
+      },
+      "give": {
+       "points": 25,
+       "top_match": 0.24,
+       "share_lost": 0.06333333333333332,
+       "margin_lost": 2.37
+      },
+      "kingDecide": {
+       "points": 9,
+       "top_match": 0.8888888888888888,
+       "share_lost": 0.0,
+       "margin_lost": 0.6666666666666666
+      },
+      "kingLook": {
+       "points": 18,
+       "top_match": 0.16666666666666666,
+       "share_lost": 0.13657407407407407,
+       "margin_lost": 3.2916666666666665
+      },
+      "peekOther": {
+       "points": 87,
+       "top_match": 0.13793103448275862,
+       "share_lost": 0.0653735632183908,
+       "margin_lost": 1.9080459770114941
+      },
+      "peekOwn": {
+       "points": 100,
+       "top_match": 0.21,
+       "share_lost": 0.040625,
+       "margin_lost": 1.14
+      },
+      "stick": {
+       "points": 135,
+       "top_match": 0.7925925925925926,
+       "share_lost": 0.020370370370370372,
+       "margin_lost": 0.4648148148148148
+      }
+     }
+    },
+    {
+     "type": "mlp",
+     "margin_weight": 0.02,
+     "alpha": 0.01,
+     "validation": {
+      "all": {
+       "points": 832,
+       "top_match": 0.2980769230769231,
+       "share_lost": 0.0823066907051282,
+       "margin_lost": 2.257512019230769
+      },
+      "blindSwap": {
+       "points": 133,
+       "top_match": 0.18045112781954886,
+       "share_lost": 0.09837092731829575,
+       "margin_lost": 3.345864661654135
+      },
+      "decide": {
+       "points": 325,
+       "top_match": 0.17846153846153845,
+       "share_lost": 0.1171794871794872,
+       "margin_lost": 2.816153846153846
+      },
+      "give": {
+       "points": 25,
+       "top_match": 0.2,
+       "share_lost": 0.07833333333333332,
+       "margin_lost": 2.27
+      },
+      "kingDecide": {
+       "points": 9,
+       "top_match": 0.4444444444444444,
+       "share_lost": 0.0,
+       "margin_lost": 2.0555555555555554
+      },
+      "kingLook": {
+       "points": 18,
+       "top_match": 0.16666666666666666,
+       "share_lost": 0.11574074074074073,
+       "margin_lost": 3.2222222222222223
+      },
+      "peekOther": {
+       "points": 87,
+       "top_match": 0.28735632183908044,
+       "share_lost": 0.06704980842911877,
+       "margin_lost": 1.9051724137931034
+      },
+      "peekOwn": {
+       "points": 100,
+       "top_match": 0.26,
+       "share_lost": 0.039375,
+       "margin_lost": 1.1925
+      },
+      "stick": {
+       "points": 135,
+       "top_match": 0.762962962962963,
+       "share_lost": 0.025925925925925925,
+       "margin_lost": 0.7388888888888889
+      }
+     }
+    },
+    {
+     "type": "mlp",
+     "margin_weight": 0.02,
+     "alpha": 0.1,
+     "validation": {
+      "all": {
+       "points": 832,
+       "top_match": 0.2932692307692308,
+       "share_lost": 0.08513621794871794,
+       "margin_lost": 2.2509014423076925
+      },
+      "blindSwap": {
+       "points": 133,
+       "top_match": 0.18796992481203006,
+       "share_lost": 0.1112155388471178,
+       "margin_lost": 3.612781954887218
+      },
+      "decide": {
+       "points": 325,
+       "top_match": 0.17846153846153845,
+       "share_lost": 0.11487179487179489,
+       "margin_lost": 2.709230769230769
+      },
+      "give": {
+       "points": 25,
+       "top_match": 0.16,
+       "share_lost": 0.09833333333333333,
+       "margin_lost": 2.35
+      },
+      "kingDecide": {
+       "points": 9,
+       "top_match": 0.5555555555555556,
+       "share_lost": 0.0,
+       "margin_lost": 1.9166666666666667
+      },
+      "kingLook": {
+       "points": 18,
+       "top_match": 0.2777777777777778,
+       "share_lost": 0.11574074074074073,
+       "margin_lost": 2.6805555555555554
+      },
+      "peekOther": {
+       "points": 87,
+       "top_match": 0.21839080459770116,
+       "share_lost": 0.07471264367816093,
+       "margin_lost": 1.9942528735632183
+      },
+      "peekOwn": {
+       "points": 100,
+       "top_match": 0.22,
+       "share_lost": 0.03979166666666666,
+       "margin_lost": 1.23
+      },
+      "stick": {
+       "points": 135,
+       "top_match": 0.7851851851851852,
+       "share_lost": 0.027314814814814816,
+       "margin_lost": 0.674074074074074
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.05,
+     "trees": 150,
+     "depth": 3,
+     "validation": {
+      "all": {
+       "points": 832,
+       "top_match": 0.3317307692307692,
+       "share_lost": 0.07446915064102565,
+       "margin_lost": 1.8753004807692308
+      },
+      "blindSwap": {
+       "points": 133,
+       "top_match": 0.18045112781954886,
+       "share_lost": 0.10056390977443609,
+       "margin_lost": 3.095864661654135
+      },
+      "decide": {
+       "points": 325,
+       "top_match": 0.24923076923076923,
+       "share_lost": 0.1041025641025641,
+       "margin_lost": 2.253846153846154
+      },
+      "give": {
+       "points": 25,
+       "top_match": 0.4,
+       "share_lost": 0.04833333333333333,
+       "margin_lost": 2.11
+      },
+      "kingDecide": {
+       "points": 9,
+       "top_match": 0.8888888888888888,
+       "share_lost": 0.0,
+       "margin_lost": 0.6666666666666666
+      },
+      "kingLook": {
+       "points": 18,
+       "top_match": 0.1111111111111111,
+       "share_lost": 0.12962962962962962,
+       "margin_lost": 3.1666666666666665
+      },
+      "peekOther": {
+       "points": 87,
+       "top_match": 0.1724137931034483,
+       "share_lost": 0.05627394636015327,
+       "margin_lost": 1.6896551724137931
+      },
+      "peekOwn": {
+       "points": 100,
+       "top_match": 0.28,
+       "share_lost": 0.035625,
+       "margin_lost": 0.955
+      },
+      "stick": {
+       "points": 135,
+       "top_match": 0.8,
+       "share_lost": 0.020370370370370372,
+       "margin_lost": 0.42777777777777776
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.05,
+     "trees": 300,
+     "depth": 3,
+     "validation": {
+      "all": {
+       "points": 832,
+       "top_match": 0.32211538461538464,
+       "share_lost": 0.07431891025641026,
+       "margin_lost": 1.9855769230769231
+      },
+      "blindSwap": {
+       "points": 133,
+       "top_match": 0.17293233082706766,
+       "share_lost": 0.10244360902255639,
+       "margin_lost": 3.3157894736842106
+      },
+      "decide": {
+       "points": 325,
+       "top_match": 0.24307692307692308,
+       "share_lost": 0.10217948717948719,
+       "margin_lost": 2.3661538461538463
+      },
+      "give": {
+       "points": 25,
+       "top_match": 0.32,
+       "share_lost": 0.04833333333333333,
+       "margin_lost": 2.33
+      },
+      "kingDecide": {
+       "points": 9,
+       "top_match": 0.7777777777777778,
+       "share_lost": 0.0,
+       "margin_lost": 0.7222222222222222
+      },
+      "kingLook": {
+       "points": 18,
+       "top_match": 0.1111111111111111,
+       "share_lost": 0.12268518518518517,
+       "margin_lost": 3.2916666666666665
+      },
+      "peekOther": {
+       "points": 87,
+       "top_match": 0.13793103448275862,
+       "share_lost": 0.062021072796934876,
+       "margin_lost": 1.8994252873563218
+      },
+      "peekOwn": {
+       "points": 100,
+       "top_match": 0.29,
+       "share_lost": 0.034375,
+       "margin_lost": 0.95
+      },
+      "stick": {
+       "points": 135,
+       "top_match": 0.8,
+       "share_lost": 0.020370370370370372,
+       "margin_lost": 0.42777777777777776
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.05,
+     "trees": 200,
+     "depth": 4,
+     "validation": {
+      "all": {
+       "points": 832,
+       "top_match": 0.3088942307692308,
+       "share_lost": 0.0748447516025641,
+       "margin_lost": 2.0213341346153846
+      },
+      "blindSwap": {
+       "points": 133,
+       "top_match": 0.15037593984962405,
+       "share_lost": 0.09680451127819549,
+       "margin_lost": 3.2913533834586466
+      },
+      "decide": {
+       "points": 325,
+       "top_match": 0.2246153846153846,
+       "share_lost": 0.10653846153846155,
+       "margin_lost": 2.4746153846153844
+      },
+      "give": {
+       "points": 25,
+       "top_match": 0.4,
+       "share_lost": 0.05333333333333333,
+       "margin_lost": 1.94
+      },
+      "kingDecide": {
+       "points": 9,
+       "top_match": 0.7777777777777778,
+       "share_lost": 0.0,
+       "margin_lost": 0.7222222222222222
+      },
+      "kingLook": {
+       "points": 18,
+       "top_match": 0.1111111111111111,
+       "share_lost": 0.12962962962962962,
+       "margin_lost": 2.9722222222222223
+      },
+      "peekOther": {
+       "points": 87,
+       "top_match": 0.25287356321839083,
+       "share_lost": 0.04310344827586207,
+       "margin_lost": 1.5574712643678161
+      },
+      "peekOwn": {
+       "points": 100,
+       "top_match": 0.16,
+       "share_lost": 0.04354166666666667,
+       "margin_lost": 1.36
+      },
+      "stick": {
+       "points": 135,
+       "top_match": 0.7925925925925926,
+       "share_lost": 0.022222222222222223,
+       "margin_lost": 0.4425925925925926
+      }
+     }
+    },
+    {
+     "type": "mlp",
+     "margin_weight": 0.05,
+     "alpha": 0.01,
+     "validation": {
+      "all": {
+       "points": 832,
+       "top_match": 0.29927884615384615,
+       "share_lost": 0.08476061698717946,
+       "margin_lost": 2.2157451923076925
+      },
+      "blindSwap": {
+       "points": 133,
+       "top_match": 0.18045112781954886,
+       "share_lost": 0.10369674185463659,
+       "margin_lost": 3.6146616541353382
+      },
+      "decide": {
+       "points": 325,
+       "top_match": 0.19076923076923077,
+       "share_lost": 0.12141025641025642,
+       "margin_lost": 2.7346153846153847
+      },
+      "give": {
+       "points": 25,
+       "top_match": 0.24,
+       "share_lost": 0.08666666666666666,
+       "margin_lost": 1.94
+      },
+      "kingDecide": {
+       "points": 9,
+       "top_match": 0.4444444444444444,
+       "share_lost": 0.0,
+       "margin_lost": 2.0555555555555554
+      },
+      "kingLook": {
+       "points": 18,
+       "top_match": 0.3333333333333333,
+       "share_lost": 0.08796296296296297,
+       "margin_lost": 2.3333333333333335
+      },
+      "peekOther": {
+       "points": 87,
+       "top_match": 0.14942528735632185,
+       "share_lost": 0.06992337164750957,
+       "margin_lost": 1.971264367816092
+      },
+      "peekOwn": {
+       "points": 100,
+       "top_match": 0.24,
+       "share_lost": 0.041875,
+       "margin_lost": 1.2575
+      },
+      "stick": {
+       "points": 135,
+       "top_match": 0.8148148148148148,
+       "share_lost": 0.024074074074074074,
+       "margin_lost": 0.5018518518518519
+      }
+     }
+    },
+    {
+     "type": "mlp",
+     "margin_weight": 0.05,
+     "alpha": 0.1,
+     "validation": {
+      "all": {
+       "points": 832,
+       "top_match": 0.29927884615384615,
+       "share_lost": 0.08115484775641026,
+       "margin_lost": 2.1063701923076925
+      },
+      "blindSwap": {
+       "points": 133,
+       "top_match": 0.21052631578947367,
+       "share_lost": 0.09617794486215539,
+       "margin_lost": 3.4962406015037595
+      },
+      "decide": {
+       "points": 325,
+       "top_match": 0.1723076923076923,
+       "share_lost": 0.1171794871794872,
+       "margin_lost": 2.6
+      },
+      "give": {
+       "points": 25,
+       "top_match": 0.32,
+       "share_lost": 0.09166666666666666,
+       "margin_lost": 1.85
+      },
+      "kingDecide": {
+       "points": 9,
+       "top_match": 0.7777777777777778,
+       "share_lost": 0.0,
+       "margin_lost": 1.6388888888888888
+      },
+      "kingLook": {
+       "points": 18,
+       "top_match": 0.2777777777777778,
+       "share_lost": 0.10185185185185185,
+       "margin_lost": 2.6666666666666665
+      },
+      "peekOther": {
+       "points": 87,
+       "top_match": 0.16091954022988506,
+       "share_lost": 0.06417624521072797,
+       "margin_lost": 1.853448275862069
+      },
+      "peekOwn": {
+       "points": 100,
+       "top_match": 0.23,
+       "share_lost": 0.041875,
+       "margin_lost": 1.145
+      },
+      "stick": {
+       "points": 135,
+       "top_match": 0.8,
+       "share_lost": 0.020370370370370372,
+       "margin_lost": 0.42777777777777776
+      }
+     }
+    }
+   ],
+   "chosen": {
+    "type": "gbdt",
+    "margin_weight": 0.05,
+    "trees": 300,
+    "depth": 3,
+    "validation": {
+     "all": {
+      "points": 832,
+      "top_match": 0.32211538461538464,
+      "share_lost": 0.07431891025641026,
+      "margin_lost": 1.9855769230769231
+     },
+     "blindSwap": {
+      "points": 133,
+      "top_match": 0.17293233082706766,
+      "share_lost": 0.10244360902255639,
+      "margin_lost": 3.3157894736842106
+     },
+     "decide": {
+      "points": 325,
+      "top_match": 0.24307692307692308,
+      "share_lost": 0.10217948717948719,
+      "margin_lost": 2.3661538461538463
+     },
+     "give": {
+      "points": 25,
+      "top_match": 0.32,
+      "share_lost": 0.04833333333333333,
+      "margin_lost": 2.33
+     },
+     "kingDecide": {
+      "points": 9,
+      "top_match": 0.7777777777777778,
+      "share_lost": 0.0,
+      "margin_lost": 0.7222222222222222
+     },
+     "kingLook": {
+      "points": 18,
+      "top_match": 0.1111111111111111,
+      "share_lost": 0.12268518518518517,
+      "margin_lost": 3.2916666666666665
+     },
+     "peekOther": {
+      "points": 87,
+      "top_match": 0.13793103448275862,
+      "share_lost": 0.062021072796934876,
+      "margin_lost": 1.8994252873563218
+     },
+     "peekOwn": {
+      "points": 100,
+      "top_match": 0.29,
+      "share_lost": 0.034375,
+      "margin_lost": 0.95
+     },
+     "stick": {
+      "points": 135,
+      "top_match": 0.8,
+      "share_lost": 0.020370370370370372,
+      "margin_lost": 0.42777777777777776
+     }
+    }
+   },
+   "model_kinds": [
+    "blindSwap",
+    "decide",
+    "give",
+    "peekOther",
+    "stick"
+   ]
+  },
+  "medium": {
+   "train_points": 1833,
+   "validation_points": 848,
+   "rule": {
+    "all": {
+     "points": 848,
+     "top_match": 0.3313679245283019,
+     "share_lost": 0.15644654088050314,
+     "margin_lost": 1.8620283018867925
+    },
+    "blindSwap": {
+     "points": 115,
+     "top_match": 0.11304347826086956,
+     "share_lost": 0.2181159420289855,
+     "margin_lost": 3.3130434782608695
+    },
+    "decide": {
+     "points": 263,
+     "top_match": 0.20532319391634982,
+     "share_lost": 0.2262357414448669,
+     "margin_lost": 2.702471482889734
+    },
+    "give": {
+     "points": 79,
+     "top_match": 0.4050632911392405,
+     "share_lost": 0.14082278481012658,
+     "margin_lost": 1.7563291139240507
+    },
+    "kingDecide": {
+     "points": 10,
+     "top_match": 0.4,
+     "share_lost": 0.04583333333333332,
+     "margin_lost": 1.25
+    },
+    "kingLook": {
+     "points": 15,
+     "top_match": 0.26666666666666666,
+     "share_lost": 0.15833333333333333,
+     "margin_lost": 1.6833333333333333
+    },
+    "peekOther": {
+     "points": 57,
+     "top_match": 0.12280701754385964,
+     "share_lost": 0.16885964912280702,
+     "margin_lost": 1.8728070175438596
+    },
+    "peekOwn": {
+     "points": 68,
+     "top_match": 0.39705882352941174,
+     "share_lost": 0.08455882352941177,
+     "margin_lost": 0.9007352941176471
+    },
+    "stick": {
+     "points": 241,
+     "top_match": 0.5809128630705395,
+     "share_lost": 0.07780082987551867,
+     "margin_lost": 0.5923236514522822
+    }
+   },
+   "tried": [
+    {
+     "type": "gbdt",
+     "margin_weight": 0.0,
+     "trees": 150,
+     "depth": 3,
+     "validation": {
+      "all": {
+       "points": 848,
+       "top_match": 0.35377358490566035,
+       "share_lost": 0.14644752358490565,
+       "margin_lost": 1.7452830188679245
+      },
+      "blindSwap": {
+       "points": 115,
+       "top_match": 0.20869565217391303,
+       "share_lost": 0.1945652173913043,
+       "margin_lost": 2.610869565217391
+      },
+      "decide": {
+       "points": 263,
+       "top_match": 0.22433460076045628,
+       "share_lost": 0.19954055766793408,
+       "margin_lost": 2.365019011406844
+      },
+      "give": {
+       "points": 79,
+       "top_match": 0.4177215189873418,
+       "share_lost": 0.13132911392405064,
+       "margin_lost": 1.9240506329113924
+      },
+      "kingDecide": {
+       "points": 10,
+       "top_match": 0.3,
+       "share_lost": 0.05833333333333333,
+       "margin_lost": 1.4
+      },
+      "kingLook": {
+       "points": 15,
+       "top_match": 0.2,
+       "share_lost": 0.23333333333333334,
+       "margin_lost": 3.2666666666666666
+      },
+      "peekOther": {
+       "points": 57,
+       "top_match": 0.10526315789473684,
+       "share_lost": 0.18786549707602337,
+       "margin_lost": 2.0789473684210527
+      },
+      "peekOwn": {
+       "points": 68,
+       "top_match": 0.4852941176470588,
+       "share_lost": 0.09191176470588236,
+       "margin_lost": 1.3125
+      },
+      "stick": {
+       "points": 241,
+       "top_match": 0.5767634854771784,
+       "share_lost": 0.07434301521438451,
+       "margin_lost": 0.5601659751037344
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.0,
+     "trees": 300,
+     "depth": 3,
+     "validation": {
+      "all": {
+       "points": 848,
+       "top_match": 0.35259433962264153,
+       "share_lost": 0.13996167452830188,
+       "margin_lost": 1.6998820754716981
+      },
+      "blindSwap": {
+       "points": 115,
+       "top_match": 0.1826086956521739,
+       "share_lost": 0.1971014492753623,
+       "margin_lost": 2.517391304347826
+      },
+      "decide": {
+       "points": 263,
+       "top_match": 0.22433460076045628,
+       "share_lost": 0.18544043092522175,
+       "margin_lost": 2.3070342205323193
+      },
+      "give": {
+       "points": 79,
+       "top_match": 0.3924050632911392,
+       "share_lost": 0.125,
+       "margin_lost": 1.9873417721518987
+      },
+      "kingDecide": {
+       "points": 10,
+       "top_match": 0.5,
+       "share_lost": 0.033333333333333326,
+       "margin_lost": 1.05
+      },
+      "kingLook": {
+       "points": 15,
+       "top_match": 0.2,
+       "share_lost": 0.2,
+       "margin_lost": 2.816666666666667
+      },
+      "peekOther": {
+       "points": 57,
+       "top_match": 0.15789473684210525,
+       "share_lost": 0.17763157894736842,
+       "margin_lost": 2.0526315789473686
+      },
+      "peekOwn": {
+       "points": 68,
+       "top_match": 0.5,
+       "share_lost": 0.0900735294117647,
+       "margin_lost": 1.3308823529411764
+      },
+      "stick": {
+       "points": 241,
+       "top_match": 0.5684647302904564,
+       "share_lost": 0.07382434301521439,
+       "margin_lost": 0.5311203319502075
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.0,
+     "trees": 200,
+     "depth": 4,
+     "validation": {
+      "all": {
+       "points": 848,
+       "top_match": 0.3561320754716981,
+       "share_lost": 0.14268867924528303,
+       "margin_lost": 1.7668042452830188
+      },
+      "blindSwap": {
+       "points": 115,
+       "top_match": 0.20869565217391303,
+       "share_lost": 0.1971014492753623,
+       "margin_lost": 2.8434782608695652
+      },
+      "decide": {
+       "points": 263,
+       "top_match": 0.23954372623574144,
+       "share_lost": 0.18995564005069707,
+       "margin_lost": 2.3517110266159698
+      },
+      "give": {
+       "points": 79,
+       "top_match": 0.3670886075949367,
+       "share_lost": 0.13449367088607594,
+       "margin_lost": 2.0
+      },
+      "kingDecide": {
+       "points": 10,
+       "top_match": 0.5,
+       "share_lost": 0.033333333333333326,
+       "margin_lost": 0.875
+      },
+      "kingLook": {
+       "points": 15,
+       "top_match": 0.2,
+       "share_lost": 0.2,
+       "margin_lost": 2.9
+      },
+      "peekOther": {
+       "points": 57,
+       "top_match": 0.21052631578947367,
+       "share_lost": 0.17105263157894737,
+       "margin_lost": 1.956140350877193
+      },
+      "peekOwn": {
+       "points": 68,
+       "top_match": 0.47058823529411764,
+       "share_lost": 0.0974264705882353,
+       "margin_lost": 1.4301470588235294
+      },
+      "stick": {
+       "points": 241,
+       "top_match": 0.5560165975103735,
+       "share_lost": 0.07486168741355465,
+       "margin_lost": 0.5549792531120332
+      }
+     }
+    },
+    {
+     "type": "mlp",
+     "margin_weight": 0.0,
+     "alpha": 0.01,
+     "validation": {
+      "all": {
+       "points": 848,
+       "top_match": 0.31721698113207547,
+       "share_lost": 0.15453026729559746,
+       "margin_lost": 1.900943396226415
+      },
+      "blindSwap": {
+       "points": 115,
+       "top_match": 0.17391304347826086,
+       "share_lost": 0.20072463768115942,
+       "margin_lost": 2.9195652173913045
+      },
+      "decide": {
+       "points": 263,
+       "top_match": 0.18631178707224336,
+       "share_lost": 0.207382762991128,
+       "margin_lost": 2.541825095057034
+      },
+      "give": {
+       "points": 79,
+       "top_match": 0.43037974683544306,
+       "share_lost": 0.14715189873417722,
+       "margin_lost": 2.1582278481012658
+      },
+      "kingDecide": {
+       "points": 10,
+       "top_match": 0.5,
+       "share_lost": 0.033333333333333326,
+       "margin_lost": 0.65
+      },
+      "kingLook": {
+       "points": 15,
+       "top_match": 0.2,
+       "share_lost": 0.23333333333333334,
+       "margin_lost": 2.8333333333333335
+      },
+      "peekOther": {
+       "points": 57,
+       "top_match": 0.12280701754385964,
+       "share_lost": 0.19736842105263158,
+       "margin_lost": 2.232456140350877
+      },
+      "peekOwn": {
+       "points": 68,
+       "top_match": 0.29411764705882354,
+       "share_lost": 0.13174019607843135,
+       "margin_lost": 1.6470588235294117
+      },
+      "stick": {
+       "points": 241,
+       "top_match": 0.5435684647302904,
+       "share_lost": 0.07365145228215768,
+       "margin_lost": 0.6182572614107884
+      }
+     }
+    },
+    {
+     "type": "mlp",
+     "margin_weight": 0.0,
+     "alpha": 0.1,
+     "validation": {
+      "all": {
+       "points": 848,
+       "top_match": 0.3384433962264151,
+       "share_lost": 0.149125393081761,
+       "margin_lost": 1.7977594339622642
+      },
+      "blindSwap": {
+       "points": 115,
+       "top_match": 0.22608695652173913,
+       "share_lost": 0.19094202898550725,
+       "margin_lost": 2.8
+      },
+      "decide": {
+       "points": 263,
+       "top_match": 0.22813688212927757,
+       "share_lost": 0.1958174904942966,
+       "margin_lost": 2.3659695817490496
+      },
+      "give": {
+       "points": 79,
+       "top_match": 0.4050632911392405,
+       "share_lost": 0.13924050632911392,
+       "margin_lost": 1.8164556962025316
+      },
+      "kingDecide": {
+       "points": 10,
+       "top_match": 0.4,
+       "share_lost": 0.04583333333333332,
+       "margin_lost": 0.725
+      },
+      "kingLook": {
+       "points": 15,
+       "top_match": 0.26666666666666666,
+       "share_lost": 0.2,
+       "margin_lost": 2.683333333333333
+      },
+      "peekOther": {
+       "points": 57,
+       "top_match": 0.08771929824561403,
+       "share_lost": 0.20394736842105263,
+       "margin_lost": 2.206140350877193
+      },
+      "peekOwn": {
+       "points": 68,
+       "top_match": 0.36764705882352944,
+       "share_lost": 0.09865196078431372,
+       "margin_lost": 1.3272058823529411
+      },
+      "stick": {
+       "points": 241,
+       "top_match": 0.5435684647302904,
+       "share_lost": 0.08385200553250345,
+       "margin_lost": 0.7188796680497925
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.02,
+     "trees": 150,
+     "depth": 3,
+     "validation": {
+      "all": {
+       "points": 848,
+       "top_match": 0.3643867924528302,
+       "share_lost": 0.14109178459119495,
+       "margin_lost": 1.7102004716981132
+      },
+      "blindSwap": {
+       "points": 115,
+       "top_match": 0.20869565217391303,
+       "share_lost": 0.19456521739130433,
+       "margin_lost": 2.7282608695652173
+      },
+      "decide": {
+       "points": 263,
+       "top_match": 0.22813688212927757,
+       "share_lost": 0.18924271229404308,
+       "margin_lost": 2.286121673003802
+      },
+      "give": {
+       "points": 79,
+       "top_match": 0.4177215189873418,
+       "share_lost": 0.12974683544303797,
+       "margin_lost": 1.8006329113924051
+      },
+      "kingDecide": {
+       "points": 10,
+       "top_match": 0.4,
+       "share_lost": 0.033333333333333326,
+       "margin_lost": 1.625
+      },
+      "kingLook": {
+       "points": 15,
+       "top_match": 0.26666666666666666,
+       "share_lost": 0.175,
+       "margin_lost": 2.75
+      },
+      "peekOther": {
+       "points": 57,
+       "top_match": 0.17543859649122806,
+       "share_lost": 0.18421052631578946,
+       "margin_lost": 2.0
+      },
+      "peekOwn": {
+       "points": 68,
+       "top_match": 0.5,
+       "share_lost": 0.0900735294117647,
+       "margin_lost": 1.3308823529411764
+      },
+      "stick": {
+       "points": 241,
+       "top_match": 0.5809128630705395,
+       "share_lost": 0.07330567081604426,
+       "margin_lost": 0.5435684647302904
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.02,
+     "trees": 300,
+     "depth": 3,
+     "validation": {
+      "all": {
+       "points": 848,
+       "top_match": 0.37028301886792453,
+       "share_lost": 0.14379422169811318,
+       "margin_lost": 1.695754716981132
+      },
+      "blindSwap": {
+       "points": 115,
+       "top_match": 0.23478260869565218,
+       "share_lost": 0.1934782608695652,
+       "margin_lost": 2.417391304347826
+      },
+      "decide": {
+       "points": 263,
+       "top_match": 0.25475285171102663,
+       "share_lost": 0.1936787072243346,
+       "margin_lost": 2.2538022813688214
+      },
+      "give": {
+       "points": 79,
+       "top_match": 0.379746835443038,
+       "share_lost": 0.12974683544303797,
+       "margin_lost": 1.9873417721518987
+      },
+      "kingDecide": {
+       "points": 10,
+       "top_match": 0.5,
+       "share_lost": 0.04583333333333332,
+       "margin_lost": 1.325
+      },
+      "kingLook": {
+       "points": 15,
+       "top_match": 0.26666666666666666,
+       "share_lost": 0.16666666666666666,
+       "margin_lost": 2.683333333333333
+      },
+      "peekOther": {
+       "points": 57,
+       "top_match": 0.15789473684210525,
+       "share_lost": 0.21052631578947367,
+       "margin_lost": 2.412280701754386
+      },
+      "peekOwn": {
+       "points": 68,
+       "top_match": 0.5,
+       "share_lost": 0.0900735294117647,
+       "margin_lost": 1.3308823529411764
+      },
+      "stick": {
+       "points": 241,
+       "top_match": 0.5726141078838174,
+       "share_lost": 0.07226832641770402,
+       "margin_lost": 0.5342323651452282
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.02,
+     "trees": 200,
+     "depth": 4,
+     "validation": {
+      "all": {
+       "points": 848,
+       "top_match": 0.36674528301886794,
+       "share_lost": 0.1416814072327044,
+       "margin_lost": 1.7178655660377358
+      },
+      "blindSwap": {
+       "points": 115,
+       "top_match": 0.19130434782608696,
+       "share_lost": 0.2003623188405797,
+       "margin_lost": 2.856521739130435
+      },
+      "decide": {
+       "points": 263,
+       "top_match": 0.25475285171102663,
+       "share_lost": 0.19146070975918883,
+       "margin_lost": 2.296577946768061
+      },
+      "give": {
+       "points": 79,
+       "top_match": 0.34177215189873417,
+       "share_lost": 0.14873417721518986,
+       "margin_lost": 2.0949367088607596
+      },
+      "kingDecide": {
+       "points": 10,
+       "top_match": 0.5,
+       "share_lost": 0.04583333333333332,
+       "margin_lost": 1.325
+      },
+      "kingLook": {
+       "points": 15,
+       "top_match": 0.26666666666666666,
+       "share_lost": 0.175,
+       "margin_lost": 2.75
+      },
+      "peekOther": {
+       "points": 57,
+       "top_match": 0.19298245614035087,
+       "share_lost": 0.18421052631578946,
+       "margin_lost": 2.206140350877193
+      },
+      "peekOwn": {
+       "points": 68,
+       "top_match": 0.5147058823529411,
+       "share_lost": 0.06433823529411764,
+       "margin_lost": 0.8235294117647058
+      },
+      "stick": {
+       "points": 241,
+       "top_match": 0.5809128630705395,
+       "share_lost": 0.07071230982019364,
+       "margin_lost": 0.508298755186722
+      }
+     }
+    },
+    {
+     "type": "mlp",
+     "margin_weight": 0.02,
+     "alpha": 0.01,
+     "validation": {
+      "all": {
+       "points": 848,
+       "top_match": 0.33372641509433965,
+       "share_lost": 0.14838836477987422,
+       "margin_lost": 1.8372641509433962
+      },
+      "blindSwap": {
+       "points": 115,
+       "top_match": 0.19130434782608696,
+       "share_lost": 0.18985507246376807,
+       "margin_lost": 2.880434782608696
+      },
+      "decide": {
+       "points": 263,
+       "top_match": 0.20532319391634982,
+       "share_lost": 0.210234474017744,
+       "margin_lost": 2.527566539923954
+      },
+      "give": {
+       "points": 79,
+       "top_match": 0.4810126582278481,
+       "share_lost": 0.12974683544303797,
+       "margin_lost": 1.9208860759493671
+      },
+      "kingDecide": {
+       "points": 10,
+       "top_match": 0.4,
+       "share_lost": 0.033333333333333326,
+       "margin_lost": 0.875
+      },
+      "kingLook": {
+       "points": 15,
+       "top_match": 0.4666666666666667,
+       "share_lost": 0.13333333333333333,
+       "margin_lost": 2.3
+      },
+      "peekOther": {
+       "points": 57,
+       "top_match": 0.12280701754385964,
+       "share_lost": 0.18201754385964913,
+       "margin_lost": 1.9912280701754386
+      },
+      "peekOwn": {
+       "points": 68,
+       "top_match": 0.27941176470588236,
+       "share_lost": 0.10784313725490195,
+       "margin_lost": 1.5036764705882353
+      },
+      "stick": {
+       "points": 241,
+       "top_match": 0.5477178423236515,
+       "share_lost": 0.07641770401106501,
+       "margin_lost": 0.6275933609958506
+      }
+     }
+    },
+    {
+     "type": "mlp",
+     "margin_weight": 0.02,
+     "alpha": 0.1,
+     "validation": {
+      "all": {
+       "points": 848,
+       "top_match": 0.3278301886792453,
+       "share_lost": 0.15128734276729558,
+       "margin_lost": 1.8331367924528301
+      },
+      "blindSwap": {
+       "points": 115,
+       "top_match": 0.17391304347826086,
+       "share_lost": 0.19311594202898547,
+       "margin_lost": 2.965217391304348
+      },
+      "decide": {
+       "points": 263,
+       "top_match": 0.19391634980988592,
+       "share_lost": 0.21197718631178708,
+       "margin_lost": 2.51425855513308
+      },
+      "give": {
+       "points": 79,
+       "top_match": 0.4177215189873418,
+       "share_lost": 0.11708860759493671,
+       "margin_lost": 1.639240506329114
+      },
+      "kingDecide": {
+       "points": 10,
+       "top_match": 0.5,
+       "share_lost": 0.025,
+       "margin_lost": 0.425
+      },
+      "kingLook": {
+       "points": 15,
+       "top_match": 0.2,
+       "share_lost": 0.2,
+       "margin_lost": 2.8333333333333335
+      },
+      "peekOther": {
+       "points": 57,
+       "top_match": 0.15789473684210525,
+       "share_lost": 0.20175438596491227,
+       "margin_lost": 2.1096491228070176
+      },
+      "peekOwn": {
+       "points": 68,
+       "top_match": 0.3382352941176471,
+       "share_lost": 0.11213235294117647,
+       "margin_lost": 1.650735294117647
+      },
+      "stick": {
+       "points": 241,
+       "top_match": 0.5560165975103735,
+       "share_lost": 0.07762793914246198,
+       "margin_lost": 0.5954356846473029
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.05,
+     "trees": 150,
+     "depth": 3,
+     "validation": {
+      "all": {
+       "points": 848,
+       "top_match": 0.35141509433962265,
+       "share_lost": 0.14084610849056606,
+       "margin_lost": 1.6650943396226414
+      },
+      "blindSwap": {
+       "points": 115,
+       "top_match": 0.17391304347826086,
+       "share_lost": 0.19166666666666665,
+       "margin_lost": 2.7
+      },
+      "decide": {
+       "points": 263,
+       "top_match": 0.23193916349809887,
+       "share_lost": 0.1939955640050697,
+       "margin_lost": 2.3041825095057034
+      },
+      "give": {
+       "points": 79,
+       "top_match": 0.4050632911392405,
+       "share_lost": 0.1360759493670886,
+       "margin_lost": 1.8164556962025316
+      },
+      "kingDecide": {
+       "points": 10,
+       "top_match": 0.3,
+       "share_lost": 0.04583333333333332,
+       "margin_lost": 1.475
+      },
+      "kingLook": {
+       "points": 15,
+       "top_match": 0.2,
+       "share_lost": 0.19166666666666668,
+       "margin_lost": 2.6333333333333333
+      },
+      "peekOther": {
+       "points": 57,
+       "top_match": 0.17543859649122806,
+       "share_lost": 0.17105263157894737,
+       "margin_lost": 1.8114035087719298
+      },
+      "peekOwn": {
+       "points": 68,
+       "top_match": 0.4264705882352941,
+       "share_lost": 0.07169117647058823,
+       "margin_lost": 0.9338235294117647
+      },
+      "stick": {
+       "points": 241,
+       "top_match": 0.5809128630705395,
+       "share_lost": 0.07330567081604426,
+       "margin_lost": 0.5435684647302904
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.05,
+     "trees": 300,
+     "depth": 3,
+     "validation": {
+      "all": {
+       "points": 848,
+       "top_match": 0.36674528301886794,
+       "share_lost": 0.14585790094339623,
+       "margin_lost": 1.7399764150943395
+      },
+      "blindSwap": {
+       "points": 115,
+       "top_match": 0.19130434782608696,
+       "share_lost": 0.23007246376811594,
+       "margin_lost": 3.15
+      },
+      "decide": {
+       "points": 263,
+       "top_match": 0.2509505703422053,
+       "share_lost": 0.18908428390367552,
+       "margin_lost": 2.171102661596958
+      },
+      "give": {
+       "points": 79,
+       "top_match": 0.379746835443038,
+       "share_lost": 0.1360759493670886,
+       "margin_lost": 2.0031645569620253
+      },
+      "kingDecide": {
+       "points": 10,
+       "top_match": 0.6,
+       "share_lost": 0.033333333333333326,
+       "margin_lost": 1.4
+      },
+      "kingLook": {
+       "points": 15,
+       "top_match": 0.2,
+       "share_lost": 0.20833333333333334,
+       "margin_lost": 2.966666666666667
+      },
+      "peekOther": {
+       "points": 57,
+       "top_match": 0.17543859649122806,
+       "share_lost": 0.18859649122807018,
+       "margin_lost": 2.0964912280701755
+      },
+      "peekOwn": {
+       "points": 68,
+       "top_match": 0.5147058823529411,
+       "share_lost": 0.08639705882352941,
+       "margin_lost": 1.2463235294117647
+      },
+      "stick": {
+       "points": 241,
+       "top_match": 0.5767634854771784,
+       "share_lost": 0.06915629322268327,
+       "margin_lost": 0.5031120331950207
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.05,
+     "trees": 200,
+     "depth": 4,
+     "validation": {
+      "all": {
+       "points": 848,
+       "top_match": 0.3632075471698113,
+       "share_lost": 0.14293435534591192,
+       "margin_lost": 1.6712853773584906
+      },
+      "blindSwap": {
+       "points": 115,
+       "top_match": 0.20869565217391303,
+       "share_lost": 0.1938405797101449,
+       "margin_lost": 2.6043478260869564
+      },
+      "decide": {
+       "points": 263,
+       "top_match": 0.2509505703422053,
+       "share_lost": 0.18773764258555137,
+       "margin_lost": 2.211977186311787
+      },
+      "give": {
+       "points": 79,
+       "top_match": 0.379746835443038,
+       "share_lost": 0.13449367088607594,
+       "margin_lost": 1.8639240506329113
+      },
+      "kingDecide": {
+       "points": 10,
+       "top_match": 0.3,
+       "share_lost": 0.05833333333333333,
+       "margin_lost": 1.175
+      },
+      "kingLook": {
+       "points": 15,
+       "top_match": 0.13333333333333333,
+       "share_lost": 0.225,
+       "margin_lost": 3.183333333333333
+      },
+      "peekOther": {
+       "points": 57,
+       "top_match": 0.15789473684210525,
+       "share_lost": 0.21198830409356723,
+       "margin_lost": 2.0789473684210527
+      },
+      "peekOwn": {
+       "points": 68,
+       "top_match": 0.5147058823529411,
+       "share_lost": 0.07352941176470588,
+       "margin_lost": 1.125
+      },
+      "stick": {
+       "points": 241,
+       "top_match": 0.5767634854771784,
+       "share_lost": 0.0741701244813278,
+       "margin_lost": 0.5570539419087137
+      }
+     }
+    },
+    {
+     "type": "mlp",
+     "margin_weight": 0.05,
+     "alpha": 0.01,
+     "validation": {
+      "all": {
+       "points": 848,
+       "top_match": 0.3431603773584906,
+       "share_lost": 0.15055031446540879,
+       "margin_lost": 1.7780070754716981
+      },
+      "blindSwap": {
+       "points": 115,
+       "top_match": 0.2,
+       "share_lost": 0.19746376811594202,
+       "margin_lost": 2.6978260869565216
+      },
+      "decide": {
+       "points": 263,
+       "top_match": 0.23193916349809887,
+       "share_lost": 0.20849176172370093,
+       "margin_lost": 2.420152091254753
+      },
+      "give": {
+       "points": 79,
+       "top_match": 0.4177215189873418,
+       "share_lost": 0.1439873417721519,
+       "margin_lost": 1.9936708860759493
+      },
+      "kingDecide": {
+       "points": 10,
+       "top_match": 0.5,
+       "share_lost": 0.033333333333333326,
+       "margin_lost": 0.45
+      },
+      "kingLook": {
+       "points": 15,
+       "top_match": 0.26666666666666666,
+       "share_lost": 0.175,
+       "margin_lost": 2.316666666666667
+      },
+      "peekOther": {
+       "points": 57,
+       "top_match": 0.12280701754385964,
+       "share_lost": 0.18859649122807018,
+       "margin_lost": 2.0350877192982457
+      },
+      "peekOwn": {
+       "points": 68,
+       "top_match": 0.36764705882352944,
+       "share_lost": 0.09926470588235294,
+       "margin_lost": 1.3860294117647058
+      },
+      "stick": {
+       "points": 241,
+       "top_match": 0.5518672199170125,
+       "share_lost": 0.07589903181189489,
+       "margin_lost": 0.6390041493775933
+      }
+     }
+    },
+    {
+     "type": "mlp",
+     "margin_weight": 0.05,
+     "alpha": 0.1,
+     "validation": {
+      "all": {
+       "points": 848,
+       "top_match": 0.3266509433962264,
+       "share_lost": 0.15475137578616352,
+       "margin_lost": 1.8640919811320755
+      },
+      "blindSwap": {
+       "points": 115,
+       "top_match": 0.16521739130434782,
+       "share_lost": 0.21702898550724636,
+       "margin_lost": 3.1652173913043478
+      },
+      "decide": {
+       "points": 263,
+       "top_match": 0.20532319391634982,
+       "share_lost": 0.21760139416983526,
+       "margin_lost": 2.576996197718631
+      },
+      "give": {
+       "points": 79,
+       "top_match": 0.4050632911392405,
+       "share_lost": 0.13449367088607594,
+       "margin_lost": 1.7848101265822784
+      },
+      "kingDecide": {
+       "points": 10,
+       "top_match": 0.5,
+       "share_lost": 0.025,
+       "margin_lost": 0.425
+      },
+      "kingLook": {
+       "points": 15,
+       "top_match": 0.2,
+       "share_lost": 0.20833333333333334,
+       "margin_lost": 2.75
+      },
+      "peekOther": {
+       "points": 57,
+       "top_match": 0.08771929824561403,
+       "share_lost": 0.18640350877192982,
+       "margin_lost": 1.969298245614035
+      },
+      "peekOwn": {
+       "points": 68,
+       "top_match": 0.3382352941176471,
+       "share_lost": 0.10477941176470588,
+       "margin_lost": 1.4926470588235294
+      },
+      "stick": {
+       "points": 241,
+       "top_match": 0.5643153526970954,
+       "share_lost": 0.0717496542185339,
+       "margin_lost": 0.5757261410788381
+      }
+     }
+    }
+   ],
+   "chosen": {
+    "type": "gbdt",
+    "margin_weight": 0.0,
+    "trees": 300,
+    "depth": 3,
+    "validation": {
+     "all": {
+      "points": 848,
+      "top_match": 0.35259433962264153,
+      "share_lost": 0.13996167452830188,
+      "margin_lost": 1.6998820754716981
+     },
+     "blindSwap": {
+      "points": 115,
+      "top_match": 0.1826086956521739,
+      "share_lost": 0.1971014492753623,
+      "margin_lost": 2.517391304347826
+     },
+     "decide": {
+      "points": 263,
+      "top_match": 0.22433460076045628,
+      "share_lost": 0.18544043092522175,
+      "margin_lost": 2.3070342205323193
+     },
+     "give": {
+      "points": 79,
+      "top_match": 0.3924050632911392,
+      "share_lost": 0.125,
+      "margin_lost": 1.9873417721518987
+     },
+     "kingDecide": {
+      "points": 10,
+      "top_match": 0.5,
+      "share_lost": 0.033333333333333326,
+      "margin_lost": 1.05
+     },
+     "kingLook": {
+      "points": 15,
+      "top_match": 0.2,
+      "share_lost": 0.2,
+      "margin_lost": 2.816666666666667
+     },
+     "peekOther": {
+      "points": 57,
+      "top_match": 0.15789473684210525,
+      "share_lost": 0.17763157894736842,
+      "margin_lost": 2.0526315789473686
+     },
+     "peekOwn": {
+      "points": 68,
+      "top_match": 0.5,
+      "share_lost": 0.0900735294117647,
+      "margin_lost": 1.3308823529411764
+     },
+     "stick": {
+      "points": 241,
+      "top_match": 0.5684647302904564,
+      "share_lost": 0.07382434301521439,
+      "margin_lost": 0.5311203319502075
+     }
+    }
+   },
+   "model_kinds": [
+    "blindSwap",
+    "decide",
+    "give",
+    "stick"
+   ]
+  },
+  "hard": {
+   "train_points": 1606,
+   "validation_points": 825,
+   "rule": {
+    "all": {
+     "points": 825,
+     "top_match": 0.3236363636363636,
+     "share_lost": 0.17893939393939393,
+     "margin_lost": 1.9427272727272726
+    },
+    "blindSwap": {
+     "points": 102,
+     "top_match": 0.18627450980392157,
+     "share_lost": 0.24101307189542487,
+     "margin_lost": 2.200980392156863
+    },
+    "decide": {
+     "points": 275,
+     "top_match": 0.19272727272727272,
+     "share_lost": 0.2442424242424242,
+     "margin_lost": 2.8018181818181818
+    },
+    "give": {
+     "points": 119,
+     "top_match": 0.37815126050420167,
+     "share_lost": 0.1446078431372549,
+     "margin_lost": 1.4222689075630253
+    },
+    "kingDecide": {
+     "points": 13,
+     "top_match": 0.6923076923076923,
+     "share_lost": 0.057692307692307696,
+     "margin_lost": 0.4807692307692308
+    },
+    "kingLook": {
+     "points": 12,
+     "top_match": 0.16666666666666666,
+     "share_lost": 0.3541666666666667,
+     "margin_lost": 4.166666666666667
+    },
+    "peekOther": {
+     "points": 37,
+     "top_match": 0.10810810810810811,
+     "share_lost": 0.2443693693693694,
+     "margin_lost": 2.4324324324324325
+    },
+    "peekOwn": {
+     "points": 51,
+     "top_match": 0.37254901960784315,
+     "share_lost": 0.10784313725490197,
+     "margin_lost": 1.4705882352941178
+    },
+    "stick": {
+     "points": 216,
+     "top_match": 0.5370370370370371,
+     "share_lost": 0.08854166666666664,
+     "margin_lost": 1.005787037037037
+    }
+   },
+   "tried": [
+    {
+     "type": "gbdt",
+     "margin_weight": 0.0,
+     "trees": 150,
+     "depth": 3,
+     "validation": {
+      "all": {
+       "points": 825,
+       "top_match": 0.31272727272727274,
+       "share_lost": 0.1723989898989899,
+       "margin_lost": 1.9075757575757575
+      },
+      "blindSwap": {
+       "points": 102,
+       "top_match": 0.18627450980392157,
+       "share_lost": 0.2483660130718954,
+       "margin_lost": 2.571078431372549
+      },
+      "decide": {
+       "points": 275,
+       "top_match": 0.16727272727272727,
+       "share_lost": 0.22143939393939394,
+       "margin_lost": 2.536363636363636
+      },
+      "give": {
+       "points": 119,
+       "top_match": 0.3277310924369748,
+       "share_lost": 0.1603641456582633,
+       "margin_lost": 1.5903361344537814
+      },
+      "kingDecide": {
+       "points": 13,
+       "top_match": 0.6153846153846154,
+       "share_lost": 0.057692307692307696,
+       "margin_lost": 0.5
+      },
+      "kingLook": {
+       "points": 12,
+       "top_match": 0.08333333333333333,
+       "share_lost": 0.34375,
+       "margin_lost": 4.083333333333333
+      },
+      "peekOther": {
+       "points": 37,
+       "top_match": 0.1891891891891892,
+       "share_lost": 0.21734234234234237,
+       "margin_lost": 2.074324324324324
+      },
+      "peekOwn": {
+       "points": 51,
+       "top_match": 0.37254901960784315,
+       "share_lost": 0.10702614379084967,
+       "margin_lost": 1.4313725490196079
+      },
+      "stick": {
+       "points": 216,
+       "top_match": 0.5509259259259259,
+       "share_lost": 0.08584104938271604,
+       "margin_lost": 1.0162037037037037
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.0,
+     "trees": 300,
+     "depth": 3,
+     "validation": {
+      "all": {
+       "points": 825,
+       "top_match": 0.3236363636363636,
+       "share_lost": 0.1694949494949495,
+       "margin_lost": 1.83
+      },
+      "blindSwap": {
+       "points": 102,
+       "top_match": 0.19607843137254902,
+       "share_lost": 0.24428104575163404,
+       "margin_lost": 2.5980392156862746
+      },
+      "decide": {
+       "points": 275,
+       "top_match": 0.17454545454545456,
+       "share_lost": 0.2207575757575757,
+       "margin_lost": 2.3918181818181816
+      },
+      "give": {
+       "points": 119,
+       "top_match": 0.3697478991596639,
+       "share_lost": 0.14670868347338936,
+       "margin_lost": 1.338235294117647
+      },
+      "kingDecide": {
+       "points": 13,
+       "top_match": 0.6153846153846154,
+       "share_lost": 0.057692307692307696,
+       "margin_lost": 0.5
+      },
+      "kingLook": {
+       "points": 12,
+       "top_match": 0.08333333333333333,
+       "share_lost": 0.3229166666666667,
+       "margin_lost": 4.291666666666667
+      },
+      "peekOther": {
+       "points": 37,
+       "top_match": 0.21621621621621623,
+       "share_lost": 0.20495495495495497,
+       "margin_lost": 2.0
+      },
+      "peekOwn": {
+       "points": 51,
+       "top_match": 0.37254901960784315,
+       "share_lost": 0.11192810457516339,
+       "margin_lost": 1.4607843137254901
+      },
+      "stick": {
+       "points": 216,
+       "top_match": 0.5509259259259259,
+       "share_lost": 0.08719135802469136,
+       "margin_lost": 1.0243055555555556
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.0,
+     "trees": 200,
+     "depth": 4,
+     "validation": {
+      "all": {
+       "points": 825,
+       "top_match": 0.31636363636363635,
+       "share_lost": 0.1739141414141414,
+       "margin_lost": 1.8763636363636365
+      },
+      "blindSwap": {
+       "points": 102,
+       "top_match": 0.14705882352941177,
+       "share_lost": 0.25735294117647056,
+       "margin_lost": 2.531862745098039
+      },
+      "decide": {
+       "points": 275,
+       "top_match": 0.1709090909090909,
+       "share_lost": 0.22128787878787876,
+       "margin_lost": 2.401818181818182
+      },
+      "give": {
+       "points": 119,
+       "top_match": 0.35294117647058826,
+       "share_lost": 0.1565126050420168,
+       "margin_lost": 1.4558823529411764
+      },
+      "kingDecide": {
+       "points": 13,
+       "top_match": 0.38461538461538464,
+       "share_lost": 0.11538461538461539,
+       "margin_lost": 1.6153846153846154
+      },
+      "kingLook": {
+       "points": 12,
+       "top_match": 0.16666666666666666,
+       "share_lost": 0.3229166666666667,
+       "margin_lost": 4.1875
+      },
+      "peekOther": {
+       "points": 37,
+       "top_match": 0.24324324324324326,
+       "share_lost": 0.2015765765765766,
+       "margin_lost": 2.0405405405405403
+      },
+      "peekOwn": {
+       "points": 51,
+       "top_match": 0.39215686274509803,
+       "share_lost": 0.09722222222222221,
+       "margin_lost": 1.3676470588235294
+      },
+      "stick": {
+       "points": 216,
+       "top_match": 0.5601851851851852,
+       "share_lost": 0.09239969135802469,
+       "margin_lost": 1.1087962962962963
+      }
+     }
+    },
+    {
+     "type": "mlp",
+     "margin_weight": 0.0,
+     "alpha": 0.01,
+     "validation": {
+      "all": {
+       "points": 825,
+       "top_match": 0.3187878787878788,
+       "share_lost": 0.1683838383838384,
+       "margin_lost": 1.8281818181818181
+      },
+      "blindSwap": {
+       "points": 102,
+       "top_match": 0.21568627450980393,
+       "share_lost": 0.23120915032679737,
+       "margin_lost": 2.3455882352941178
+      },
+      "decide": {
+       "points": 275,
+       "top_match": 0.19272727272727272,
+       "share_lost": 0.2084848484848485,
+       "margin_lost": 2.38
+      },
+      "give": {
+       "points": 119,
+       "top_match": 0.3949579831932773,
+       "share_lost": 0.14145658263305325,
+       "margin_lost": 1.3802521008403361
+      },
+      "kingDecide": {
+       "points": 13,
+       "top_match": 0.38461538461538464,
+       "share_lost": 0.125,
+       "margin_lost": 2.1538461538461537
+      },
+      "kingLook": {
+       "points": 12,
+       "top_match": 0.16666666666666666,
+       "share_lost": 0.25,
+       "margin_lost": 2.8125
+      },
+      "peekOther": {
+       "points": 37,
+       "top_match": 0.13513513513513514,
+       "share_lost": 0.23761261261261266,
+       "margin_lost": 2.27027027027027
+      },
+      "peekOwn": {
+       "points": 51,
+       "top_match": 0.43137254901960786,
+       "share_lost": 0.07924836601307188,
+       "margin_lost": 0.9607843137254902
+      },
+      "stick": {
+       "points": 216,
+       "top_match": 0.49537037037037035,
+       "share_lost": 0.10976080246913579,
+       "margin_lost": 1.1828703703703705
+      }
+     }
+    },
+    {
+     "type": "mlp",
+     "margin_weight": 0.0,
+     "alpha": 0.1,
+     "validation": {
+      "all": {
+       "points": 825,
+       "top_match": 0.3103030303030303,
+       "share_lost": 0.17373737373737377,
+       "margin_lost": 1.9090909090909092
+      },
+      "blindSwap": {
+       "points": 102,
+       "top_match": 0.19607843137254902,
+       "share_lost": 0.235702614379085,
+       "margin_lost": 2.536764705882353
+      },
+      "decide": {
+       "points": 275,
+       "top_match": 0.16363636363636364,
+       "share_lost": 0.22227272727272726,
+       "margin_lost": 2.5309090909090908
+      },
+      "give": {
+       "points": 119,
+       "top_match": 0.3949579831932773,
+       "share_lost": 0.14565826330532214,
+       "margin_lost": 1.4243697478991597
+      },
+      "kingDecide": {
+       "points": 13,
+       "top_match": 0.46153846153846156,
+       "share_lost": 0.10576923076923077,
+       "margin_lost": 1.8653846153846154
+      },
+      "kingLook": {
+       "points": 12,
+       "top_match": 0.16666666666666666,
+       "share_lost": 0.2604166666666667,
+       "margin_lost": 2.8125
+      },
+      "peekOther": {
+       "points": 37,
+       "top_match": 0.10810810810810811,
+       "share_lost": 0.24211711711711714,
+       "margin_lost": 2.3986486486486487
+      },
+      "peekOwn": {
+       "points": 51,
+       "top_match": 0.43137254901960786,
+       "share_lost": 0.08415032679738561,
+       "margin_lost": 0.9901960784313726
+      },
+      "stick": {
+       "points": 216,
+       "top_match": 0.5092592592592593,
+       "share_lost": 0.10686728395061727,
+       "margin_lost": 1.1736111111111112
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.02,
+     "trees": 150,
+     "depth": 3,
+     "validation": {
+      "all": {
+       "points": 825,
+       "top_match": 0.3054545454545455,
+       "share_lost": 0.17419191919191923,
+       "margin_lost": 1.8845454545454545
+      },
+      "blindSwap": {
+       "points": 102,
+       "top_match": 0.19607843137254902,
+       "share_lost": 0.24346405228758172,
+       "margin_lost": 2.375
+      },
+      "decide": {
+       "points": 275,
+       "top_match": 0.15636363636363637,
+       "share_lost": 0.2274242424242424,
+       "margin_lost": 2.5318181818181817
+      },
+      "give": {
+       "points": 119,
+       "top_match": 0.3277310924369748,
+       "share_lost": 0.15231092436974789,
+       "margin_lost": 1.4852941176470589
+      },
+      "kingDecide": {
+       "points": 13,
+       "top_match": 0.5384615384615384,
+       "share_lost": 0.07692307692307693,
+       "margin_lost": 0.7884615384615384
+      },
+      "kingLook": {
+       "points": 12,
+       "top_match": 0.16666666666666666,
+       "share_lost": 0.3333333333333333,
+       "margin_lost": 4.291666666666667
+      },
+      "peekOther": {
+       "points": 37,
+       "top_match": 0.21621621621621623,
+       "share_lost": 0.2105855855855856,
+       "margin_lost": 1.9594594594594594
+      },
+      "peekOwn": {
+       "points": 51,
+       "top_match": 0.37254901960784315,
+       "share_lost": 0.11683006535947711,
+       "margin_lost": 1.5196078431372548
+      },
+      "stick": {
+       "points": 216,
+       "top_match": 0.5277777777777778,
+       "share_lost": 0.09008487654320987,
+       "margin_lost": 1.0543981481481481
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.02,
+     "trees": 300,
+     "depth": 3,
+     "validation": {
+      "all": {
+       "points": 825,
+       "top_match": 0.3212121212121212,
+       "share_lost": 0.1684343434343434,
+       "margin_lost": 1.8272727272727274
+      },
+      "blindSwap": {
+       "points": 102,
+       "top_match": 0.19607843137254902,
+       "share_lost": 0.24305555555555558,
+       "margin_lost": 2.4411764705882355
+      },
+      "decide": {
+       "points": 275,
+       "top_match": 0.1709090909090909,
+       "share_lost": 0.21999999999999997,
+       "margin_lost": 2.4318181818181817
+      },
+      "give": {
+       "points": 119,
+       "top_match": 0.3445378151260504,
+       "share_lost": 0.14565826330532214,
+       "margin_lost": 1.415966386554622
+      },
+      "kingDecide": {
+       "points": 13,
+       "top_match": 0.5384615384615384,
+       "share_lost": 0.07692307692307693,
+       "margin_lost": 0.7884615384615384
+      },
+      "kingLook": {
+       "points": 12,
+       "top_match": 0.16666666666666666,
+       "share_lost": 0.3125,
+       "margin_lost": 3.6875
+      },
+      "peekOther": {
+       "points": 37,
+       "top_match": 0.24324324324324326,
+       "share_lost": 0.21734234234234237,
+       "margin_lost": 2.0135135135135136
+      },
+      "peekOwn": {
+       "points": 51,
+       "top_match": 0.37254901960784315,
+       "share_lost": 0.11192810457516339,
+       "margin_lost": 1.4607843137254901
+      },
+      "stick": {
+       "points": 216,
+       "top_match": 0.5555555555555556,
+       "share_lost": 0.08256172839506172,
+       "margin_lost": 1.0081018518518519
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.02,
+     "trees": 200,
+     "depth": 4,
+     "validation": {
+      "all": {
+       "points": 825,
+       "top_match": 0.31393939393939396,
+       "share_lost": 0.17202020202020205,
+       "margin_lost": 1.886060606060606
+      },
+      "blindSwap": {
+       "points": 102,
+       "top_match": 0.18627450980392157,
+       "share_lost": 0.23897058823529413,
+       "margin_lost": 2.3799019607843137
+      },
+      "decide": {
+       "points": 275,
+       "top_match": 0.14909090909090908,
+       "share_lost": 0.2224242424242424,
+       "margin_lost": 2.4954545454545456
+      },
+      "give": {
+       "points": 119,
+       "top_match": 0.36134453781512604,
+       "share_lost": 0.15021008403361344,
+       "margin_lost": 1.4327731092436975
+      },
+      "kingDecide": {
+       "points": 13,
+       "top_match": 0.5384615384615384,
+       "share_lost": 0.07692307692307693,
+       "margin_lost": 0.7884615384615384
+      },
+      "kingLook": {
+       "points": 12,
+       "top_match": 0.08333333333333333,
+       "share_lost": 0.40625,
+       "margin_lost": 5.0
+      },
+      "peekOther": {
+       "points": 37,
+       "top_match": 0.21621621621621623,
+       "share_lost": 0.20382882882882883,
+       "margin_lost": 2.060810810810811
+      },
+      "peekOwn": {
+       "points": 51,
+       "top_match": 0.37254901960784315,
+       "share_lost": 0.11029411764705882,
+       "margin_lost": 1.5049019607843137
+      },
+      "stick": {
+       "points": 216,
+       "top_match": 0.5601851851851852,
+       "share_lost": 0.09008487654320987,
+       "margin_lost": 1.0798611111111112
+      }
+     }
+    },
+    {
+     "type": "mlp",
+     "margin_weight": 0.02,
+     "alpha": 0.01,
+     "validation": {
+      "all": {
+       "points": 825,
+       "top_match": 0.32606060606060605,
+       "share_lost": 0.16863636363636364,
+       "margin_lost": 1.8324242424242425
+      },
+      "blindSwap": {
+       "points": 102,
+       "top_match": 0.20588235294117646,
+       "share_lost": 0.2410130718954248,
+       "margin_lost": 2.2941176470588234
+      },
+      "decide": {
+       "points": 275,
+       "top_match": 0.1781818181818182,
+       "share_lost": 0.21,
+       "margin_lost": 2.462727272727273
+      },
+      "give": {
+       "points": 119,
+       "top_match": 0.42016806722689076,
+       "share_lost": 0.14040616246498602,
+       "margin_lost": 1.365546218487395
+      },
+      "kingDecide": {
+       "points": 13,
+       "top_match": 0.5384615384615384,
+       "share_lost": 0.10576923076923077,
+       "margin_lost": 1.6730769230769231
+      },
+      "kingLook": {
+       "points": 12,
+       "top_match": 0.16666666666666666,
+       "share_lost": 0.28125,
+       "margin_lost": 3.0625
+      },
+      "peekOther": {
+       "points": 37,
+       "top_match": 0.13513513513513514,
+       "share_lost": 0.23536036036036037,
+       "margin_lost": 2.2567567567567566
+      },
+      "peekOwn": {
+       "points": 51,
+       "top_match": 0.43137254901960786,
+       "share_lost": 0.08169934640522875,
+       "margin_lost": 1.1862745098039216
+      },
+      "stick": {
+       "points": 216,
+       "top_match": 0.5231481481481481,
+       "share_lost": 0.10397376543209876,
+       "margin_lost": 1.0902777777777777
+      }
+     }
+    },
+    {
+     "type": "mlp",
+     "margin_weight": 0.02,
+     "alpha": 0.1,
+     "validation": {
+      "all": {
+       "points": 825,
+       "top_match": 0.32606060606060605,
+       "share_lost": 0.1674747474747475,
+       "margin_lost": 1.842121212121212
+      },
+      "blindSwap": {
+       "points": 102,
+       "top_match": 0.21568627450980393,
+       "share_lost": 0.2283496732026144,
+       "margin_lost": 2.4191176470588234
+      },
+      "decide": {
+       "points": 275,
+       "top_match": 0.19636363636363635,
+       "share_lost": 0.21363636363636362,
+       "margin_lost": 2.423636363636364
+      },
+      "give": {
+       "points": 119,
+       "top_match": 0.3865546218487395,
+       "share_lost": 0.1456582633053221,
+       "margin_lost": 1.4201680672268908
+      },
+      "kingDecide": {
+       "points": 13,
+       "top_match": 0.46153846153846156,
+       "share_lost": 0.10576923076923077,
+       "margin_lost": 1.8653846153846154
+      },
+      "kingLook": {
+       "points": 12,
+       "top_match": 0.16666666666666666,
+       "share_lost": 0.28125,
+       "margin_lost": 3.0625
+      },
+      "peekOther": {
+       "points": 37,
+       "top_match": 0.13513513513513514,
+       "share_lost": 0.23536036036036037,
+       "margin_lost": 2.3716216216216215
+      },
+      "peekOwn": {
+       "points": 51,
+       "top_match": 0.43137254901960786,
+       "share_lost": 0.08088235294117647,
+       "margin_lost": 1.1274509803921569
+      },
+      "stick": {
+       "points": 216,
+       "top_match": 0.5185185185185185,
+       "share_lost": 0.09818672839506172,
+       "margin_lost": 1.0706018518518519
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.05,
+     "trees": 150,
+     "depth": 3,
+     "validation": {
+      "all": {
+       "points": 825,
+       "top_match": 0.32242424242424245,
+       "share_lost": 0.17050505050505052,
+       "margin_lost": 1.857878787878788
+      },
+      "blindSwap": {
+       "points": 102,
+       "top_match": 0.22549019607843138,
+       "share_lost": 0.22508169934640526,
+       "margin_lost": 2.2598039215686274
+      },
+      "decide": {
+       "points": 275,
+       "top_match": 0.16363636363636364,
+       "share_lost": 0.22893939393939391,
+       "margin_lost": 2.5354545454545456
+      },
+      "give": {
+       "points": 119,
+       "top_match": 0.33613445378151263,
+       "share_lost": 0.15721288515406162,
+       "margin_lost": 1.5588235294117647
+      },
+      "kingDecide": {
+       "points": 13,
+       "top_match": 0.6153846153846154,
+       "share_lost": 0.057692307692307696,
+       "margin_lost": 0.5
+      },
+      "kingLook": {
+       "points": 12,
+       "top_match": 0.16666666666666666,
+       "share_lost": 0.3229166666666667,
+       "margin_lost": 4.5
+      },
+      "peekOther": {
+       "points": 37,
+       "top_match": 0.1891891891891892,
+       "share_lost": 0.21396396396396397,
+       "margin_lost": 2.0405405405405403
+      },
+      "peekOwn": {
+       "points": 51,
+       "top_match": 0.37254901960784315,
+       "share_lost": 0.11192810457516339,
+       "margin_lost": 1.4901960784313726
+      },
+      "stick": {
+       "points": 216,
+       "top_match": 0.5648148148148148,
+       "share_lost": 0.08236882716049382,
+       "margin_lost": 0.9606481481481481
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.05,
+     "trees": 300,
+     "depth": 3,
+     "validation": {
+      "all": {
+       "points": 825,
+       "top_match": 0.3236363636363636,
+       "share_lost": 0.16914141414141418,
+       "margin_lost": 1.843939393939394
+      },
+      "blindSwap": {
+       "points": 102,
+       "top_match": 0.18627450980392157,
+       "share_lost": 0.2512254901960784,
+       "margin_lost": 2.4950980392156863
+      },
+      "decide": {
+       "points": 275,
+       "top_match": 0.16363636363636364,
+       "share_lost": 0.22075757575757574,
+       "margin_lost": 2.4872727272727273
+      },
+      "give": {
+       "points": 119,
+       "top_match": 0.37815126050420167,
+       "share_lost": 0.14250700280112047,
+       "margin_lost": 1.365546218487395
+      },
+      "kingDecide": {
+       "points": 13,
+       "top_match": 0.5384615384615384,
+       "share_lost": 0.07692307692307693,
+       "margin_lost": 0.7884615384615384
+      },
+      "kingLook": {
+       "points": 12,
+       "top_match": 0.25,
+       "share_lost": 0.2708333333333333,
+       "margin_lost": 3.5833333333333335
+      },
+      "peekOther": {
+       "points": 37,
+       "top_match": 0.21621621621621623,
+       "share_lost": 0.2150900900900901,
+       "margin_lost": 2.0945945945945947
+      },
+      "peekOwn": {
+       "points": 51,
+       "top_match": 0.37254901960784315,
+       "share_lost": 0.11437908496732026,
+       "margin_lost": 1.4852941176470589
+      },
+      "stick": {
+       "points": 216,
+       "top_match": 0.5601851851851852,
+       "share_lost": 0.08429783950617284,
+       "margin_lost": 0.9895833333333334
+      }
+     }
+    },
+    {
+     "type": "gbdt",
+     "margin_weight": 0.05,
+     "trees": 200,
+     "depth": 4,
+     "validation": {
+      "all": {
+       "points": 825,
+       "top_match": 0.31272727272727274,
+       "share_lost": 0.16944444444444448,
+       "margin_lost": 1.8157575757575757
+      },
+      "blindSwap": {
+       "points": 102,
+       "top_match": 0.20588235294117646,
+       "share_lost": 0.2422385620915033,
+       "margin_lost": 2.4607843137254903
+      },
+      "decide": {
+       "points": 275,
+       "top_match": 0.15636363636363637,
+       "share_lost": 0.21515151515151515,
+       "margin_lost": 2.3936363636363636
+      },
+      "give": {
+       "points": 119,
+       "top_match": 0.35294117647058826,
+       "share_lost": 0.15441176470588236,
+       "margin_lost": 1.4012605042016806
+      },
+      "kingDecide": {
+       "points": 13,
+       "top_match": 0.5384615384615384,
+       "share_lost": 0.07692307692307693,
+       "margin_lost": 0.7884615384615384
+      },
+      "kingLook": {
+       "points": 12,
+       "top_match": 0.08333333333333333,
+       "share_lost": 0.2916666666666667,
+       "margin_lost": 2.8958333333333335
+      },
+      "peekOther": {
+       "points": 37,
+       "top_match": 0.1891891891891892,
+       "share_lost": 0.2150900900900901,
+       "margin_lost": 2.0472972972972974
+      },
+      "peekOwn": {
+       "points": 51,
+       "top_match": 0.35294117647058826,
+       "share_lost": 0.11764705882352941,
+       "margin_lost": 1.4166666666666667
+      },
+      "stick": {
+       "points": 216,
+       "top_match": 0.5509259259259259,
+       "share_lost": 0.08834876543209876,
+       "margin_lost": 1.0601851851851851
+      }
+     }
+    },
+    {
+     "type": "mlp",
+     "margin_weight": 0.05,
+     "alpha": 0.01,
+     "validation": {
+      "all": {
+       "points": 825,
+       "top_match": 0.31393939393939396,
+       "share_lost": 0.1701010101010101,
+       "margin_lost": 1.8124242424242425
+      },
+      "blindSwap": {
+       "points": 102,
+       "top_match": 0.17647058823529413,
+       "share_lost": 0.244281045751634,
+       "margin_lost": 2.3480392156862746
+      },
+      "decide": {
+       "points": 275,
+       "top_match": 0.14909090909090908,
+       "share_lost": 0.225,
+       "margin_lost": 2.4881818181818183
+      },
+      "give": {
+       "points": 119,
+       "top_match": 0.42016806722689076,
+       "share_lost": 0.12675070028011204,
+       "margin_lost": 1.2415966386554622
+      },
+      "kingDecide": {
+       "points": 13,
+       "top_match": 0.46153846153846156,
+       "share_lost": 0.125,
+       "margin_lost": 1.9615384615384615
+      },
+      "kingLook": {
+       "points": 12,
+       "top_match": 0.25,
+       "share_lost": 0.1875,
+       "margin_lost": 2.1458333333333335
+      },
+      "peekOther": {
+       "points": 37,
+       "top_match": 0.16216216216216217,
+       "share_lost": 0.23648648648648649,
+       "margin_lost": 2.3783783783783785
+      },
+      "peekOwn": {
+       "points": 51,
+       "top_match": 0.45098039215686275,
+       "share_lost": 0.08660130718954247,
+       "margin_lost": 1.161764705882353
+      },
+      "stick": {
+       "points": 216,
+       "top_match": 0.5185185185185185,
+       "share_lost": 0.09915123456790124,
+       "margin_lost": 1.0428240740740742
+      }
+     }
+    },
+    {
+     "type": "mlp",
+     "margin_weight": 0.05,
+     "alpha": 0.1,
+     "validation": {
+      "all": {
+       "points": 825,
+       "top_match": 0.3236363636363636,
+       "share_lost": 0.16914141414141418,
+       "margin_lost": 1.8287878787878789
+      },
+      "blindSwap": {
+       "points": 102,
+       "top_match": 0.21568627450980393,
+       "share_lost": 0.21732026143790847,
+       "margin_lost": 2.3137254901960786
+      },
+      "decide": {
+       "points": 275,
+       "top_match": 0.16727272727272727,
+       "share_lost": 0.22454545454545455,
+       "margin_lost": 2.4709090909090907
+      },
+      "give": {
+       "points": 119,
+       "top_match": 0.453781512605042,
+       "share_lost": 0.13095238095238096,
+       "margin_lost": 1.2415966386554622
+      },
+      "kingDecide": {
+       "points": 13,
+       "top_match": 0.38461538461538464,
+       "share_lost": 0.1346153846153846,
+       "margin_lost": 2.1153846153846154
+      },
+      "kingLook": {
+       "points": 12,
+       "top_match": 0.16666666666666666,
+       "share_lost": 0.28125,
+       "margin_lost": 3.0625
+      },
+      "peekOther": {
+       "points": 37,
+       "top_match": 0.13513513513513514,
+       "share_lost": 0.23761261261261266,
+       "margin_lost": 2.3783783783783785
+      },
+      "peekOwn": {
+       "points": 51,
+       "top_match": 0.43137254901960786,
+       "share_lost": 0.08660130718954247,
+       "margin_lost": 1.1372549019607843
+      },
+      "stick": {
+       "points": 216,
+       "top_match": 0.5138888888888888,
+       "share_lost": 0.10050154320987653,
+       "margin_lost": 1.0891203703703705
+      }
+     }
+    }
+   ],
+   "chosen": {
+    "type": "mlp",
+    "margin_weight": 0.02,
+    "alpha": 0.1,
+    "validation": {
+     "all": {
+      "points": 825,
+      "top_match": 0.32606060606060605,
+      "share_lost": 0.1674747474747475,
+      "margin_lost": 1.842121212121212
+     },
+     "blindSwap": {
+      "points": 102,
+      "top_match": 0.21568627450980393,
+      "share_lost": 0.2283496732026144,
+      "margin_lost": 2.4191176470588234
+     },
+     "decide": {
+      "points": 275,
+      "top_match": 0.19636363636363635,
+      "share_lost": 0.21363636363636362,
+      "margin_lost": 2.423636363636364
+     },
+     "give": {
+      "points": 119,
+      "top_match": 0.3865546218487395,
+      "share_lost": 0.1456582633053221,
+      "margin_lost": 1.4201680672268908
+     },
+     "kingDecide": {
+      "points": 13,
+      "top_match": 0.46153846153846156,
+      "share_lost": 0.10576923076923077,
+      "margin_lost": 1.8653846153846154
+     },
+     "kingLook": {
+      "points": 12,
+      "top_match": 0.16666666666666666,
+      "share_lost": 0.28125,
+      "margin_lost": 3.0625
+     },
+     "peekOther": {
+      "points": 37,
+      "top_match": 0.13513513513513514,
+      "share_lost": 0.23536036036036037,
+      "margin_lost": 2.3716216216216215
+     },
+     "peekOwn": {
+      "points": 51,
+      "top_match": 0.43137254901960786,
+      "share_lost": 0.08088235294117647,
+      "margin_lost": 1.1274509803921569
+     },
+     "stick": {
+      "points": 216,
+      "top_match": 0.5185185185185185,
+      "share_lost": 0.09818672839506172,
+      "margin_lost": 1.0706018518518519
+     }
+    }
+   },
+   "model_kinds": [
+    "blindSwap",
+    "decide",
+    "peekOther",
+    "peekOwn"
+   ]
+  }
+ }
+}
