@@ -21,7 +21,7 @@ Every move is also announced on screen and lit in the hands it touched, so a pla
 
 A burst of moves shortens each hold rather than dropping any of them, and hovering a line in the log finds its cards on the table.
 
-The look is deliberately spare: a black background, white cards, one mint accent for the numbers that matter, and Plus Jakarta Sans for headlines.
+The look is deliberately spare: a black background by default, white cards, one mint accent for the numbers that matter, and Plus Jakarta Sans for headlines. A warm paper light theme is also available. It can be chosen from the header's sun and moon switch, and with no saved choice it follows the system's color scheme. The choice is stored in the browser, and the theme is applied before first paint.
 
 First time players get a short walkthrough. **How to play** then opens a desktop rules reference, with the option to replay the walkthrough at the bottom.
 
