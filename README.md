@@ -39,7 +39,7 @@ flowchart TB
   seats["Every seat's browser"]
 
   player -->|"Step 1: action"| functions
-  functions -->|"Step 2: version checked commit,<br/>retried on conflict"| games
+  functions -->|"Step 2: version checked commit,<br/>retried on conflict"| postgres
   games -->|"Step 3: same commit"| views
   views -->|"Step 4: Postgres Changes"| realtime
   realtime -->|"Step 5: new view"| seats
