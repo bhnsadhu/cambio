@@ -76,7 +76,8 @@ async function table(page: Page) {
 for (const width of [390, 1440]) {
   test(`original notification treatments share the natural table flow at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.emulateMedia({ reducedMotion: "reduce" });
+    // The colors below are the dark theme's; the light theme follows the system setting.
+    await page.emulateMedia({ reducedMotion: "reduce", colorScheme: "dark" });
     const fixture = await table(page);
     const notices = viewport(page);
     const event = notices.getByRole("region", { name: "Game event", exact: true });
