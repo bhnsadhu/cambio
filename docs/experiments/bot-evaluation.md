@@ -157,3 +157,66 @@ Easy copies come closest to the edge (the interval's low end is 49.1%), so a sma
 * **Equal reaction speeds.** Every level gets the same reaction time here, so hard's faster sticks in the live game are not part of these numbers, and races between sticks are not tested.
 * **One memory length.** Only a two card memory was removed and tested. Medium's actual rule (its own cards plus six others) and other lengths were not tested separately, and every ablation was tested only as hard against hard.
 * **Card counting's effect is small.** It clears the H3 bar only when both seed sets are pooled.
+
+## Learned policies: H5 to H9
+
+This section was committed before any model, training or data logging code. The hypotheses and thresholds below will not be edited; if a mistake is found, a dated correction note goes underneath them. The results will be added in their own section below.
+
+### The question
+
+Can models trained on simulated play make each level play more accurately, with Cambio calls whose probabilities can be trusted, while each level still knows only what it knows today and the three levels stay distinct?
+
+### Setup
+
+**Decision points.** Every choice a bot makes: at the start of its turn, call Cambio or draw (a draw always comes from the deck; this ruleset has no draw from the discard); with a drawn card, place it on the pile or swap it into any slot at the table, its own or an opponent's; each power (look at one of its own cards, look at an opponent's card, blind swap two cards, look at two cards with a king), including whether to skip it, and after a king look whether to swap; whether to stick a remembered matching card and which one; and which card to give after sticking an opponent's card.
+
+**What a level may know.** A model for a level gets features built only from that seat's observation (`observeBot`): its own remembered faces, capped by its memory length (easy two cards, medium its own cards plus six others, hard everything it has seen), the face up pile, public positions, and the public keeps and pushes, through the same card counting and inference its frozen strategy already uses. Nothing else: no deck order, no unseen faces, no other seat's memory. Each level gets its own models, trained only on its own decision points. Easy and medium keep their effort rolls (the full strategy on 50% and 75% of opportunities, with the same lapses otherwise); a learned action policy only replaces what the level does when it is focused.
+
+**Frozen versions.** Today's decisions stay in the code as named options, call policy `gate_v1` and action policy `rules_v1`, chosen through the seat's strategy object the way the ablation options are. Learned options are added next to them as call policy `model_v1` and action policy `model_v1`. Live tables keep the frozen options until this evaluation supports a switch.
+
+**Data.** Seeded rounds of frozen bots at mixed tables. At each sampled decision point, each candidate action is valued by copying the true state, taking the action, shuffling the undealt deck (which no seat has seen), and playing the rest of the round with the frozen bots, several times, with the same shuffles for every candidate at that point. The value of an action is the deciding seat's mean win share (a tie splits the win) and mean final margin (the best other hand minus its own). Features come only from the seat's knowledge; labels come from true outcomes, so across many examples a model learns the expected value given what the seat knows. The number of rollouts is recorded with the data.
+
+**Seed sets.** Training 100001 onward, validation 200001 to 200400, test 300001 to 300200 and 310001 to 310200. None overlaps the seeds the existing evaluation, the benchmark or the tests use (1 to 200, 10001 to 10200, 101 to 124, and the small fixture seeds). Every model choice, threshold and softening is made on validation seeds only. The test seeds are used once, for the run described below, and for nothing else.
+
+**Models.** A call model per level predicts whether calling now wins (a tie counts as a win, as in H2). An action model per level predicts each candidate action's value. Both are exported as small JSON files and run by a plain TypeScript forward pass with no new runtime dependency. A level using `model_v1` for calls calls when the model's probability clears that level's threshold, after the same minimum of one full lap of turns.
+
+**Configurations.** C uses the learned call policy with frozen actions. A uses the learned action policy with frozen calls. CA uses both. A frozen seat uses `gate_v1` and `rules_v1`.
+
+**Test run.** The same harness, side layout, reversed seatings, intervals and sample size as H1 to H4: each matchup is played on both test sets (400 seeds) in both seatings, 800 rounds. For each configuration X: each learned level against its frozen self (easy X vs easy, medium X vs medium, hard X vs hard); learned levels against each other (hard X vs medium X, medium X vs easy X); and each learned level against the frozen level above it (easy X vs medium, medium X vs hard). Frozen hard vs medium and medium vs easy are also played on the test seeds for reference. Win share intervals use the same t interval across seeds as H1 to H4. The existing results files are left unchanged; new results go in their own files.
+
+**Calibration error.** Expected calibration error (ECE): calls grouped into ten equal width probability bins, the absolute gap between each bin's average stated probability and its observed win rate, weighted by the bin's share of calls. On the existing evaluation, the gate's ECE over the shipped bots' 2,668 calls is 0.330.
+
+### Hypotheses
+
+**H5. The learned call model's probabilities are better calibrated than the gate's beliefs.**
+Measured on the test run: the ECE of the model's probability at every actual call by a seat using the learned call policy (configurations C and CA), against the ECE of the gate's win belief at every actual call by a frozen seat in the same matchups.
+Refuted if the model's ECE is above 0.10, or if the 95% bootstrap interval of the gate's ECE minus the model's ECE (resampling test seeds, 2,000 resamples with a fixed seed) includes zero or falls below it.
+
+**H6. Each level's learned action policy beats its own frozen version.**
+Measured on the test run in configuration A: easy A vs easy, medium A vs medium, hard A vs hard.
+Refuted for a level if the 95% interval of the learned side's win share includes 50% or lies below it.
+
+**H7. The level ordering survives with the learned policies.**
+Measured on the test run for each configuration X: hard X vs medium X and medium X vs easy X.
+Refuted for a configuration if either matchup's 95% interval for the stronger level includes 50% or lies below it.
+
+**H8. No learned policy gains from information its level should not have.**
+Checked by the hidden information tests, for every level and for configurations C, A and CA: an attempted read of an unobserved card, the deck, or another seat's memory throws; permuting every card the level cannot know, reversing the deck, and giving other seats false private knowledge must leave the observation, the model features, the call assessment and the planned moves unchanged; each level's memory limit is unchanged with learned options in seeded rounds; and every level's models take the same feature list, built only from that level's observation.
+Refuted if any of these tests fails, or if a learned component cannot be covered by them.
+
+**H9. Levels keep their identity.**
+Measured on the test run for each configuration X: easy X vs frozen medium, and medium X vs frozen hard.
+Refuted for a configuration if the learned lower level's 95% interval includes 50% or lies above it.
+
+**Thresholds.** The intervals in H1 to H4 have half widths of about 3 points at 800 rounds (hard vs medium, 60.2% to 66.3%), and the test run uses the same sample size, so an effect smaller than about 3 points will not be detected and is not claimed. The H5 ceiling of 0.10 is less than a third of the gate's 0.330, and wider than the sampling noise expected from several hundred calls.
+
+**What goes live.** The learned call policy goes live only if H5, H7, H8 and H9 are supported for configuration C, and for CA as well if the learned action policy also goes live. The learned action policy goes live only if H6, H7, H8 and H9 are supported for configuration A, and for CA as well if the learned call policy also goes live. Each switch is one constant. A component that is not supported stays on its frozen version.
+
+### What will not be measured
+
+* **Human play.** No human versus bot games, and no claim that the learned bots feel right, fair or fun to people. Every number is bots playing bots.
+* **Full games.** Single rounds, as in H1 to H4, at equal reaction speeds.
+* **Live performance.** Nothing measures the model's speed inside the Vercel functions or under real traffic, beyond a unit test that the forward pass runs.
+* **Other model families or data sizes.** Only the models named in the training write up are compared, at laptop scale, and the rollout values are estimates from a limited number of rollouts.
+* **Opponents other than these bots.** The models learn values against the frozen bots; how they fare against other strategies, including human habits such as bluffing keeps, is unknown.
+* **Action accuracy on the test seeds.** Agreement with the best rollout action is reported on validation seeds only; the test seeds are used for the matchups and calls above.
