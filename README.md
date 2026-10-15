@@ -21,8 +21,9 @@ The hypotheses were committed before any evaluation code. The full write up, wit
 
 ## Demo
 
-<!-- TODO: demo gif. Record one short round at a laptop window size: open a table, the ready check, a draw and swap, a stick, a Cambio call, and scoring. Save it as docs/images/demo.gif, then replace this comment and the placeholder line below with: ![A round of Cambio against the house bots](docs/images/demo.gif) -->
-*Demo recording coming soon.*
+![A round of Cambio against the house bots: the landing page, a dealt table, draws, sticks, a player running out of cards, and the results](docs/images/demo.gif)
+
+*One full round against the three house bots, sped up about seven times. Recorded on the local test database, not the live site.*
 
 ## Architecture
 
