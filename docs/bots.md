@@ -1,6 +1,6 @@
 # Bot AI
 
-How the house bots decide, what they are allowed to know, and how their strength is measured. Back to the [README](../README.md).
+How the house bots decide, what they are allowed to know, and how their strength is measured. Back to the [README](../README.md). The full evaluation, with its hypotheses, intervals and data, is in [the bot evaluation](experiments/bot-evaluation.md).
 
 The bots choose from information they could legitimately observe: opening peeks, their own draws, private power reveals, face up discards, and public card movements. Each bot's strategy receives a separate observation containing only that seat's remembered or currently revealed faces and public information. Unseen faces, deck order, other players' private reveals, and other bots' memories are excluded before evaluating moves or rechecking a Cambio call. Hard's 100% strategy still estimates unknown cards; it cannot see them.
 
@@ -14,9 +14,11 @@ All difficulties use the same rules engine as humans. Fairness tests change hidd
 
 The percentages control use of the strongest strategy for replacements, powers, sticks, and giving cards; they are not win rates. All levels share the same counting and tactical evaluator. Missed opportunities remain missed on repeated planning passes with the same intent randomness. Bots only stick remembered matches, so easy's mistakes do not create endless blind guess penalties.
 
-All three levels use the same cautious Cambio rule. A deterministic belief rollout compares the bot's estimated hand against every opponent, including their best improving replacement on one final draw. Calling requires an estimated lead, at least 64% winning belief and 80% belief of winning or finishing within one point. There is no random call, absolute score cutoff, or late round fallback. Hard's information is better; its permission to call recklessly is not greater. The reducer checks the assessment again on every commit attempt, so a human stick or concurrent update can cancel an obsolete call.
+All three levels use the same Cambio rule. A deterministic belief rollout compares the bot's estimated hand against every opponent, including their best improving replacement on one final draw. Calling requires an estimated lead, at least 64% winning belief and 80% belief of winning or finishing within one point. There is no random call, absolute score cutoff, or late round fallback. Hard's information is better; its permission to call recklessly is not greater. The reducer checks the assessment again on every commit attempt, so a human stick or concurrent update can cancel an obsolete call.
 
 These probabilities are decision estimates, not calibrated promises: unseen cards and opponents' final turn powers can still overturn a lead. In 192 complete rounds with equal reaction speeds and reversed seatings (seeds 1 to 24 and an independent set, 101 to 124), hard earned 64.5 winning shares against medium's 31.5, with mean scores 5.06 versus 7.40. Medium earned 82.5 shares against easy's 13.5, with mean scores 6.05 versus 12.43. Tied wins divide the share. Every actual Cambio call passed the belief gate. Tests fail on an unfinished round, illegal move, lost or duplicated card, or reversed difficulty ordering. Run `BOT_BENCHMARK=1 npm test -- src/lib/game/bot-strength.test.ts --silent=false` to print the measurements.
+
+The larger evaluation confirms the ordering and measures how far the beliefs are from calibrated. Over 800 rounds per matchup, hard won 63.3% of the win share against medium (95% interval 60.2% to 66.3%) and medium won 78.3% against easy (75.6% to 81.0%). Every call by the shipped bots passed the gate, yet only 1,440 of 2,668 won (54.0%), at an average belief of 87.0%. The gate still adds strength: a hard bot without it won 44.4% against full hard bots. Regenerate everything with `npm run results`.
 
 Cameron consistently uses the Quiff avatar; Camila uses Curls; Cami uses Ponytail. Camille fills the fourth bot seat if every human leaves during a round. Existing saved bot seats receive the same mapping when projected, and human avatar choices remain independent.
 
