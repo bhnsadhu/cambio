@@ -113,6 +113,10 @@ test("joining a first table introduces the game once and carries that choice bet
   await expect(rules(page)).toBeVisible();
   await page.keyboard.press("Escape");
   await page.getByRole("link", { name: "Cambio home", exact: true }).click();
+  // Both pages have a How to play button; wait for home so the click is not
+  // taken by the table page while it is navigating away.
+  await expect(page).toHaveURL(`${origin}/`);
+  await expect(page.getByRole("button", { name: "Open a table", exact: true })).toBeVisible();
   await helpButton(page).click();
   await expect(rules(page)).toBeVisible();
 });
