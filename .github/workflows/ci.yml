@@ -46,7 +46,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       # The script starts its own Postgres and PostgREST containers and a
       # local app with dummy credentials (see e2e/local-server.mjs).
-      - run: npm run test:accounts -- --reporter=line,html
+      - run: npm run test:accounts -- --reporter=line,github,html
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
