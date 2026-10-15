@@ -24,9 +24,13 @@ export function unseenValues(state: Pick<BotObservation, "cards" | "discard" | "
 
 function weight(state: Pick<BotObservation, "botHints">, id: string, value: number, inference = true): number {
   if (!inference) return 1;
+  return clueWeight(state.botHints?.[id], value);
+}
+
+/** How much a card's public clue, if any, favors one possible value. */
+function clueWeight(clue: "kept" | "pushed" | undefined, value: number): number {
   // A keep/push is evidence of intent, not proof of a face. Even a high kept
   // card or a low pushed card retains probability, so opponents can bluff.
-  const clue = state.botHints?.[id];
   if (clue === "kept") return value <= 3 ? 3 : value <= 6 ? 1.5 : 0.65;
   if (clue === "pushed") return value >= 7 ? 3 : value >= 4 ? 1.3 : 0.6;
   return 1;
@@ -74,6 +78,9 @@ export function assessObservedCambio(state: BotObservation, botId: string): Camb
   const hands = state.players.map((p) => p.hand.filter((id): id is string => !!id));
   const me = state.players.indexOf(bot);
   const sums = state.players.map(() => 0);
+  // Remembered faces are the same in every sample, so read them once.
+  const knownValues = new Map<string, number>();
+  for (const id of hands.flat()) if (known.has(id) && state.cards[id]) knownValues.set(id, cardValue(state.cards[id]));
   const samples = 192;
   let wins = 0, near = 0;
   // Fixed stratification avoids a fresh random hunch on each server replan.
@@ -86,17 +93,21 @@ export function assessObservedCambio(state: BotObservation, botId: string): Camb
     const remaining = pool.slice();
     const take = (id: string) => {
       const available = remaining.length ? remaining : pool;
-      let cursor = random() * available.reduce((sum, value) => sum + weight(state, id, value, inference), 0);
+      // The same weights, summed in the same order, with the clue looked up once.
+      const clue = inference ? state.botHints?.[id] : undefined;
+      let total = 0;
+      for (const value of available) total += clueWeight(clue, value);
+      let cursor = random() * total;
       let index = available.length - 1;
       for (let i = 0; i < available.length; i++) {
-        cursor -= weight(state, id, available[i], inference);
+        cursor -= clueWeight(clue, available[i]);
         if (cursor <= 0) { index = i; break; }
       }
       const value = available[index];
       if (available === remaining) remaining.splice(index, 1);
       return value;
     };
-    const values = hands.map((hand) => hand.map((id) => known.has(id) && state.cards[id] ? cardValue(state.cards[id]) : take(id)));
+    const values = hands.map((hand) => hand.map((id) => knownValues.get(id) ?? take(id)));
     const totals = values.map((hand, index) => {
       const total = hand.reduce((sum, value) => sum + value, 0);
       if (index === me || !hand.length) return total;
