@@ -97,8 +97,8 @@ function calibrationChart(bins: CalibrationBin[]): string {
   body.push(`<text x="${x(0.3)}" y="${y(0.3) - 8}" font-size="12" fill="${C.ink2}" transform="rotate(${(-slope).toFixed(1)} ${x(0.3)} ${y(0.3) - 8})">belief matches outcome</text>`);
   body.push(`<line x1="${x(0.64)}" y1="${y(0)}" x2="${x(0.64)}" y2="${y(1)}" stroke="${C.ink3}" stroke-dasharray="2 4"/>`);
   body.push(`<text x="${x(0.64) - 6}" y="${y(1) + 14}" font-size="12" fill="${C.ink2}" text-anchor="end">gate threshold 64%</text>`);
-  for (const [gate, color, nudge] of [["off", C.series2, 6], ["on", C.series1, -6]] as const) {
-    for (const bin of bins.filter((b) => b.gate === gate && b.calls > 0)) {
+  for (const [group, color, nudge] of [["no_gate", C.series2, 6], ["shipped", C.series1, -6]] as const) {
+    for (const bin of bins.filter((b) => b.group === group && b.calls > 0)) {
       const cx = x(bin.meanBelief!) + nudge;
       body.push(`<line x1="${cx.toFixed(1)}" x2="${cx.toFixed(1)}" y1="${y(bin.low!).toFixed(1)}" y2="${y(bin.high!).toFixed(1)}" stroke="${color}" stroke-width="2" stroke-linecap="round"/>`);
       body.push(bin.tooSmall
@@ -108,22 +108,22 @@ function calibrationChart(bins: CalibrationBin[]): string {
   }
   // Legend and the per bin counts, so identity is never color alone.
   const legendX = 590;
-  body.push(`<circle cx="${legendX}" cy="104" r="5.5" fill="${C.series1}"/><text x="${legendX + 14}" y="108" font-size="13" fill="${C.ink}">Shipped bots, gate on</text>`);
+  body.push(`<circle cx="${legendX}" cy="104" r="5.5" fill="${C.series1}"/><text x="${legendX + 14}" y="108" font-size="13" fill="${C.ink}">Shipped bots, all levels</text>`);
   body.push(`<circle cx="${legendX}" cy="128" r="5.5" fill="${C.series2}"/><text x="${legendX + 14}" y="132" font-size="13" fill="${C.ink}">Hard with the gate removed</text>`);
   body.push(`<circle cx="${legendX}" cy="152" r="5" fill="${C.surface}" stroke="${C.ink2}" stroke-width="2"/><text x="${legendX + 14}" y="156" font-size="13" fill="${C.ink}">Fewer than 30 calls</text>`);
   body.push(`<text x="${legendX - 6}" y="192" font-size="12" font-weight="600" fill="${C.ink2}">Calls per belief bin</text>`);
   let row = 212;
-  for (const gate of ["on", "off"] as const) {
-    body.push(`<text x="${legendX - 6}" y="${row}" font-size="12" fill="${gate === "on" ? C.series1 : C.series2}" font-weight="600">${gate === "on" ? "Gate on" : "Gate off"}</text>`);
+  for (const group of ["shipped", "no_gate"] as const) {
+    body.push(`<text x="${legendX - 6}" y="${row}" font-size="12" fill="${group === "shipped" ? C.series1 : C.series2}" font-weight="600">${group === "shipped" ? "Shipped bots" : "Gate removed"}</text>`);
     row += 18;
-    for (const bin of bins.filter((b) => b.gate === gate && b.calls > 0)) {
+    for (const bin of bins.filter((b) => b.group === group && b.calls > 0)) {
       body.push(`<text x="${legendX - 6}" y="${row}" font-size="12" fill="${C.ink2}">${pct(bin.from, 0)} to ${pct(bin.to, 0)}: ${bin.wins} of ${bin.calls} won</text>`);
       row += 16;
     }
     row += 8;
   }
   return svg(width, height, "Do Cambio calls win as often as the bots believe?",
-    "Observed win rate of every actual call, grouped by the caller's win belief, with 95% Wilson intervals.", body);
+    "Calls by shipped bots and by hard with only the gate removed, grouped by the caller's win belief. 95% Wilson intervals.", body);
 }
 
 export function renderCharts(dir: string, matchups: MatchupSummary[], bins: CalibrationBin[]) {

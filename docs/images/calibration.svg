@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="820" height="560" viewBox="0 0 820 560" role="img" aria-labelledby="t d" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
 <title id="t">Do Cambio calls win as often as the bots believe?</title>
-<desc id="d">Observed win rate of every actual call, grouped by the caller's win belief, with 95% Wilson intervals.</desc>
+<desc id="d">Calls by shipped bots and by hard with only the gate removed, grouped by the caller's win belief. 95% Wilson intervals.</desc>
 <rect width="820" height="560" rx="12" fill="#fcfcfb"/>
 <text x="24" y="34" font-size="18" font-weight="600" fill="#0b0b0b">Do Cambio calls win as often as the bots believe?</text>
-<text x="24" y="56" font-size="13" fill="#52514e">Observed win rate of every actual call, grouped by the caller's win belief, with 95% Wilson intervals.</text>
+<text x="24" y="56" font-size="13" fill="#52514e">Calls by shipped bots and by hard with only the gate removed, grouped by the caller's win belief. 95% Wilson intervals.</text>
 <line x1="80" x2="560" y1="480" y2="480" stroke="#e6e5e0"/>
 <text x="70" y="484" font-size="12" fill="#52514e" text-anchor="end">0%</text>
 <text x="80" y="500" font-size="12" fill="#52514e" text-anchor="middle">0%</text>
@@ -48,24 +48,24 @@
 <circle cx="494.8" cy="330.0" r="5" fill="#fcfcfb" stroke="#eb6834" stroke-width="2"/>
 <line x1="561.0" x2="561.0" y1="352.9" y2="173.4" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
 <circle cx="561.0" cy="257.1" r="5" fill="#fcfcfb" stroke="#eb6834" stroke-width="2"/>
-<line x1="398.3" x2="398.3" y1="317.5" y2="257.4" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
-<circle cx="398.3" cy="287.5" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
-<line x1="437.1" x2="437.1" y1="309.0" y2="282.2" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
-<circle cx="437.1" cy="295.6" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
-<line x1="480.4" x2="480.4" y1="293.9" y2="267.9" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
-<circle cx="480.4" cy="280.9" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
-<line x1="541.3" x2="541.3" y1="269.0" y2="248.6" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
-<circle cx="541.3" cy="258.7" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
-<circle cx="590" cy="104" r="5.5" fill="#2a78d6"/><text x="604" y="108" font-size="13" fill="#0b0b0b">Shipped bots, gate on</text>
+<line x1="398.5" x2="398.5" y1="309.4" y2="242.9" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="398.5" cy="275.9" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="437.0" x2="437.0" y1="303.9" y2="274.7" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="437.0" cy="289.3" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="480.2" x2="480.2" y1="291.1" y2="262.6" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="480.2" cy="276.8" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="541.2" x2="541.2" y1="263.7" y2="241.5" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="541.2" cy="252.5" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="590" cy="104" r="5.5" fill="#2a78d6"/><text x="604" y="108" font-size="13" fill="#0b0b0b">Shipped bots, all levels</text>
 <circle cx="590" cy="128" r="5.5" fill="#eb6834"/><text x="604" y="132" font-size="13" fill="#0b0b0b">Hard with the gate removed</text>
 <circle cx="590" cy="152" r="5" fill="#fcfcfb" stroke="#52514e" stroke-width="2"/><text x="604" y="156" font-size="13" fill="#0b0b0b">Fewer than 30 calls</text>
 <text x="584" y="192" font-size="12" font-weight="600" fill="#52514e">Calls per belief bin</text>
-<text x="584" y="212" font-size="12" fill="#2a78d6" font-weight="600">Gate on</text>
-<text x="584" y="230" font-size="12" fill="#52514e">60% to 70%: 78 of 158 won</text>
-<text x="584" y="246" font-size="12" fill="#52514e">70% to 80%: 381 of 806 won</text>
-<text x="584" y="262" font-size="12" fill="#52514e">80% to 90%: 438 of 858 won</text>
-<text x="584" y="278" font-size="12" fill="#52514e">90% to 100%: 779 of 1373 won</text>
-<text x="584" y="302" font-size="12" fill="#eb6834" font-weight="600">Gate off</text>
+<text x="584" y="212" font-size="12" fill="#2a78d6" font-weight="600">Shipped bots</text>
+<text x="584" y="230" font-size="12" fill="#52514e">60% to 70%: 67 of 128 won</text>
+<text x="584" y="246" font-size="12" fill="#52514e">70% to 80%: 333 of 681 won</text>
+<text x="584" y="262" font-size="12" fill="#52514e">80% to 90%: 371 of 712 won</text>
+<text x="584" y="278" font-size="12" fill="#52514e">90% to 100%: 669 of 1147 won</text>
+<text x="584" y="302" font-size="12" fill="#eb6834" font-weight="600">Gate removed</text>
 <text x="584" y="320" font-size="12" fill="#52514e">0% to 10%: 0 of 1 won</text>
 <text x="584" y="336" font-size="12" fill="#52514e">10% to 20%: 0 of 4 won</text>
 <text x="584" y="352" font-size="12" fill="#52514e">20% to 30%: 7 of 60 won</text>

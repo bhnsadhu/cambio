@@ -54,6 +54,8 @@ export interface RoundRow {
 export interface CallRow {
   matchup: string; set: string; seed: number; seating: number;
   seat: number; side: "a" | "b"; variant: string; difficulty: BotDifficulty; gate: boolean;
+  /** A shipped bot: no ability removed. */
+  shipped: boolean;
   turnsTaken: number; winBelief: number; nearWinBelief: number; ownEstimate: number; strongestOpponent: number; unknownOwn: number;
   won: boolean; tied: boolean; callerScore: number; bestOtherScore: number;
 }
@@ -92,7 +94,7 @@ export function playTask(task: Task): { round: RoundRow; calls: CallRow[] } {
     const def = matchup[side];
     const callerScore = scores[call.seat];
     return {
-      ...task, seat: call.seat + 1, side, variant: def.label, difficulty: def.difficulty, gate: def.strategy?.callGate !== false,
+      ...task, seat: call.seat + 1, side, variant: def.label, difficulty: def.difficulty, gate: def.strategy?.callGate !== false, shipped: !def.strategy,
       turnsTaken: call.turnsTaken, winBelief: call.belief.winChance, nearWinBelief: call.belief.nearWinChance,
       ownEstimate: call.belief.ownEstimate, strongestOpponent: call.belief.strongestOpponent, unknownOwn: call.belief.unknownOwn,
       won: result.winnerIds.includes(call.playerId), tied: result.winnerIds.includes(call.playerId) && result.winnerIds.length > 1,
@@ -145,20 +147,22 @@ export function summarize(rounds: RoundRow[], calls: CallRow[]): MatchupSummary[
   });
 }
 
-export interface CalibrationBin { gate: "on" | "off"; from: number; to: number; calls: number; wins: number; meanBelief: number | null; rate: number | null; low: number | null; high: number | null; tooSmall: boolean }
+/** Shipped bots (gate on, nothing removed), and hard with only the gate removed. */
+export interface CalibrationBin { group: "shipped" | "no_gate"; from: number; to: number; calls: number; wins: number; meanBelief: number | null; rate: number | null; low: number | null; high: number | null; tooSmall: boolean }
 
 export const MIN_BIN = 30;
 
 export function calibrate(calls: CallRow[]): CalibrationBin[] {
   const bins: CalibrationBin[] = [];
-  for (const gate of ["on", "off"] as const) {
+  for (const group of ["shipped", "no_gate"] as const) {
+    const members = calls.filter((call) => group === "shipped" ? call.shipped : !call.gate);
     for (let index = 0; index < 10; index++) {
       const from = index / 10, to = (index + 1) / 10;
-      const inBin = calls.filter((call) => call.gate === (gate === "on") && call.winBelief >= from && (call.winBelief < to || (index === 9 && call.winBelief <= 1)));
+      const inBin = members.filter((call) => call.winBelief >= from && (call.winBelief < to || (index === 9 && call.winBelief <= 1)));
       const wins = inBin.filter((call) => call.won).length;
       const interval = wilson(wins, inBin.length);
       bins.push({
-        gate, from, to, calls: inBin.length, wins,
+        group, from, to, calls: inBin.length, wins,
         meanBelief: inBin.length ? mean(inBin.map((call) => call.winBelief)) : null,
         rate: inBin.length ? interval.rate : null, low: inBin.length ? interval.low : null, high: inBin.length ? interval.high : null,
         tooSmall: inBin.length < MIN_BIN,

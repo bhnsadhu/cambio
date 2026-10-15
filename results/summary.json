@@ -22,7 +22,7 @@
   "totals": {
     "rounds": 6800,
     "calls": 3784,
-    "gatedCalls": 3195,
+    "shippedCalls": 2668,
     "ungatedCalls": 589
   },
   "benchmark": [
@@ -691,7 +691,7 @@
   ],
   "calibration": [
     {
-      "gate": "on",
+      "group": "shipped",
       "from": 0,
       "to": 0.1,
       "calls": 0,
@@ -703,7 +703,7 @@
       "tooSmall": true
     },
     {
-      "gate": "on",
+      "group": "shipped",
       "from": 0.1,
       "to": 0.2,
       "calls": 0,
@@ -715,7 +715,7 @@
       "tooSmall": true
     },
     {
-      "gate": "on",
+      "group": "shipped",
       "from": 0.2,
       "to": 0.3,
       "calls": 0,
@@ -727,7 +727,7 @@
       "tooSmall": true
     },
     {
-      "gate": "on",
+      "group": "shipped",
       "from": 0.3,
       "to": 0.4,
       "calls": 0,
@@ -739,7 +739,7 @@
       "tooSmall": true
     },
     {
-      "gate": "on",
+      "group": "shipped",
       "from": 0.4,
       "to": 0.5,
       "calls": 0,
@@ -751,7 +751,7 @@
       "tooSmall": true
     },
     {
-      "gate": "on",
+      "group": "shipped",
       "from": 0.5,
       "to": 0.6,
       "calls": 0,
@@ -763,55 +763,55 @@
       "tooSmall": true
     },
     {
-      "gate": "on",
+      "group": "shipped",
       "from": 0.6,
       "to": 0.7,
-      "calls": 158,
-      "wins": 78,
-      "meanBelief": 0.6756,
-      "rate": 0.493671,
-      "low": 0.416795,
-      "high": 0.570847,
+      "calls": 128,
+      "wins": 67,
+      "meanBelief": 0.676025,
+      "rate": 0.523438,
+      "low": 0.437498,
+      "high": 0.608011,
       "tooSmall": false
     },
     {
-      "gate": "on",
+      "group": "shipped",
       "from": 0.7,
       "to": 0.8,
-      "calls": 806,
-      "wins": 381,
-      "meanBelief": 0.756455,
-      "rate": 0.472705,
-      "low": 0.438449,
-      "high": 0.50722,
+      "calls": 681,
+      "wins": 333,
+      "meanBelief": 0.756149,
+      "rate": 0.488987,
+      "low": 0.45161,
+      "high": 0.526487,
       "tooSmall": false
     },
     {
-      "gate": "on",
+      "group": "shipped",
       "from": 0.8,
       "to": 0.9,
-      "calls": 858,
-      "wins": 438,
-      "meanBelief": 0.846579,
-      "rate": 0.51049,
-      "low": 0.477069,
-      "high": 0.543817,
+      "calls": 712,
+      "wins": 371,
+      "meanBelief": 0.846347,
+      "rate": 0.521067,
+      "low": 0.484359,
+      "high": 0.55755,
       "tooSmall": false
     },
     {
-      "gate": "on",
+      "group": "shipped",
       "from": 0.9,
       "to": 1,
-      "calls": 1373,
-      "wins": 779,
-      "meanBelief": 0.973571,
-      "rate": 0.567371,
-      "low": 0.541012,
-      "high": 0.593353,
+      "calls": 1147,
+      "wins": 669,
+      "meanBelief": 0.973373,
+      "rate": 0.583261,
+      "low": 0.554497,
+      "high": 0.611468,
       "tooSmall": false
     },
     {
-      "gate": "off",
+      "group": "no_gate",
       "from": 0,
       "to": 0.1,
       "calls": 1,
@@ -823,7 +823,7 @@
       "tooSmall": true
     },
     {
-      "gate": "off",
+      "group": "no_gate",
       "from": 0.1,
       "to": 0.2,
       "calls": 4,
@@ -835,7 +835,7 @@
       "tooSmall": true
     },
     {
-      "gate": "off",
+      "group": "no_gate",
       "from": 0.2,
       "to": 0.3,
       "calls": 60,
@@ -847,7 +847,7 @@
       "tooSmall": false
     },
     {
-      "gate": "off",
+      "group": "no_gate",
       "from": 0.3,
       "to": 0.4,
       "calls": 186,
@@ -859,7 +859,7 @@
       "tooSmall": false
     },
     {
-      "gate": "off",
+      "group": "no_gate",
       "from": 0.4,
       "to": 0.5,
       "calls": 154,
@@ -871,7 +871,7 @@
       "tooSmall": false
     },
     {
-      "gate": "off",
+      "group": "no_gate",
       "from": 0.5,
       "to": 0.6,
       "calls": 89,
@@ -883,7 +883,7 @@
       "tooSmall": false
     },
     {
-      "gate": "off",
+      "group": "no_gate",
       "from": 0.6,
       "to": 0.7,
       "calls": 50,
@@ -895,7 +895,7 @@
       "tooSmall": false
     },
     {
-      "gate": "off",
+      "group": "no_gate",
       "from": 0.7,
       "to": 0.8,
       "calls": 18,
@@ -907,7 +907,7 @@
       "tooSmall": true
     },
     {
-      "gate": "off",
+      "group": "no_gate",
       "from": 0.8,
       "to": 0.9,
       "calls": 13,
@@ -919,7 +919,7 @@
       "tooSmall": true
     },
     {
-      "gate": "off",
+      "group": "no_gate",
       "from": 0.9,
       "to": 1,
       "calls": 14,
@@ -952,12 +952,38 @@
     },
     "h2": {
       "rule": "Refuted if the win rate of bot calls falls below the 64% belief threshold the gate requires.",
-      "calls": 3195,
-      "wins": 1676,
-      "winRate": 0.52457,
-      "low": 0.507234,
-      "high": 0.541846,
-      "meanBelief": 0.869961,
+      "calls": 2668,
+      "wins": 1440,
+      "winRate": 0.53973,
+      "low": 0.520774,
+      "high": 0.558572,
+      "meanBelief": 0.869762,
+      "byLevel": {
+        "easy": {
+          "calls": 260,
+          "wins": 162,
+          "winRate": 0.623077,
+          "low": 0.562782,
+          "high": 0.679788,
+          "meanBelief": 0.85653
+        },
+        "medium": {
+          "calls": 822,
+          "wins": 462,
+          "winRate": 0.562044,
+          "low": 0.527916,
+          "high": 0.595594,
+          "meanBelief": 0.864114
+        },
+        "hard": {
+          "calls": 1586,
+          "wins": 816,
+          "winRate": 0.514502,
+          "low": 0.489899,
+          "high": 0.539034,
+          "meanBelief": 0.874859
+        }
+      },
       "supported": false
     },
     "h3": {

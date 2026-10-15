@@ -90,8 +90,8 @@ writeCsv(`${RESULTS}/rounds.csv`,
   ["matchup", "set", "seed", "seating", "side_a_seats", "share_a", "score_a", "score_b", "seat1_share", "seat2_share", "seat3_share", "seat4_share", "seat1_score", "seat2_score", "seat3_score", "seat4_score", "winners", "steps", "ended", "caller_seat"],
   rounds.map((r) => [r.matchup, r.set, r.seed, r.seating, r.seating === 1 ? "1 and 3" : "2 and 4", r.shareA, r.scoreA, r.scoreB, ...r.shares, ...r.scores, r.winners, r.steps, r.ended, r.callerSeat ?? ""]));
 writeCsv(`${RESULTS}/calls.csv`,
-  ["matchup", "set", "seed", "seating", "seat", "side", "variant", "difficulty", "gate", "turns_taken", "win_belief", "near_win_belief", "own_estimate", "strongest_opponent", "unknown_own", "won", "tied", "caller_score", "best_other_score"],
-  calls.map((c) => [c.matchup, c.set, c.seed, c.seating, c.seat, c.side, c.variant, c.difficulty, c.gate ? "on" : "off", c.turnsTaken, c.winBelief, c.nearWinBelief, c.ownEstimate, c.strongestOpponent, c.unknownOwn, c.won ? 1 : 0, c.tied ? 1 : 0, c.callerScore, c.bestOtherScore]));
+  ["matchup", "set", "seed", "seating", "seat", "side", "variant", "difficulty", "shipped", "gate", "turns_taken", "win_belief", "near_win_belief", "own_estimate", "strongest_opponent", "unknown_own", "won", "tied", "caller_score", "best_other_score"],
+  calls.map((c) => [c.matchup, c.set, c.seed, c.seating, c.seat, c.side, c.variant, c.difficulty, c.shipped ? 1 : 0, c.gate ? "on" : "off", c.turnsTaken, c.winBelief, c.nearWinBelief, c.ownEstimate, c.strongestOpponent, c.unknownOwn, c.won ? 1 : 0, c.tied ? 1 : 0, c.callerScore, c.bestOtherScore]));
 
 const matchups = summarize(rounds, calls);
 const calibration = calibrate(calls);
@@ -107,14 +107,20 @@ writeCsv(`${RESULTS}/matchups.csv`,
     ...ci(m.meanScoreA), ...ci(m.meanScoreB), ...ci(m.scoreGap), ...(m.seatOrder ? ci(m.seatOrder) : ["", "", ""]),
     m.callsA, m.callsB, m.callWinRateA ?? "", m.callWinRateB ?? ""]));
 writeCsv(`${RESULTS}/calibration.csv`,
-  ["gate", "belief_from", "belief_to", "calls", "wins", "mean_belief", "observed_win_rate", "rate_low", "rate_high", "too_small"],
-  calibration.map((b) => [b.gate, b.from, b.to, b.calls, b.wins, b.meanBelief ?? "", b.rate ?? "", b.low ?? "", b.high ?? "", b.tooSmall ? 1 : 0]));
+  ["group", "belief_from", "belief_to", "calls", "wins", "mean_belief", "observed_win_rate", "rate_low", "rate_high", "too_small"],
+  calibration.map((b) => [b.group, b.from, b.to, b.calls, b.wins, b.meanBelief ?? "", b.rate ?? "", b.low ?? "", b.high ?? "", b.tooSmall ? 1 : 0]));
 
 // The hypothesis checks, exactly as docs/experiments/bot-evaluation.md words them.
 const byId = Object.fromEntries(matchups.map((m) => [m.id, m]));
 const excludesHalf = (i: { low: number; high: number }) => i.low > 0.5 || i.high < 0.5;
-const gated = calls.filter((c) => c.gate);
+// H2 is about the shipped bots, so ablated variants are left out of it.
+const gated = calls.filter((c) => c.shipped);
 const gatedRate = wilson(gated.filter((c) => c.won).length, gated.length);
+const byLevel = Object.fromEntries((["easy", "medium", "hard"] as const).map((lvl) => {
+  const own = gated.filter((c) => c.difficulty === lvl);
+  const w = wilson(own.filter((c) => c.won).length, own.length);
+  return [lvl, { calls: own.length, wins: own.filter((c) => c.won).length, winRate: w.rate, low: w.low, high: w.high, meanBelief: own.reduce((sum, c) => sum + c.winBelief, 0) / own.length }];
+}));
 const hypotheses = {
   h1: {
     rule: "Refuted if the 95% interval for either matchup includes an even split.",
@@ -125,6 +131,7 @@ const hypotheses = {
     rule: "Refuted if the win rate of bot calls falls below the 64% belief threshold the gate requires.",
     calls: gated.length, wins: gated.filter((c) => c.won).length, winRate: gatedRate.rate, low: gatedRate.low, high: gatedRate.high,
     meanBelief: gated.reduce((sum, c) => sum + c.winBelief, 0) / gated.length,
+    byLevel,
     supported: gatedRate.rate >= 0.64,
   },
   h3: {
@@ -150,7 +157,7 @@ const summary = {
     interval: "Per seed, average over its seatings. The 95% interval is the mean across seeds plus or minus the t critical value (0.975, n minus 1 degrees of freedom) times the standard deviation across seeds over the square root of n. Calibration bins use the Wilson score interval.",
     minimumBin: MIN_BIN,
   },
-  totals: { rounds: rounds.length, calls: calls.length, gatedCalls: gated.length, ungatedCalls: calls.length - gated.length },
+  totals: { rounds: rounds.length, calls: calls.length, shippedCalls: gated.length, ungatedCalls: calls.filter((c) => !c.gate).length },
   benchmark, matchups, calibration, hypotheses,
 };
 writeFileSync(`${RESULTS}/summary.json`, `${JSON.stringify(summary, (_, value) => typeof value === "number" ? round6(value) : value, 2)}\n`);
