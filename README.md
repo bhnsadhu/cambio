@@ -29,21 +29,21 @@ The hypotheses were committed before any evaluation code. The full write up, wit
 
 ```mermaid
 flowchart TB
-  player["A player's browser<br/>holds only the anon key"]
-  functions["Vercel Functions<br/>route handlers run the pure rules engine<br/>bot turns run after the response, via waitUntil"]
+  player["Player's browser<br/>anon key only"]
+  functions["Vercel Functions<br/>pure rules engine<br/>bot turns via waitUntil"]
   subgraph postgres["Supabase Postgres"]
-    games[("games<br/>full secret state<br/>RLS on, no policies")]
-    views[("game_views<br/>redacted public view")]
+    games[("games<br/>secret state, RLS")]
+    views[("game_views<br/>redacted view")]
   end
   realtime["Supabase Realtime"]
   seats["Every seat's browser"]
 
-  player -->|"Step 1: action with a client action ID"| functions
-  functions -->|"Step 2: game_load, then game_commit,<br/>version checked and retried on conflict"| games
-  games -->|"Step 3: the same commit writes the redacted view"| views
+  player -->|"Step 1: action"| functions
+  functions -->|"Step 2: version checked commit,<br/>retried on conflict"| games
+  games -->|"Step 3: same commit"| views
   views -->|"Step 4: Postgres Changes"| realtime
-  realtime -->|"Step 5: the new public view"| seats
-  functions -.->|"each player's private view:<br/>own drawn card and reveals"| seats
+  realtime -->|"Step 5: new view"| seats
+  functions -.->|"private view:<br/>drawn card, reveals"| seats
 ```
 
 Every move is a pure function over the current state. The server loads the state and its version, runs the action through the engine, and commits only if the version is unchanged; a losing commit reloads and runs again, so the rules decide every late arrival. More in [docs/architecture.md](docs/architecture.md).
