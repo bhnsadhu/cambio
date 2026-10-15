@@ -11,7 +11,7 @@
  */
 import { assessCambio, planBots, type Jitter } from "./bots";
 import type { CambioAssessment } from "./bot-beliefs";
-import { applyAction, createGame } from "./engine";
+import { applyAction, createGame, type EngineCtx } from "./engine";
 import { makeCtx } from "./testkit";
 import type { BotDifficulty, BotStrategy, GameState } from "./types";
 
@@ -68,13 +68,42 @@ export function playRound(seed: number, seats: (BotDifficulty | SeatSpec)[], onS
     if (known.length > 2) throw new Error(`seed ${seed}: seat ${player.seat} saw more than its opening cards before setup`);
     if (strategy.memory !== undefined) state.botKnown[player.id] = known.slice(Math.max(0, known.length - strategy.memory));
   }
-  const jitter = jitterFor(seed);
+  const { state: finished, steps, calls } = playOut(state, ctx, {
+    jitter: jitterFor(seed),
+    label: `seed ${seed}`,
+    actionId: (step) => `strength-${seed}-${step}`,
+    onStep,
+  });
+  if (finished.phase !== "scoring") throw new Error(`seed ${seed} and levels ${levels.join("/")} did not finish after ${steps} legal actions`);
+  if (finished.results.length !== 1) throw new Error(`seed ${seed}: expected one scored round, found ${finished.results.length}`);
+  return { state: finished, steps, calls };
+}
+
+export type RoundCtx = EngineCtx & { tick: (ms: number) => void };
+
+export interface PlayOutOptions {
+  jitter: Jitter;
+  /** Names the round in error messages. */
+  label: string;
+  /** A unique id for each applied action. */
+  actionId: (step: number) => string;
+  onStep?: (state: GameState) => void;
+}
+
+/**
+ * Plays bots from any live state until the round scores, or until the step
+ * limit. A copied state can be played forward this way to see where an
+ * action leads; the caller checks that the round finished.
+ */
+export function playOut(start: GameState, ctx: RoundCtx, options: PlayOutOptions): PlayedRound {
+  const { jitter, label, actionId, onStep } = options;
+  let state = start;
   const waiting = new Map<string, number>();
   const calls: CallRecord[] = [];
   let steps = 0;
   for (; state.phase !== "scoring" && steps < MAX_STEPS; steps++) {
     const plans = planBots(state, ctx.now, jitter);
-    if (!plans.length) throw new Error(`seed ${seed}: no move in ${state.phase}`);
+    if (!plans.length) throw new Error(`${label}: no move in ${state.phase}`);
     for (const intent of waiting.keys()) if (!plans.some((plan) => plan.intent === intent)) waiting.delete(intent);
     const scheduled = plans.map((plan) => {
       if (!waiting.has(plan.intent)) waiting.set(plan.intent, ctx.now);
@@ -87,19 +116,17 @@ export function playRound(seed: number, seats: (BotDifficulty | SeatSpec)[], onS
       calls.push({ playerId: caller.id, seat: caller.seat, turnsTaken: state.turnsTaken, belief: assessCambio(state, caller.id) });
     }
     ctx.tick(Math.max(700, plan.due - ctx.now + 1));
-    const result = applyAction(state, { actionId: `strength-${seed}-${steps}`, playerId: plan.playerId, action: plan.action }, ctx);
+    const result = applyAction(state, { actionId: actionId(steps), playerId: plan.playerId, action: plan.action }, ctx);
     state = result.state;
     waiting.delete(plan.intent);
-    checkCards(state, `seed ${seed}, step ${steps}`);
+    checkCards(state, `${label}, step ${steps}`);
     onStep?.(state);
   }
-  if (state.phase !== "scoring") throw new Error(`seed ${seed} and levels ${levels.join("/")} did not finish after ${steps} legal actions`);
-  if (state.results.length !== 1) throw new Error(`seed ${seed}: expected one scored round, found ${state.results.length}`);
   return { state, steps, calls };
 }
 
 /** No card is created, lost, or duplicated, and the registry holds exactly the live cards. */
-function checkCards(state: GameState, where: string) {
+export function checkCards(state: GameState, where: string) {
   const cards = [
     ...state.deck,
     ...state.discard,
