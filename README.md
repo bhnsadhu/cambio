@@ -2,27 +2,57 @@
 
 # Cambio
 
-A real time multiplayer web app for the card game Cambio, also known as Cabo. It seats four players, and three house bots fill any seat that is empty. Share a five character code and play in the browser. Play as a guest, or create an account to keep your record. No installs.
+[![CI](https://github.com/bhnsadhu/cambio/actions/workflows/ci.yml/badge.svg)](https://github.com/bhnsadhu/cambio/actions/workflows/ci.yml)
+[![Players](https://img.shields.io/endpoint?url=https%3A%2F%2Fcambio.bhanusadhu.com%2Fapi%2Fstats%3Fformat%3Dshields)](https://cambio.bhanusadhu.com/leaderboard?scope=all)
+
+A real time multiplayer web app for the card game Cambio, also known as Cabo, where house bots that see only what a human could see fill every empty seat.
 
 **Play it live: [cambio.bhanusadhu.com](https://cambio.bhanusadhu.com)**
 
-Open the link, enter a display name, and press **Open a table**, then **Start round**. Any seat still empty goes to Cameron, Camila or Cami, at easy, medium or hard. Cards are dealt face down, and the opening peek waits until everyone is ready.
+## The question
 
----
+Can bots that only see what a human could see play at three clearly different skill levels, and can their Cambio calls be trusted?
+
+The engine already keeps hidden cards out of each bot's view, and a seeded benchmark already orders easy, medium and hard. Still open: how large each gap is once intervals are attached, which bot abilities actually add strength, and whether the belief behind each Cambio call matches how often those calls win. The hypotheses are written down before any evaluation code, and the results are coming.
+
+## Demo
+
+<!-- TODO: demo gif. Record one short round at a laptop window size: open a table, the ready check, a draw and swap, a stick, a Cambio call, and scoring. Save it as docs/images/demo.gif, then replace this comment and the placeholder line below with: ![A round of Cambio against the house bots](docs/images/demo.gif) -->
+*Demo recording coming soon.*
+
+## Architecture
+
+```mermaid
+flowchart LR
+  browser["Browser<br/>anon key only"]
+  functions["Vercel Functions<br/>Next.js route handlers<br/>pure rules engine"]
+  games[("Postgres games<br/>full secret state<br/>RLS on, no policies")]
+  views[("game_views<br/>redacted public view")]
+  realtime["Supabase Realtime<br/>Postgres Changes"]
+
+  browser -->|"action with a client action ID"| functions
+  functions -->|"game_load: state and version"| games
+  functions -->|"game_commit: version checked, retried on conflict"| games
+  games -->|"same commit writes the redacted view"| views
+  views --> realtime
+  realtime -->|"new view for every seat"| browser
+  functions -->|"private view: own drawn card and reveals"| browser
+  functions -.->|"waitUntil bot runner under a 20 second lease"| functions
+```
+
+Every move is a pure function over the current state. The server loads the state and its version, runs the action through the engine, and commits only if the version is unchanged; a losing commit reloads and runs again, so the rules decide every late arrival. More in [docs/architecture.md](docs/architecture.md).
 
 ## Highlights
 
 | Feature | What it does |
 | --- | --- |
 | **Real time multiplayer** | Every move streams to all four seats over Supabase Realtime. Simultaneous moves are serialized, and the rules decide every late arrival. |
-| **Complete game engine** | Turn logic, power cards, anytime sticking, and every way a round can end, in about 850 lines of pure TypeScript with no I/O. |
+| **Complete game engine** | Turn logic, power cards, anytime sticking, and every way a round can end, in about 1,550 lines of pure TypeScript with no I/O. |
 | **Bots that play from memory** | Three house bots fill empty seats and act only on information they have legitimately seen, at three difficulties. |
 | **Persistent accounts** | Wins, rank and streak across every table, with friends, invites and a light for whoever is playing right now. |
 | **Friends and global leaderboards** | Compare lifetime points with accepted friends or all players. Equal points share a rank, and your position stays visible even outside the current page. Guests can browse the global leaderboard. |
 | **Serverless architecture** | Runs on serverless functions and one Postgres database, with no dedicated game server. |
 | **Engine and browser regression suites** | Seeded bot versus bot tables played to the score, checking that every move is legal, no card is created or lost, and each difficulty beats the one below it. A Playwright suite covers the whole account lifecycle against an isolated database. |
-
----
 
 ## Tech Stack
 
@@ -38,223 +68,22 @@ Open the link, enter a display name, and press **Open a table**, then **Start ro
 | Hosting and compute | Vercel Functions, with `waitUntil` running bot turns after the response is sent |
 | Animation | Web Animations API, with no animation library |
 | Testing | Vitest, Playwright, and isolated Postgres lifecycle checks |
+| Continuous integration | GitHub Actions, with no real secrets |
 | Typography | Plus Jakarta Sans |
 
----
+## Measured and not yet measured
 
-## How It Works
+**Measured**
 
-### Real Time State Sync
+* Bot strength on fixed seeds: in 192 complete bot versus bot rounds with equal reaction speeds and reversed seatings, hard earned 64.5 win shares to medium's 31.5, and medium earned 82.5 to easy's 13.5. Every round finished with only legal moves and every card accounted for after every action. Rerun it with `BOT_BENCHMARK=1 npm test -- src/lib/game/bot-strength.test.ts --silent=false`; details in [docs/bots.md](docs/bots.md).
+* Hidden information: tests permute every unseen card, reverse the deck, and throw on any attempted read of a card a bot has not seen, and the bots' plans must not change.
 
-Every action is a pure function over the current game state. The server loads the state and its version, runs the action through the engine, and commits with a version check inside Postgres (`game_commit`).
+**Not yet measured**
 
-If two players act in the same few milliseconds, one commit loses the race, reloads, and runs again against the winner's state. The rules then decide the outcome of the late action, so nothing is dropped and nothing is applied twice.
-
-| Mechanism | Purpose |
-| --- | --- |
-| Version checked commits | Prevent simultaneous actions from overwriting each other |
-| Retry on conflict | Run a competing action again against the latest committed state |
-| Client generated action IDs | Prevent a request retried after a network hiccup from being applied twice |
-| Redacted `game_views` | Publish the information each player is allowed to receive |
-| Supabase Realtime | Stream committed views to connected players |
-| Client version checks | Discard any view older than the one already held |
-| Slow polling and tab focus refresh | Recover from dropped sockets |
-
-### The Game Engine
-
-`src/lib/game/engine.ts` is deterministic. Time, randomness and ID generation are injected, so every rule can be tested in isolation.
-
-| System | Behavior |
-| --- | --- |
-| **Turns** | Draw, then place the card on the pile or swap it into any slot at the table. Each turn stage is enforced, and an out of turn move returns a typed error. |
-| **Swap targets** | A swap is not confined to your own hand. Push the drawn card onto another player and they are left holding it, while the card it replaced goes face up on the pile. |
-| **Power cards** | Four powers cover peeking at your cards, peeking at opponents' cards, blind swaps, and looking before an optional swap. A power with no legal target fizzles. |
-| **Anytime sticking** | Any player may stick a card matching the top of the pile at any moment, including on their own turn, while holding a drawn card or resolving a power. |
-| **Stick resolution** | A correct stick removes the card. Sticking someone else's card means you owe them one of yours. A wrong stick draws a penalty and reveals nothing. |
-| **Competing sticks** | If two players stick the same card, the first wins and the second gets “too late” with no penalty. Sticks follow card identity rather than slot position. |
-| **Round endings** | Calling Cambio or reaching zero cards triggers exactly one more turn for everyone else, even if the trigger happens during another player's turn. |
-| **Final scoring** | Players who reach zero during final turns leave the queue. Scoring waits for any card still owed after a stick. The lowest total wins, and ties stand. |
-| **Idle players** | A human who sits on a turn for 30 seconds forfeits it and draws a penalty. An owed card that is never handed over is given at random. |
-| **Unanimous pause** | Any seat can request a pause, every seat must agree, and one decline cancels it. On resume, every clock shifts forward by the time held. |
-| **Ready checks** | Every round deals first and asks after: four cards land face down in front of each seat, and the peek only opens once every seat has said it is ready. Bots answer at once, and a seat that never answers is carried after 45 seconds. |
-| **Between rounds** | Another round is the table's call, not the host's. Every seat asks for one and the last yes deals, with bots agreeing the moment the round is scored. Any player can instead choose Back to table to bring everyone to the same lobby, keeping human seats, the host, settings, and results. Bot seats reopen for friends or the next deal. |
-| **Leaving** | During a round, a medium bot takes over the exact seat, card positions, and pending move. Play continues, and a departing host passes hosting to the earliest-joined human still at the table, regardless of seat position. Leaving the lobby or results opens the seat and returns the remaining humans to the lobby. |
-| **Removing players** | The host can use Players to remove another human, including while paused. A medium bot takes over during a round; between rounds the seat opens. The removed player's access to the seat is revoked. This is not a permanent ban from joining by code. |
-| **Narration** | Every rule that fires writes a structured event: the kind of move, who made it, whose cards it touched, and which cards to light up. Card IDs travel with it and ranks never do. |
-
-### Power Cards
-
-| Card | Power |
-| --- | --- |
-| 7 or 8 | Peek at one of your own cards |
-| 9 or 10 | Peek at another player's card |
-| J or Q | Swap any two cards belonging to two different players, without looking. You need not be one of them |
-| Black king | Look at two cards from two different players, then decide whether to swap them |
-| Red king | No power |
-
-Powers activate when a drawn card is placed on the discard pile. Swapping a drawn card into a hand, your own or anyone else's, does not activate its power.
-
-### Bot AI
-
-The bots choose from information they could legitimately observe: opening peeks, their own draws, private power reveals, face-up discards, and public card movements. Each bot's strategy receives a separate observation containing only that seat's remembered or currently revealed faces and public information. Unseen faces, deck order, other players' private reveals, and other bots' memories are excluded before evaluating moves or rechecking a Cambio call. Hard's 100% strategy still estimates unknown cards; it cannot see them.
-
-All difficulties use the same rules engine as humans. Fairness tests change hidden faces, reverse the deck, and replace opponents' private knowledge without changing the bot's observation, moves, or call assessment. Additional tests throw on any attempted secret read and check that unpeeked cards, face-down gifts, blind swaps, and penalties do not grant new knowledge.
-
-| Level | How it plays |
-| --- | --- |
-| **Easy — 50%** | Uses the full strategy on half of its tactical opportunities. Remembers only its two most recently seen cards, misses sticks, skips useful powers, and sometimes keeps a mediocre draw without checking what it replaces. Slowest reactions. |
-| **Medium — 75%** | Uses the full strategy on three quarters of its tactical opportunities. Remembers its own revealed cards plus six opponent cards, counts public discards, and makes targeted attacks and swaps, with occasional lapses. |
-| **Hard — 100%** | Always uses the full strategy and retains every legitimately observed face. Counts every seen card, infers likely quality from public keeps and pushes, compares moves against every opponent, sets up matching sticks, and avoids discards that could let opponents shed cards. Fastest reactions. |
-
-The percentages control use of the strongest strategy for replacements, powers, sticks, and giving cards; they are not win rates. All levels share the same counting and tactical evaluator. Missed opportunities remain missed on repeated planning passes with the same intent randomness. Bots only stick remembered matches, so easy's mistakes do not create endless blind-guess penalties.
-
-All three levels use the same cautious Cambio rule. A deterministic belief rollout compares the bot's estimated hand against every opponent, including their best improving replacement on one final draw. Calling requires an estimated lead, at least 64% winning belief and 80% belief of winning or finishing within one point. There is no random call, absolute score cutoff, or late-round fallback. Hard's information is better; its permission to call recklessly is not greater. The reducer checks the assessment again on every commit attempt, so a human stick or concurrent update can cancel an obsolete call.
-
-These probabilities are decision estimates, not calibrated promises: unseen cards and opponents' final-turn powers can still overturn a lead. In 192 complete rounds with equal reaction speeds and reversed seatings (seeds 1–24 and an independent 101–124 set), hard earned 64.5 winning shares against medium's 31.5, with mean scores 5.06 versus 7.40. Medium earned 82.5 shares against easy's 13.5, with mean scores 6.05 versus 12.43. Tied wins divide the share. Every actual Cambio call passed the belief gate. Tests fail on an unfinished round, illegal move, lost/duplicated card, or reversed difficulty ordering. Run `BOT_BENCHMARK=1 npm test -- src/lib/game/bot-strength.test.ts --silent=false` to print the measurements.
-
-Cameron consistently uses the Quiff avatar; Camila uses Curls; Cami uses Ponytail. Camille fills the fourth bot seat if every human leaves during a round. Existing saved bot seats receive the same mapping when projected, and human avatar choices remain independent.
-
-Each move waits a randomized, human paced delay. The intent is checked again before it commits, so a bot never sticks a card a human already took.
-
-After every human action, the server starts a bot runner with `waitUntil`. A 20 second database lease keeps it to one runner per game. If a runner dies, the lease expires and the next action or a client nudge starts another.
-
-### Profiles and Friends
-
-Accounts use a unique username and password, separate from the display name shown to other players. The same username is used for login, friend lookup, and public profile links. Changing it updates all three together and preserves existing friends and stats. Guests can still play without creating an account.
-
-Guest play includes the full avatar and skin-tone picker, a temporary display name, bot difficulty choices, host controls, and the same round flow as account play. A new visitor can open a table immediately as Guest. The player editor is available before joining, during play, and from the pause dialog; edits update the existing seat without changing its cards or timers. Guest hosts can also control join requests. Appearance preferences use tab-scoped session storage, while existing seat credentials still allow a table to be resumed. No guest account or permanent ranked record is created.
-
-The guest player editor shows actual completed-round stats for that seat at the current table: rounds, wins, best hand, sticks, and Cambio calls and wins. These are table results, not saved profile progress. Creating an account carries over the chosen name and avatar and claims the same seat; subsequent rounds contribute to the account's permanent record, standings, and social features.
-
-Passwords use salted scrypt hashes. Random session tokens live in HttpOnly cookies with SameSite protection and a 30 day lifetime; only their hashes are stored in the database. Login and sensitive changes have persistent request limits. Clearing browser storage does not delete an account: logging in restores its profile ID, stats, friends, and existing seats.
-
-Presence tracks each open browser document across the site. Closing or leaving sends an identity-bound offline beacon; other open tabs keep the account online, and in-site navigation does not briefly disconnect it. Opaque Supabase Realtime signals immediately invalidate friends' authenticated snapshots without publishing private table codes. A blocked stream falls back to polling every two seconds; slow reads are coalesced. A crash or lost connection cannot deliver a departure, so its lease expires after 75 seconds. Account creation alone never marks someone online. Apply migrations through `0013_live_presence.sql` before deploying this client. A live Supabase check confirmed online and offline invalidations in 800ms and 437ms respectively; browser regressions cover multiple tabs, page restoration, account changes, and slow connections.
-
-The account page provides avatar, display name, username, and password changes, plus separate sign out and permanent deletion controls. The avatar editor offers six styles and a separate skin-tone selector: the original default plus five shades. Both choices preview together and save across devices, profiles, friends, standings, and active tables; Cancel restores the saved appearance. Existing avatars keep their original appearance until edited. Password changes revoke other sessions. Deletion requires the current password and an explicit confirmation, removes all account and social records, and anonymizes retained game seats. Game actions check the live account session as well as any saved seat token.
-
-Existing browser profiles can add credentials without changing their profile ID. After upgrading, the old browser key no longer grants access. A profile whose original browser key was already lost cannot be claimed by name alone.
-
-The play screen offers a new table or joining by code, using a saved display name or a guest name. Friends sit beside the table setup panels and can be invited from the lobby. A single “Back to your table” shortcut remembers the most recently used table in this browser for 30 minutes after foreground use. Home checks that the table still has players and that the player can resume their seat or join its lobby; empty, missing, expired, and unavailable tables stay hidden. Visiting another table replaces the shortcut, and switching accounts clears it. Choosing Leave during a round hands the seat and its cards to a medium bot and releases the player's access. Simply navigating away preserves the seat for a return. Leaving the lobby or results opens the seat. The full record lives on the public profile page. Account settings contain only account details and session controls.
-
-Login and signup share `/login`. A validated `next` destination returns players to the table, profile, or account screen they came from. A guest name and a complete table code carry into signup from table setup. Account settings preserve a link back to the originating screen. Successful sign out and deletion return to the play screen with a dismissible confirmation. How to play is available in every main website header and all table states. The first opening shows the interactive walkthrough; later openings show scrollable written rules with Show walkthrough again at the bottom. A first confirmed table seat introduces the walkthrough automatically if it has not already been seen in that browser.
-
-Creating an account after joining as a guest attaches the account to that existing seat using its saved credential. The player's seat, hand, and host status stay intact, including mid round and while paused. Avatar edits update that same seat. Rejoining with a saved guest credential also resumes the seat instead of adding another player.
-
-Friends at another table can receive and accept invitations, including during a round or with Do not disturb enabled. Accepting opens the invited table without cancelling the previous round. The destination must still have an open seat in its lobby; invitations to someone already seated there remain unavailable.
-
-The friends list puts people at your table first, other online friends next, and offline friends last. Each group sorts from highest badge rank to lowest, using points to order friends within the same tier. Table seating takes precedence over delayed presence. Player cards in the lobby and during play show each account's tier and whether you are friends, with Add friend, Request sent, or Accept friend controls as appropriate. Guest seats and house bots have no account tier or friend request controls.
-
-| Piece | What it does |
-| --- | --- |
-| **The record** | Every scored round is written into each seated profile: rounds played and won, total and best hand, tables, Cambio calls and the ones that stuck, sticks landed and missed, current and best streak. |
-| **Rank** | Points are a stored column, so the ladder is ordered in the database: a round won is worth four times a round played, and a Cambio you called and won is worth more again. Seven tiers run from Rookie to Cambio Master, with your standing among every saved player beside them. |
-| **Friends** | One row per relationship, pending until it is accepted. Asking someone who has already asked you accepts it instead of opening a second request. |
-| **Opponents** | Every round records who was across the table, so the friends list knows the head to head and can suggest the people you have already played. |
-| **Invites** | A code handed to one friend, from the table you are sitting at. The server checks you are actually seated there before it sends one. |
-| **Presence** | Your client says which table it is at; the server reads the phase and the open seats from the table itself, so "one seat open" is never a guess. A light goes out two minutes after a tab closes. |
-
-Every one of these goes through a `SECURITY DEFINER` RPC gated by the server secret. The anon key can no more read a profile than it can read a hand of cards.
-
-### Hidden Information
-
-The full state, including every card's identity, lives in one JSONB row and never leaves the server.
-
-| Boundary | What it allows |
-| --- | --- |
-| Public projection | Slot IDs, card counts, and the face up top of the pile |
-| Private player view | Only that player's drawn card and unexpired reveals |
-| Browser access | Holds only the anon key and can read only `game_views` |
-| Full game state | Stored in `games`, with Row Level Security enabled and no policies |
-| Server access | Uses `SECURITY DEFINER` functions that require a shared secret |
-| Reshuffled cards | Receive new IDs so previously discarded cards cannot be traced into the deck |
-
-### Front End
-
-Motion is derived from state. Each new view is diffed by card ID, and cards animate from their previous positions to their new ones.
-
-| Event | Animation |
-| --- | --- |
-| Deal | Cards stagger from the deck, and nothing is revealed until the last one is down |
-| Draw | The drawn card lands in the action bar |
-| Swap | Cards cross between positions |
-| Stick | The matching card arrives on the pile face up |
-
-Every move is also announced on screen and lit in the hands it touched, so a player who is not acting can still follow every card.
-
-| Moment | Notification |
-| --- | --- |
-| A draw, a plain placement | The table log only |
-| A look, a swap, a stick, a card owed | A line in the middle of the table, naming the move, who made it, and whose card it happened to |
-| Cambio, a swap during the final turns, a player out of cards, the table going dark | The same space at four times the size |
-
-A burst of moves shortens each hold rather than dropping any of them, and hovering a line in the log finds its cards on the table.
-
-The look is deliberately spare: a black background, white cards, one mint accent for the numbers that matter, and Plus Jakarta Sans for headlines.
-
-First time players get a short walkthrough. **How to play** then opens a desktop rules reference, with the option to replay the walkthrough at the bottom.
-
----
-
-## How to Play
-
-1. **Create a table and share the code.** Four seats are available, taken in lobby join order, and bots fill any empty seats when the round starts. The host takes the first turn of the first round, and play continues clockwise through the seats.
-2. **Say you are ready.** Your four cards are already dealt, face down. The bots say yes at once, and nothing is shown to anyone until the last seat is in.
-3. **Remember your opening cards.** Once the table is ready, a five second window shows everyone their own bottom two, all at the same time.
-4. **Draw on your turn.** Place the drawn card on the pile to activate its power, or swap it into any hand at the table, your own or someone else's.
-5. **Watch for sticks.** If you believe a card matches the top of the pile, stick it. Sticking is open to every seat at every moment, your own turn included; where the turn already owns the click, the table arms the stick first.
-6. **Call Cambio.** Call at the start of your turn instead of drawing. Everyone else gets one more turn before scoring.
-7. **Finish with the lowest total.** Hands are revealed and scored. The lowest total wins, and the winner leads the next round, including after a return to the lobby. Seats stay fixed when playing again; turns continue clockwise from the winner. If players tie, the tied player with the lowest seat number starts. If no winner remains at the table, the host starts.
-8. **Play on, or leave.** Every seat chooses. Another round starts once everyone is ready; if anyone leaves, the rest go back to the lobby with a seat open.
-
-### Scoring
-
-The deck contains 52 cards plus two jokers.
-
-| Card | Points |
-| --- | --- |
-| Ace | 1 |
-| 2 through 10 | Face value |
-| Jack or queen | 10 |
-| Red king | -1 |
-| Black king | 0 |
-| Joker | 0 |
-
-<details>
-<summary><strong>Additional rulings</strong></summary>
-
-- Cards stay face down after the opening peek. A value only appears during a timed reveal.
-- Calling Cambio replaces drawing. You cannot draw, swap in a good card, and then call.
-- Reaching zero cards also triggers the final turns.
-- A correct stick of another player's card means you owe them one of yours.
-- A wrong stick draws a penalty and reveals nothing.
-- If another player sticks the same card first, your attempt receives “too late” with no penalty.
-- You may stick during your own power resolution once your drawn card is down.
-- Scoring waits until any card owed after a stick has been handed over.
-- Ties stand.
-- Pausing and resuming require agreement from every seat.
-
-</details>
-
----
-
-## Project Layout
-
-| Path | Responsibility |
-| --- | --- |
-| `src/lib/game/` | Pure, deterministic rules engine with no I/O |
-| `src/lib/game/engine.ts` | `applyAction(state, envelope, ctx)` returns a new state or a `GameError` |
-| `src/lib/game/bots.ts` | `planBots(state)` returns intended bot moves with paced delays |
-| `src/lib/game/view.ts` | Redacts secret state into public projections and private views |
-| `src/lib/server/` | Persistence and orchestration for Next.js route handlers |
-| `src/lib/server/store.ts` | Loads state, applies actions, commits with a version check, and retries conflicts |
-| `src/lib/server/runner.ts` | Runs bots under a database lease, started after actions with `waitUntil` |
-| `src/lib/server/social.ts` | Profiles, friends, invites, presence, and writing a scored round into the record books |
-| `src/lib/social/` | Profile and friend types, and the rank ladder based on points |
-| `src/lib/client/` | `useGame` hook, Realtime subscription, actions, watchdog, card flights, profile and friends |
-| `src/components/` | Table UI, profile cards and the friends panel |
-| `supabase/` | Database schema and RPCs |
-
----
+* Intervals around those bot gaps, which bot abilities matter, and how often Cambio calls win compared with the belief behind them. This is [the question](#the-question) above.
+* Any human versus bot play.
+* Load, latency, or behavior under real traffic beyond the concurrency races the tests stage.
+* Phone play. The table is built and tested for laptop and desktop windows.
 
 ## Run It Locally
 
@@ -277,6 +106,7 @@ supabase/migrations/0009_leaderboard.sql
 supabase/migrations/0010_browser_presence.sql
 supabase/migrations/0011_profile_avatars.sql
 supabase/migrations/0012_avatar_skin_tones.sql
+supabase/migrations/0013_live_presence.sql
 ```
 
 Then store a server secret:
@@ -312,9 +142,10 @@ npm run dev
 ### 4. Run the tests
 
 ```bash
+npm run typecheck
+npm run lint
 npm test
 ```
-
 
 For the complete account lifecycle, start Docker and install the test browser once:
 
@@ -325,4 +156,19 @@ npm run test:accounts
 
 This command creates isolated Postgres and PostgREST containers, applies every migration, runs the SQL account tests, starts a local app using dummy credentials, and runs the browser suite. It removes the test containers afterward. Stop any existing Next development server first so the test app can use the development build directory.
 
-The browser suite covers registration, duplicate usernames, display name changes at active tables, username changes, wrong and correct passwords, session revocation, logout, a failed logout request, delayed responses after logout, multiple tabs, legacy profile upgrades, restored stats and friends after clearing storage, seat recovery, permanent deletion, request origin checks, and mobile account layouts. These tests never use the live Supabase database.
+The browser suite covers registration, duplicate usernames, display name changes at active tables, username changes, wrong and correct passwords, session revocation, logout, a failed logout request, delayed responses after logout, multiple tabs, legacy profile upgrades, restored stats and friends after clearing storage, seat recovery, permanent deletion, request origin checks, and the account and login pages in a 390 pixel wide window without sideways scrolling. The same run also covers gameplay, bots, presence, notifications, seat management, and the table at laptop sizes from 1024 by 768 to 1440 by 900. These tests never use the live Supabase database.
+
+Continuous integration runs all of the above on every push and pull request; see [.github/workflows/ci.yml](.github/workflows/ci.yml).
+
+## Deeper docs
+
+| Doc | What is in it |
+| --- | --- |
+| [How to play](docs/how-to-play.md) | Quick start, the steps of a round, scoring, and additional rulings |
+| [The game engine](docs/engine.md) | Every rule system the engine enforces, and the power cards |
+| [Bot AI](docs/bots.md) | What bots may know, the three levels, the Cambio gate, and the benchmark |
+| [Architecture](docs/architecture.md) | Real time state sync, hidden information boundaries, and the project layout |
+| [Profiles and friends](docs/accounts.md) | Accounts, guests, presence, friends, invites, and the permanent record |
+| [Front end](docs/front-end.md) | Card motion and the notification scale |
+| [Visual reference](docs/visual-reference.md) | Visual sources and avatar artwork |
+| [Avatar skin tones](docs/avatar-skin-tones.md) | How the tone sheets were made and rendered |

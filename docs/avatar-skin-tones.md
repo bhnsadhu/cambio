@@ -1,26 +1,26 @@
-# Avatar skin-tone artwork
+# Avatar skin tone artwork
 
-The existing six avatar identities are preserved in five additional skin-tone sheets. The default sheet, `public/avatars/heads.png`, is unchanged. Each variant contains the same six heads in the original three-column, two-row grid at 1536 × 1024 pixels.
+The existing six avatar identities are preserved in five additional skin tone sheets. The default sheet, `public/avatars/heads.png`, is unchanged. Each variant contains the same six heads in the original three column, two row grid at 1536 × 1024 pixels.
 
-Generated with the built-in `image_gen` edit tool using `heads.png` as the edit target for every variant. Each output was visually inspected for the original character order, silhouette, framing, hairstyles, expressions, eyes, beard, jewelry, background and shading. Dimensions were checked with `sips`.
+Generated with the built in `image_gen` edit tool using `heads.png` as the edit target for every variant. Each output was visually inspected for the original character order, silhouette, framing, hairstyles, expressions, eyes, beard, jewelry, background and shading. Dimensions were checked with `sips`.
 
 ## Saved assets
 
 | Tone | File | Requested midtone |
 | --- | --- | --- |
 | Light | `public/avatars/heads-light.png` | `#f1c6a7` |
-| Light-medium | `public/avatars/heads-light-medium.png` | `#dca27b` |
+| Light medium | `public/avatars/heads-light-medium.png` | `#dca27b` |
 | Medium | `public/avatars/heads-medium.png` | `#ba7b53` |
 | Deep | `public/avatars/heads-deep.png` | `#895337` |
 | Very deep | `public/avatars/heads-very-deep.png` | `#593725` |
 
-These color references specify the intended midtone; the rendered skin retains highlights and shadows. The artwork changes exposed skin independently of hair, eyes, mouth, accessories and background. No whole-image color filter is used.
+These color references specify the intended midtone; the rendered skin retains highlights and shadows. The artwork changes exposed skin independently of hair, eyes, mouth, accessories and background. No whole image color filter is used.
 
 ## Rendering without a halo
 
 The original sheet contains a transparent head silhouette; the tone sheets are opaque and retain a blurred studio background. `src/lib/avatar-crops.ts` traces the original alpha boundaries as vector contours. `Avatar` applies the same contour and square crop to every tone of a style, so only the head is visible and changing tones cannot introduce the baked background. The renderer uses no radial fade or blur. Images use quality 90 with source sizes calculated for the cropped sprite, keeping the face and hair sharp at small display sizes.
 
-`e2e/avatar-rendering.spec.ts` checks all 36 combinations against clear regions in the original alpha channel, verifies that the head stays visible, and captures each tone's six-style picker for visual review. The original asset pixels remain unchanged.
+`e2e/avatar-rendering.spec.ts` checks all 36 combinations against clear regions in the original alpha channel, verifies that the head stays visible, and captures each tone's six style picker for visual review. The original asset pixels remain unchanged.
 
 ## Final prompt set
 
@@ -36,15 +36,15 @@ Invariants: EXACT same six character identities, head silhouettes and face geome
 
 | Asset suffix | TONE_DESCRIPTION | EXPOSED_SKIN_TONE |
 | --- | --- | --- |
-| light | LIGHT skin tone with warm peach midtone approximately #f1c6a7 | light |
-| light-medium | LIGHT-MEDIUM skin tone with warm golden tan midtone approximately #dca27b | light-medium |
-| medium | MEDIUM skin tone with warm medium brown midtone approximately #ba7b53 | medium brown |
-| deep | DEEP skin tone with rich deep brown midtone approximately #895337 | deep brown |
-| very-deep | VERY DEEP skin tone with rich dark brown midtone approximately #593725 | very deep dark brown |
+| `light` | `LIGHT skin tone with warm peach midtone approximately #f1c6a7` | `light` |
+| `light-medium` | `LIGHT-MEDIUM skin tone with warm golden tan midtone approximately #dca27b` | `light-medium` |
+| `medium` | `MEDIUM skin tone with warm medium brown midtone approximately #ba7b53` | `medium brown` |
+| `deep` | `DEEP skin tone with rich deep brown midtone approximately #895337` | `deep brown` |
+| `very-deep` | `VERY DEEP skin tone with rich dark brown midtone approximately #593725` | `very deep dark brown` |
 
 ## Generated originals
 
-The project copies are the deliverables. Built-in output originals remain at:
+The project copies are the deliverables. Built in output originals remain at:
 
 ```text
 /Users/bhanusadhu/.codex/generated_images/01a0cc02-b4ec-7981-a6ba-a0924f141b9d/
