@@ -53,7 +53,11 @@ try {
   query("insert into private.server_config(key,value) values ('server_secret','account-test-secret'); grant select on public.game_views to anon;");
   query(readFileSync('supabase/tests/accounts.sql', 'utf8'));
   query(readFileSync('supabase/tests/presence.sql', 'utf8'));
-  docker(['run', '-d', '--name', rest, '-e', `PGRST_DB_URI=postgres://postgres:cambio-local-test@host.docker.internal:${portFor(db, 5432)}/postgres`, '-e', 'PGRST_DB_SCHEMAS=public', '-e', 'PGRST_DB_ANON_ROLE=anon', '-p', '127.0.0.1::3000', 'postgrest/postgrest:v13.0.7']);
+  // Container to container over the default bridge. host.docker.internal
+  // only resolves on Docker Desktop, and the published port is bound to the
+  // host's loopback, so Linux CI runners could reach neither.
+  const dbAddress = docker(['inspect', '-f', '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}', db]);
+  docker(['run', '-d', '--name', rest, '-e', `PGRST_DB_URI=postgres://postgres:cambio-local-test@${dbAddress}:5432/postgres`, '-e', 'PGRST_DB_SCHEMAS=public', '-e', 'PGRST_DB_ANON_ROLE=anon', '-p', '127.0.0.1::3000', 'postgrest/postgrest:v13.0.7']);
   const appPort = await freePort();
   const proxyPort = await freePort();
   const env = { ...process.env, E2E_DB_CONTAINER: db, E2E_APP_PORT: String(appPort), E2E_PROXY_PORT: String(proxyPort), E2E_REST_ORIGIN: `http://127.0.0.1:${portFor(rest, 3000)}`, E2E_APP_ORIGIN: `http://localhost:${appPort}` };
