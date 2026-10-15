@@ -160,6 +160,14 @@ The browser suite covers registration, duplicate usernames, display name changes
 
 Continuous integration runs all of the above on every push and pull request; see [.github/workflows/ci.yml](.github/workflows/ci.yml).
 
+### 5. Regenerate the bot evaluation
+
+```bash
+npm run results
+```
+
+This deletes and rewrites every file in `results/` and the three charts in `docs/images/`, then prints how long it took. It first replays the original seeded benchmark and stops if that no longer reproduces, then plays 6,800 seeded bot rounds across all CPU cores. On an 8 core Apple M3 it printed 107.7 and 129.5 seconds on two runs. The output is deterministic: runs with 3 and 7 workers wrote byte identical files. It needs Node 24 and no extra packages, since Node runs the TypeScript directly.
+
 ## Deeper docs
 
 | Doc | What is in it |

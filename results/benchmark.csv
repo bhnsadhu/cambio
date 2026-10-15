@@ -1,0 +1,5 @@
+matchup,seeds,level,win_share,mean_score
+hard_vs_medium,1 to 24 and 101 to 124,hard,64.5,5.057292
+hard_vs_medium,1 to 24 and 101 to 124,medium,31.5,7.401042
+medium_vs_easy,1 to 24 and 101 to 124,medium,82.5,6.052083
+medium_vs_easy,1 to 24 and 101 to 124,easy,13.5,12.427083
