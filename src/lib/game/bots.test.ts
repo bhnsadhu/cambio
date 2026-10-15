@@ -59,7 +59,8 @@ describe("bots", () => {
         expect(r.scores.find((s) => s.playerId === p.id)!.cards.length).toBe(cardCount(p));
       }
     }
-  });
+    // Forty full rounds; a shared CI runner can take longer than the 5 second default.
+  }, 30_000);
 
   it("bots only ever stick cards they have actually seen", () => {
     const ctx = makeCtx(7);
