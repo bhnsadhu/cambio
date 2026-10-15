@@ -21,6 +21,9 @@ export function Leaderboard({ initialScope }: { initialScope: LeaderboardScope |
   const social = useSocial();
   const scope = initialScope ?? (stored ? "friends" : "all");
   const path = `/leaderboard?scope=${scope}`;
+  // The global count comes from the standings query itself, so it always
+  // matches the table below it and the README badge (/api/stats).
+  const [players, setPlayers] = useState<number | null>(null);
   return (
     <main className="site-shell min-h-screen pb-16">
       <AppHeader active="leaderboard" accountFrom={path} loginNext={path} />
@@ -28,6 +31,7 @@ export function Leaderboard({ initialScope }: { initialScope: LeaderboardScope |
         <div>
           <h1 className="text-[32px] font-medium leading-tight tracking-tight">Leaderboard</h1>
           <p className="t-body mt-3 text-ink-2">Every round counts. See where you stand.</p>
+          {scope === "all" && players !== null ? <p className="t-sub tnum mt-2 text-ink-3">{players.toLocaleString()} {players === 1 ? "player" : "players"}</p> : null}
         </div>
         <nav className="flex gap-2" aria-label="Leaderboard views">
           {(["friends", "all"] as const).map((value) => (
@@ -46,13 +50,13 @@ export function Leaderboard({ initialScope }: { initialScope: LeaderboardScope |
             <Link href={loginHref(path)} className="t-sub font-medium text-accent">Log in</Link>
             <Link href={loginHref(path, "register")} className="t-sub font-medium text-ink">Create account</Link>
           </div>
-        </section> : <Standings key={`${stored?.token ?? "guest"}:${scope}`} scope={scope} />}
+        </section> : <Standings key={`${stored?.token ?? "guest"}:${scope}`} scope={scope} onTotal={scope === "all" ? setPlayers : undefined} />}
       <Notifications social={social} />
     </main>
   );
 }
 
-function Standings({ scope }: { scope: LeaderboardScope }) {
+function Standings({ scope, onTotal }: { scope: LeaderboardScope; onTotal?: (total: number) => void }) {
   const [offset, setOffset] = useState(0);
   const [attempt, setAttempt] = useState(0);
   const [snapshot, setSnapshot] = useState<LeaderboardSnapshot | null>(null);
@@ -64,7 +68,7 @@ function Standings({ scope }: { scope: LeaderboardScope }) {
       const generation = profileGeneration();
       try {
         const result = await callProfile<LeaderboardSnapshot>(`/api/leaderboard?scope=${scope}&offset=${offset}`);
-        if (active && generation === profileGeneration()) { setSnapshot(result); setError(null); }
+        if (active && generation === profileGeneration()) { setSnapshot(result); setError(null); onTotal?.(result.total); }
       } catch (error) {
         if (active) setError(error instanceof Error ? error.message : "Could not load the leaderboard. Try again.");
       }
@@ -74,7 +78,7 @@ function Standings({ scope }: { scope: LeaderboardScope }) {
     const visible = () => { if (document.visibilityState === "visible") void load(); };
     document.addEventListener("visibilitychange", visible);
     return () => { active = false; window.clearTimeout(first); window.clearInterval(timer); document.removeEventListener("visibilitychange", visible); };
-  }, [scope, offset, attempt]);
+  }, [scope, offset, attempt, onTotal]);
 
   const changePage = (next: number) => { setError(null); setOffset(next); };
   return (

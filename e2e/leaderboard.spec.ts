@@ -100,6 +100,13 @@ test("guests can browse everyone, login returns to friends, and own rank stays v
     await page.getByRole("link", { name: "Leaderboard", exact: true }).click();
     await expect(page.getByRole("link", { name: "All players", exact: true })).toHaveAttribute("aria-current", "page");
     await expect(page.getByRole("table")).toBeVisible();
+    // The header count, the public stats route, and its badge share one query.
+    await expect(page.getByText(`${first.total.toLocaleString("en-US")} players`, { exact: true })).toBeVisible();
+    const stats = await page.request.get("/api/stats");
+    expect(stats.headers()["cache-control"]).toBe("public, max-age=60, s-maxage=60");
+    expect(await stats.json()).toEqual({ players: first.total });
+    const badge = await (await page.request.get("/api/stats?format=shields")).json();
+    expect(badge).toMatchObject({ schemaVersion: 1, label: "players", message: first.total.toLocaleString("en-US") });
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await expect(page.getByText("Page 2", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Previous", exact: true }).click();
