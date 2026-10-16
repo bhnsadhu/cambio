@@ -25,8 +25,9 @@ import { expectedCard, unseenValues } from "./bot-knowledge";
 import { bestTrade, discardGain, estimateOther, opponentsOf, ownSlots, powerGain, tacticalGain, tacticalSlots, tradeGain, type Mind, type Slot } from "./bot-tactics";
 export { assessCambio } from "./bot-beliefs";
 import { observeBot, type BotObservation } from "./bot-observation";
-import type { DecisionKind } from "./bot-features";
-import { actionPolicyOf } from "./bot-policies";
+import { decisionCandidates, type DecisionKind } from "./bot-features";
+import { predict } from "./bot-models";
+import { ACTION_MODELS, actionModelShareOf, actionPolicyOf, actionTopKOf } from "./bot-policies";
 import { canStick, TURN_TIMEOUT_MS } from "./engine";
 import type { Action, BotDifficulty, Card, GameState, Player } from "./types";
 
@@ -351,9 +352,47 @@ export function rulesV1Choice(state: BotObservation, botId: string, kind: Decisi
 /** rules_v1: the hand written tactical evaluator above, unchanged since the evaluation began. */
 const RULES_V1: ActionRules = { drawn: strategicDrawn, power: strategicPower, stick: strategicStick, give: strategicGive };
 
+/**
+ * model_v1: the level's action model re-ranks the candidates the frozen
+ * evaluator lists, from the same observation. Decisions the model was not
+ * shown to improve on validation keep rules_v1.
+ */
+const MODEL_V1: ActionRules = {
+  drawn: (state, brain) => modelChoice(state, brain, "decide")!,
+  power: (state, brain) => {
+    const pp = state.pendingPower!;
+    return modelChoice(state, brain, pp.kind === "kingLook" ? (pp.looked ? "kingDecide" : "kingLook") : pp.kind)!;
+  },
+  stick: (state, brain) => {
+    const action = modelChoice(state, brain, "stick");
+    return action?.type === "stick" ? action.cardId : null;
+  },
+  give: (state, brain, slots) => {
+    const action = modelChoice(state, brain, "give");
+    return action?.type === "give" ? action.cardId : strategicGive(state, brain, slots);
+  },
+};
+
+function modelChoice(state: BotObservation, brain: Brain, kind: DecisionKind): Action | null {
+  const rule = rulesV1Choice(state, brain.bot.id, kind);
+  const { kinds, model } = ACTION_MODELS[brain.diff];
+  if (!kinds.includes(kind)) return rule;
+  // A level made less sharp on purpose keeps the rule on a share of its decisions, with one stable roll per decision.
+  const share = actionModelShareOf(brain.diff, brain.bot.strategy);
+  if (share < 1 && brain.roll(`model-share:${kind}:${state.turnsTaken}:${state.discard.length}`) >= share) return rule;
+  const ranked = decisionCandidates(state, brain.bot.id, kind, rule).candidates
+    .map((candidate, index) => ({ candidate, index, value: predict(model, candidate.features) }))
+    .sort((a, b) => b.value - a.value || a.index - b.index);
+  // Or picks among its top few, again with one stable roll per decision.
+  const k = Math.min(actionTopKOf(brain.diff, brain.bot.strategy), ranked.length);
+  const pick = k > 1 ? ranked[Math.floor(brain.roll(`model:${kind}:${state.turnsTaken}:${state.discard.length}`) * k)] : ranked[0];
+  return pick.candidate.action;
+}
+
 function actionRulesFor(bot: Player): ActionRules {
   switch (actionPolicyOf(bot.strategy)) {
     case "rules_v1": return RULES_V1;
+    case "model_v1": return MODEL_V1;
   }
 }
 

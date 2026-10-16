@@ -1,7 +1,9 @@
 import { cardValue } from "./cards";
 import { clueWeight, unseenValues } from "./bot-knowledge";
 import { observeBot, type BotObservation } from "./bot-observation";
-import { callPolicyOf } from "./bot-policies";
+import { callFeatures } from "./bot-features";
+import { predict } from "./bot-models";
+import { CALL_MODELS, callPolicyOf, callThresholdOf } from "./bot-policies";
 import type { GameState } from "./types";
 
 export { expectedCard, unseenValues } from "./bot-knowledge";
@@ -13,6 +15,8 @@ export interface CambioAssessment {
   winChance: number;
   nearWinChance: number;
   unknownOwn: number;
+  /** Only under call policy model_v1: the call model's chance that calling now wins. */
+  modelChance?: number;
 }
 
 /**
@@ -79,17 +83,20 @@ export function assessObservedCambio(state: BotObservation, botId: string): Camb
   const ownEstimate = sums[me] / samples;
   const strongestOpponent = Math.min(...sums.filter((_, index) => index !== me).map((sum) => sum / samples));
   const winChance = wins / samples, nearWinChance = near / samples;
-  let believed: boolean;
+  const unknownOwn = hands[me].filter((id) => !known.has(id)).length;
+  const ready = state.phase === "playing" && state.turnsTaken >= state.players.length;
   switch (callPolicyOf(bot.strategy)) {
-    case "gate_v1":
+    case "gate_v1": {
       // Evaluation only: with the gate off, an estimated lead alone is enough.
-      believed = bot.strategy?.callGate === false || (winChance >= 0.64 && nearWinChance >= 0.8);
-      break;
+      const believed = bot.strategy?.callGate === false || (winChance >= 0.64 && nearWinChance >= 0.8);
+      return { call: ready && believed && ownEstimate <= strongestOpponent, ownEstimate, strongestOpponent, winChance, nearWinChance, unknownOwn };
+    }
+    case "model_v1": {
+      // The level's own call model reads the same observation and the same
+      // belief rollout, and states a chance meant to be taken literally.
+      const level = bot.difficulty ?? "medium";
+      const modelChance = predict(CALL_MODELS[level], callFeatures(state, botId, { ownEstimate, strongestOpponent, winChance, nearWinChance, unknownOwn }));
+      return { call: ready && modelChance >= callThresholdOf(level, bot.strategy), ownEstimate, strongestOpponent, winChance, nearWinChance, unknownOwn, modelChance };
+    }
   }
-  return {
-    call: state.phase === "playing" && state.turnsTaken >= state.players.length &&
-      believed && ownEstimate <= strongestOpponent,
-    ownEstimate, strongestOpponent, winChance, nearWinChance,
-    unknownOwn: hands[me].filter((id) => !known.has(id)).length,
-  };
 }

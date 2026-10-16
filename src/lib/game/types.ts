@@ -54,12 +54,24 @@ export interface BotStrategy {
   callPolicy?: CallPolicy;
   /** How a focused bot chooses its moves. Default: the live action policy. */
   actionPolicy?: ActionPolicy;
+  /** Tuning only: the call model's threshold in place of the level's. */
+  callThreshold?: number;
+  /** Tuning only: choose among this many of the action model's best moves in place of the level's setting. */
+  actionTopK?: number;
+  /** Tuning only: the share of focused decisions that use the action model, in place of the level's setting. */
+  actionModelShare?: number;
 }
 
-/** gate_v1: the shared belief gate every level has used since the evaluation began. */
-export type CallPolicy = "gate_v1";
-/** rules_v1: the hand written tactical evaluator for draws, powers, sticks and gives. */
-export type ActionPolicy = "rules_v1";
+/**
+ * gate_v1: the shared belief gate every level has used since the evaluation began.
+ * model_v1: the level's learned call model, calling when its chance clears the level's threshold.
+ */
+export type CallPolicy = "gate_v1" | "model_v1";
+/**
+ * rules_v1: the hand written tactical evaluator for draws, powers, sticks and gives.
+ * model_v1: the level's learned action model re-ranks the same candidates.
+ */
+export type ActionPolicy = "rules_v1" | "model_v1";
 
 export interface Player {
   id: string;
