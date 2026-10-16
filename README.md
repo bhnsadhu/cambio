@@ -17,6 +17,8 @@ Can bots that only see what a human could see play at three clearly different sk
 
 The hypotheses were committed before any evaluation code. The full write up, with every interval and what was not measured, is in [the bot evaluation](docs/experiments/bot-evaluation.md), and `npm run results` regenerates every number and chart.
 
+**Can models trained on simulated play do better? Partly, and none of it is live yet.** Per level models, trained only on what each level may know and evaluated once on untouched test seeds, gave Cambio calls whose stated chances are far closer to the truth (calibration error 0.086 against the gate's 0.310) and made medium and hard stronger against their frozen selves (54.7% and 58.8% of the win share). The levels kept their order and their identity. But learned actions did not clear the bar for easy (its interval reached 49.97%), and the call model calls on hands it should know are lost when a position is far from its training data, so real players still get the original bots. Details in [the learned policy results](docs/experiments/bot-evaluation.md#learned-policies-results) and [ml/README.md](ml/README.md).
+
 ![Win share by matchup, with 95% intervals](docs/images/win-share.svg)
 
 ## Demo
@@ -58,6 +60,7 @@ Every move is a pure function over the current state. The server loads the state
 | **Persistent accounts** | Wins, rank and streak across every table, with friends, invites and a light for whoever is playing right now. |
 | **Friends and global leaderboards** | Compare lifetime points with accepted friends or all players. Equal points share a rank, and your position stays visible even outside the current page. Guests can browse the global leaderboard. |
 | **Serverless architecture** | Runs on serverless functions and one Postgres database, with no dedicated game server. |
+| **Learned bot policies, tested before shipping** | Per level call and action models trained from rollouts of seeded play, with features limited to what each level may know, a plain TypeScript forward pass, and hypotheses written before any model code. They stay off until a test run supports them. |
 | **Engine and browser regression suites** | Seeded bot versus bot tables played to the score, checking that every move is legal, no card is created or lost, and each difficulty beats the one below it. A Playwright suite covers the whole account lifecycle against an isolated database. |
 
 ## Tech Stack
@@ -87,12 +90,18 @@ Every move is a pure function over the current state. The server loads the state
 * Fairness controls: four copies of one level split the wins evenly within their intervals, and seat order changed no result.
 * The original seeded benchmark still reproduces exactly (hard 64.5 win shares to medium's 31.5, medium 82.5 to easy's 13.5), and every round finishes with only legal moves and all 54 cards accounted for after every action.
 * Hidden information: tests permute every unseen card, reverse the deck, and throw on any attempted read of a card a bot has not seen, and the bots' plans must not change.
+* Learned policies, once on 400 untouched test seeds ([results](docs/experiments/bot-evaluation.md#learned-policies-results), [chart](docs/images/learned-win-share.svg)):
+  * The learned call model's calls had a calibration error of 0.086 against the gate's 0.310 (H5 supported), but its calls won 48.7% against the gate's 55.6%, and it calls on hands it should know are lost in unusual positions.
+  * Learned actions beat their frozen level for medium (54.7%, 51.6% to 57.7%) and hard (58.8%, 55.6% to 61.9%), but not clearly for easy (52.8%, 49.97% to 55.6%), so H6 is refuted.
+  * With learned calls, learned actions or both, hard still beat medium and medium still beat easy, no learned level reached the frozen level above it, and every hidden information test passed (H7, H9 and H8 supported).
+* What real players get: the original bots. Learned actions stay off because H6 was refuted for easy. Learned calls stay off because switching them on fails the existing tests that forbid calling on a known losing hand. Both remain in the code as options, each one constant away from live.
 
 **Not yet measured**
 
 * Any human versus bot play.
 * Load, latency, or behavior under real traffic beyond the concurrency races the tests stage.
-* Calibrated call beliefs. The gate's percentages are decision estimates; modeling final turn sticks and attacks to calibrate them was not attempted.
+* Calibrated calls that are also safe. The learned call model is better calibrated but extrapolates badly far from its data; a guarded version was not tested, because the test seeds have been used.
+* Whether the learned policies feel right or fun to people.
 * Full games to a score. The evaluation plays single rounds at equal reaction speeds.
 * Phone play. The table is built and tested for laptop and desktop windows.
 
@@ -179,6 +188,19 @@ npm run results
 
 This deletes and rewrites every file in `results/` and the three charts in `docs/images/`, then prints how long it took. It first replays the original seeded benchmark and stops if that no longer reproduces, then plays 6,800 seeded bot rounds across all CPU cores. On an 8 core Apple M3 it printed 107.7 and 129.5 seconds on two runs. The output is deterministic: runs with 3 and 7 workers wrote byte identical files. It needs Node 24 and no extra packages, since Node runs the TypeScript directly.
 
+### 6. Retrain the bot models
+
+```bash
+npm run ml:data -- --split train --seeds 200
+npm run ml:data -- --split validation --seeds 100
+python3 -m venv ml/.venv && ml/.venv/bin/pip install -r ml/requirements.txt
+cd ml && .venv/bin/python train_call.py && .venv/bin/python train_action.py && cd ..
+npm run ml:tune -- --thresholds
+npm run ml:tune -- --check
+```
+
+Collecting the data took 21 and 11 minutes on 4 cores; training takes a few minutes. The models land in `src/lib/game/models/` and the tests check the TypeScript forward pass against them. Retrained models need fresh test seeds before any claim about them, since the current ones have been used. [ml/README.md](ml/README.md) has the data schema and every validation number.
+
 ## Deeper docs
 
 | Doc | What is in it |
@@ -187,6 +209,7 @@ This deletes and rewrites every file in `results/` and the three charts in `docs
 | [The game engine](docs/engine.md) | Every rule system the engine enforces, and the power cards |
 | [Bot AI](docs/bots.md) | What bots may know, the three levels, the Cambio gate, and the benchmark |
 | [Bot evaluation](docs/experiments/bot-evaluation.md) | The question, hypotheses written before the code, results with intervals, and what was not measured |
+| [Learned bot policies](ml/README.md) | Training data, schema, models, validation results and tuning |
 | [Decisions log](docs/decisions.md) | Rules and product decisions that changed over time, with commits and recorded reasons |
 | [Architecture](docs/architecture.md) | Real time state sync, hidden information boundaries, and the project layout |
 | [Profiles and friends](docs/accounts.md) | Accounts, guests, presence, friends, invites, and the permanent record |
