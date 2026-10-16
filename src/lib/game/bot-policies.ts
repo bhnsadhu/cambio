@@ -46,7 +46,7 @@ export const ACTION_MODELS: Record<BotDifficulty, ActionModel> = {
  * calling now is at least this. Tuned on validation seeds only; see
  * ml/README.md.
  */
-export const CALL_THRESHOLDS: Record<BotDifficulty, number> = { easy: 0.5, medium: 0.5, hard: 0.5 };
+export const CALL_THRESHOLDS: Record<BotDifficulty, number> = { easy: 0.6, medium: 0.45, hard: 0.55 };
 
 /**
  * Action sharpness: model_v1 picks at random among this many of its best
@@ -59,7 +59,7 @@ export const ACTION_TOP_K: Record<BotDifficulty, number> = { easy: 1, medium: 1,
  * Also action sharpness: the share of a level's focused decisions that use
  * the model, with rules_v1 on the rest. Tuned on validation seeds only.
  */
-export const ACTION_MODEL_SHARE: Record<BotDifficulty, number> = { easy: 1, medium: 1, hard: 1 };
+export const ACTION_MODEL_SHARE: Record<BotDifficulty, number> = { easy: 1, medium: 0.5, hard: 1 };
 
 export function callThresholdOf(difficulty: BotDifficulty, strategy?: BotStrategy): number {
   return strategy?.callThreshold ?? CALL_THRESHOLDS[difficulty];

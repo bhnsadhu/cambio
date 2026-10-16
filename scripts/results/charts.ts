@@ -6,22 +6,22 @@
 import { writeFileSync } from "node:fs";
 import type { CalibrationBin, MatchupSummary } from "./evaluate";
 
-const C = {
+export const C = {
   surface: "#fcfcfb", ink: "#0b0b0b", ink2: "#52514e", ink3: "#8a8984", grid: "#e6e5e0",
   series1: "#2a78d6", series2: "#eb6834",
 };
-const FONT = `font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"`;
-const pct = (value: number, digits = 1) => `${(value * 100).toFixed(digits)}%`;
-const esc = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+export const FONT = `font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"`;
+export const pct = (value: number, digits = 1) => `${(value * 100).toFixed(digits)}%`;
+export const esc = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-interface Row { label: string; sub: string; mean: number; low: number; high: number }
+export interface Row { label: string; sub: string; mean: number; low: number; high: number }
 
 /**
  * A dot and interval chart on a 0 to 100% axis with an even split reference.
  * Labels and group headings stay in the left column, clear of the plot, so
  * the grid can run unbroken from the first row to the last.
  */
-function intervalChart(title: string, subtitle: string, groups: { heading: string; rows: Row[] }[]): string {
+export function intervalChart(title: string, subtitle: string, groups: { heading: string; rows: Row[] }[]): string {
   const width = 820, left = 260, right = 620, rowHeight = 46, headingGap = 30, groupGap = 18;
   const x = (value: number) => left + (right - left) * value;
   const body: string[] = [];
@@ -55,7 +55,7 @@ function intervalChart(title: string, subtitle: string, groups: { heading: strin
   return svg(width, axisY + 24, title, subtitle, [...grid, ...body]);
 }
 
-function svg(width: number, height: number, title: string, subtitle: string, body: string[]): string {
+export function svg(width: number, height: number, title: string, subtitle: string, body: string[]): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="t d" ${FONT}>
 <title id="t">${esc(title)}</title>
 <desc id="d">${esc(subtitle)}</desc>
