@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="560" viewBox="0 0 820 560" role="img" aria-labelledby="t d" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title id="t">Call model next to the gate, on the test seeds</title>
+<desc id="d">Every call in the test run, grouped by the probability the caller stated. 95% Wilson intervals.</desc>
+<rect x="0.5" y="0.5" width="819" height="559" rx="12" fill="#fcfcfb" stroke="#e6e5e0"/>
+<text x="24" y="34" font-size="18" font-weight="600" fill="#0b0b0b">Call model next to the gate, on the test seeds</text>
+<text x="24" y="56" font-size="13" fill="#52514e">Every call in the test run, grouped by the probability the caller stated. 95% Wilson intervals.</text>
+<line x1="80" x2="560" y1="480" y2="480" stroke="#e6e5e0"/>
+<text x="70" y="484" font-size="12" fill="#52514e" text-anchor="end">0%</text>
+<text x="80" y="500" font-size="12" fill="#52514e" text-anchor="middle">0%</text>
+<line x1="80" x2="560" y1="402" y2="402" stroke="#e6e5e0"/>
+<text x="70" y="406" font-size="12" fill="#52514e" text-anchor="end">20%</text>
+<text x="176" y="500" font-size="12" fill="#52514e" text-anchor="middle">20%</text>
+<line x1="80" x2="560" y1="324" y2="324" stroke="#e6e5e0"/>
+<text x="70" y="328" font-size="12" fill="#52514e" text-anchor="end">40%</text>
+<text x="272" y="500" font-size="12" fill="#52514e" text-anchor="middle">40%</text>
+<line x1="80" x2="560" y1="246" y2="246" stroke="#e6e5e0"/>
+<text x="70" y="250" font-size="12" fill="#52514e" text-anchor="end">60%</text>
+<text x="368" y="500" font-size="12" fill="#52514e" text-anchor="middle">60%</text>
+<line x1="80" x2="560" y1="168" y2="168" stroke="#e6e5e0"/>
+<text x="70" y="172" font-size="12" fill="#52514e" text-anchor="end">80%</text>
+<text x="464" y="500" font-size="12" fill="#52514e" text-anchor="middle">80%</text>
+<line x1="80" x2="560" y1="90" y2="90" stroke="#e6e5e0"/>
+<text x="70" y="94" font-size="12" fill="#52514e" text-anchor="end">100%</text>
+<text x="560" y="500" font-size="12" fill="#52514e" text-anchor="middle">100%</text>
+<text x="320" y="524" font-size="13" fill="#52514e" text-anchor="middle">Stated chance of winning at the moment of calling</text>
+<text x="22" y="285" font-size="13" fill="#52514e" text-anchor="middle" transform="rotate(-90 22 285)">Calls that won</text>
+<line x1="80" y1="480" x2="560" y2="90" stroke="#8a8984" stroke-dasharray="4 4"/>
+<text x="224" y="355" font-size="12" fill="#52514e" transform="rotate(-39.1 224 355)">stated chance matches outcome</text>
+<line x1="408.2" x2="408.2" y1="351.7" y2="300.1" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<circle cx="408.2" cy="326.7" r="5.5" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="449.8" x2="449.8" y1="276.6" y2="255.1" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<circle cx="449.8" cy="265.8" r="5.5" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="491.9" x2="491.9" y1="280.2" y2="259.9" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<circle cx="491.9" cy="270.0" r="5.5" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="552.6" x2="552.6" y1="258.5" y2="241.3" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<circle cx="552.6" cy="249.8" r="5.5" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="302.1" x2="302.1" y1="330.6" y2="303.2" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="302.1" cy="317.1" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="337.6" x2="337.6" y1="304.5" y2="282.6" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="337.6" cy="293.6" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="381.1" x2="381.1" y1="290.1" y2="263.7" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="381.1" cy="276.9" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="427.9" x2="427.9" y1="264.2" y2="216.0" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="427.9" cy="239.4" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="477.0" x2="477.0" y1="305.0" y2="186.7" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="477.0" cy="241.7" r="5.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="590" cy="104" r="5.5" fill="#2a78d6"/><text x="604" y="108" font-size="13" fill="#0b0b0b">Call model, learned seats</text>
+<circle cx="590" cy="128" r="5.5" fill="#eb6834"/><text x="604" y="132" font-size="13" fill="#0b0b0b">Gate belief, frozen seats</text>
+<circle cx="590" cy="152" r="5" fill="#fcfcfb" stroke="#52514e" stroke-width="2"/><text x="604" y="156" font-size="13" fill="#0b0b0b">Fewer than 30 calls</text>
+<text x="584" y="192" font-size="12" font-weight="600" fill="#52514e">Calls per probability bin</text>
+<text x="584" y="212" font-size="12" fill="#2a78d6" font-weight="600">Call model</text>
+<text x="584" y="230" font-size="12" fill="#52514e">40% to 50%: 315 of 754 won</text>
+<text x="584" y="246" font-size="12" fill="#52514e">50% to 60%: 577 of 1207 won</text>
+<text x="584" y="262" font-size="12" fill="#52514e">60% to 70%: 437 of 839 won</text>
+<text x="584" y="278" font-size="12" fill="#52514e">70% to 80%: 145 of 235 won</text>
+<text x="584" y="294" font-size="12" fill="#52514e">80% to 90%: 22 of 36 won</text>
+<text x="584" y="318" font-size="12" fill="#eb6834" font-weight="600">Gate belief</text>
+<text x="584" y="336" font-size="12" fill="#52514e">60% to 70%: 81 of 206 won</text>
+<text x="584" y="352" font-size="12" fill="#52514e">70% to 80%: 685 of 1247 won</text>
+<text x="584" y="368" font-size="12" fill="#52514e">80% to 90%: 755 of 1402 won</text>
+<text x="584" y="384" font-size="12" fill="#52514e">90% to 100%: 1122 of 1901 won</text>
+</svg>

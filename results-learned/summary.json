@@ -1,0 +1,1555 @@
+{
+  "question": "Can models trained on simulated play make each level play more accurately, with Cambio calls whose probabilities can be trusted, while each level still knows only what it knows today and the three levels stay distinct?",
+  "method": {
+    "harness": "src/lib/game/bot-harness.ts, as in npm run results",
+    "seedSets": [
+      {
+        "name": "T1",
+        "from": 300001,
+        "count": 200
+      },
+      {
+        "name": "T2",
+        "from": 310001,
+        "count": 200
+      }
+    ],
+    "seatings": "Side A at seats 1 and 3, then reversed to seats 2 and 4.",
+    "interval": "Per seed, average over its seatings; the mean across seeds plus or minus the t critical value times the standard deviation over the square root of n. Call bins use the Wilson interval; the H5 difference uses 2,000 bootstrap resamples of test seeds.",
+    "settings": {
+      "callThresholds": {
+        "easy": 0.6,
+        "medium": 0.45,
+        "hard": 0.55
+      },
+      "actionTopK": {
+        "easy": 1,
+        "medium": 1,
+        "hard": 1
+      }
+    }
+  },
+  "totals": {
+    "rounds": 18400,
+    "calls": 9356,
+    "modelCalls": 3071,
+    "gateCalls": 4756
+  },
+  "matchups": [
+    {
+      "id": "easy_C_vs_easy",
+      "group": "learned vs frozen self",
+      "config": "C",
+      "sideA": "easy C",
+      "sideB": "easy",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.478333,
+        "low": 0.45856,
+        "high": 0.498107,
+        "n": 400,
+        "sd": 0.201159
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.4825,
+          "low": 0.454552,
+          "high": 0.510448,
+          "n": 200,
+          "sd": 0.200431
+        },
+        "T2": {
+          "mean": 0.474167,
+          "low": 0.445958,
+          "high": 0.502375,
+          "n": 200,
+          "sd": 0.202302
+        }
+      },
+      "meanScoreA": {
+        "mean": 8.985625,
+        "low": 8.621216,
+        "high": 9.350034,
+        "n": 400,
+        "sd": 3.707247
+      },
+      "meanScoreB": {
+        "mean": 9.005625,
+        "low": 8.626118,
+        "high": 9.385132,
+        "n": 400,
+        "sd": 3.860847
+      }
+    },
+    {
+      "id": "medium_C_vs_medium",
+      "group": "learned vs frozen self",
+      "config": "C",
+      "sideA": "medium C",
+      "sideB": "medium",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.48375,
+        "low": 0.460915,
+        "high": 0.506585,
+        "n": 400,
+        "sd": 0.23231
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.489583,
+          "low": 0.458284,
+          "high": 0.520883,
+          "n": 200,
+          "sd": 0.224469
+        },
+        "T2": {
+          "mean": 0.477917,
+          "low": 0.444407,
+          "high": 0.511426,
+          "n": 200,
+          "sd": 0.240317
+        }
+      },
+      "meanScoreA": {
+        "mean": 8.244375,
+        "low": 7.888371,
+        "high": 8.600379,
+        "n": 400,
+        "sd": 3.621737
+      },
+      "meanScoreB": {
+        "mean": 8.178125,
+        "low": 7.813932,
+        "high": 8.542318,
+        "n": 400,
+        "sd": 3.705055
+      }
+    },
+    {
+      "id": "hard_C_vs_hard",
+      "group": "learned vs frozen self",
+      "config": "C",
+      "sideA": "hard C",
+      "sideB": "hard",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.494167,
+        "low": 0.475187,
+        "high": 0.513146,
+        "n": 400,
+        "sd": 0.193084
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.51125,
+          "low": 0.483446,
+          "high": 0.539054,
+          "n": 200,
+          "sd": 0.199398
+        },
+        "T2": {
+          "mean": 0.477083,
+          "low": 0.45122,
+          "high": 0.502947,
+          "n": 200,
+          "sd": 0.185483
+        }
+      },
+      "meanScoreA": {
+        "mean": 5.73875,
+        "low": 5.425656,
+        "high": 6.051844,
+        "n": 400,
+        "sd": 3.185208
+      },
+      "meanScoreB": {
+        "mean": 5.861875,
+        "low": 5.540452,
+        "high": 6.183298,
+        "n": 400,
+        "sd": 3.269938
+      }
+    },
+    {
+      "id": "hard_C_vs_medium_C",
+      "group": "ordering",
+      "config": "C",
+      "sideA": "hard C",
+      "sideB": "medium C",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.632917,
+        "low": 0.603739,
+        "high": 0.662094,
+        "n": 400,
+        "sd": 0.296832
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.641667,
+          "low": 0.600962,
+          "high": 0.682372,
+          "n": 200,
+          "sd": 0.291921
+        },
+        "T2": {
+          "mean": 0.624167,
+          "low": 0.582037,
+          "high": 0.666297,
+          "n": 200,
+          "sd": 0.302141
+        }
+      },
+      "meanScoreA": {
+        "mean": 5.83125,
+        "low": 5.499349,
+        "high": 6.163151,
+        "n": 400,
+        "sd": 3.376531
+      },
+      "meanScoreB": {
+        "mean": 8.115625,
+        "low": 7.755474,
+        "high": 8.475776,
+        "n": 400,
+        "sd": 3.663934
+      }
+    },
+    {
+      "id": "medium_C_vs_easy_C",
+      "group": "ordering",
+      "config": "C",
+      "sideA": "medium C",
+      "sideB": "easy C",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.779583,
+        "low": 0.753275,
+        "high": 0.805891,
+        "n": 400,
+        "sd": 0.267638
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.772917,
+          "low": 0.734002,
+          "high": 0.811831,
+          "n": 200,
+          "sd": 0.279079
+        },
+        "T2": {
+          "mean": 0.78625,
+          "low": 0.750524,
+          "high": 0.821976,
+          "n": 200,
+          "sd": 0.256215
+        }
+      },
+      "meanScoreA": {
+        "mean": 8.333125,
+        "low": 7.959838,
+        "high": 8.706412,
+        "n": 400,
+        "sd": 3.797563
+      },
+      "meanScoreB": {
+        "mean": 14.010625,
+        "low": 13.622557,
+        "high": 14.398693,
+        "n": 400,
+        "sd": 3.947936
+      }
+    },
+    {
+      "id": "easy_C_vs_medium",
+      "group": "against the frozen level above",
+      "config": "C",
+      "sideA": "easy C",
+      "sideB": "medium",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.197292,
+        "low": 0.172951,
+        "high": 0.221632,
+        "n": 400,
+        "sd": 0.247621
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.18,
+          "low": 0.146491,
+          "high": 0.213509,
+          "n": 200,
+          "sd": 0.240312
+        },
+        "T2": {
+          "mean": 0.214583,
+          "low": 0.179146,
+          "high": 0.250021,
+          "n": 200,
+          "sd": 0.254145
+        }
+      },
+      "meanScoreA": {
+        "mean": 12.55125,
+        "low": 12.17464,
+        "high": 12.92786,
+        "n": 400,
+        "sd": 3.831368
+      },
+      "meanScoreB": {
+        "mean": 6.181875,
+        "low": 5.879732,
+        "high": 6.484018,
+        "n": 400,
+        "sd": 3.073792
+      }
+    },
+    {
+      "id": "medium_C_vs_hard",
+      "group": "against the frozen level above",
+      "config": "C",
+      "sideA": "medium C",
+      "sideB": "hard",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.374792,
+        "low": 0.345022,
+        "high": 0.404561,
+        "n": 400,
+        "sd": 0.302857
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.376667,
+          "low": 0.33412,
+          "high": 0.419213,
+          "n": 200,
+          "sd": 0.305126
+        },
+        "T2": {
+          "mean": 0.372917,
+          "low": 0.3309,
+          "high": 0.414933,
+          "n": 200,
+          "sd": 0.301325
+        }
+      },
+      "meanScoreA": {
+        "mean": 8.390625,
+        "low": 8.044394,
+        "high": 8.736856,
+        "n": 400,
+        "sd": 3.522316
+      },
+      "meanScoreB": {
+        "mean": 6.194375,
+        "low": 5.877012,
+        "high": 6.511738,
+        "n": 400,
+        "sd": 3.228631
+      }
+    },
+    {
+      "id": "easy_A_vs_easy",
+      "group": "learned vs frozen self",
+      "config": "A",
+      "sideA": "easy A",
+      "sideB": "easy",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.527708,
+        "low": 0.4997,
+        "high": 0.555717,
+        "n": 400,
+        "sd": 0.284936
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.503333,
+          "low": 0.46615,
+          "high": 0.540516,
+          "n": 200,
+          "sd": 0.266661
+        },
+        "T2": {
+          "mean": 0.552083,
+          "low": 0.51014,
+          "high": 0.594027,
+          "n": 200,
+          "sd": 0.300804
+        }
+      },
+      "meanScoreA": {
+        "mean": 10.1575,
+        "low": 9.767741,
+        "high": 10.547259,
+        "n": 400,
+        "sd": 3.965137
+      },
+      "meanScoreB": {
+        "mean": 11.251875,
+        "low": 10.85408,
+        "high": 11.64967,
+        "n": 400,
+        "sd": 4.046893
+      }
+    },
+    {
+      "id": "medium_A_vs_medium",
+      "group": "learned vs frozen self",
+      "config": "A",
+      "sideA": "medium A",
+      "sideB": "medium",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.546667,
+        "low": 0.515994,
+        "high": 0.577339,
+        "n": 400,
+        "sd": 0.312044
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.545417,
+          "low": 0.502114,
+          "high": 0.588719,
+          "n": 200,
+          "sd": 0.310548
+        },
+        "T2": {
+          "mean": 0.547917,
+          "low": 0.50409,
+          "high": 0.591743,
+          "n": 200,
+          "sd": 0.314306
+        }
+      },
+      "meanScoreA": {
+        "mean": 7.3425,
+        "low": 7.006548,
+        "high": 7.678452,
+        "n": 400,
+        "sd": 3.417742
+      },
+      "meanScoreB": {
+        "mean": 7.90375,
+        "low": 7.578517,
+        "high": 8.228983,
+        "n": 400,
+        "sd": 3.308698
+      }
+    },
+    {
+      "id": "hard_A_vs_hard",
+      "group": "learned vs frozen self",
+      "config": "A",
+      "sideA": "hard A",
+      "sideB": "hard",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.5875,
+        "low": 0.556418,
+        "high": 0.618582,
+        "n": 400,
+        "sd": 0.316211
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.57375,
+          "low": 0.529696,
+          "high": 0.617804,
+          "n": 200,
+          "sd": 0.315938
+        },
+        "T2": {
+          "mean": 0.60125,
+          "low": 0.557093,
+          "high": 0.645407,
+          "n": 200,
+          "sd": 0.316677
+        }
+      },
+      "meanScoreA": {
+        "mean": 6.570625,
+        "low": 6.254586,
+        "high": 6.886664,
+        "n": 400,
+        "sd": 3.215161
+      },
+      "meanScoreB": {
+        "mean": 8.28,
+        "low": 7.966121,
+        "high": 8.593879,
+        "n": 400,
+        "sd": 3.193191
+      }
+    },
+    {
+      "id": "hard_A_vs_medium_A",
+      "group": "ordering",
+      "config": "A",
+      "sideA": "hard A",
+      "sideB": "medium A",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.685833,
+        "low": 0.655385,
+        "high": 0.716281,
+        "n": 400,
+        "sd": 0.309756
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.68625,
+          "low": 0.64136,
+          "high": 0.73114,
+          "n": 200,
+          "sd": 0.321934
+        },
+        "T2": {
+          "mean": 0.685417,
+          "low": 0.643879,
+          "high": 0.726954,
+          "n": 200,
+          "sd": 0.297889
+        }
+      },
+      "meanScoreA": {
+        "mean": 6.286875,
+        "low": 5.976229,
+        "high": 6.597521,
+        "n": 400,
+        "sd": 3.160303
+      },
+      "meanScoreB": {
+        "mean": 10.180625,
+        "low": 9.791957,
+        "high": 10.569293,
+        "n": 400,
+        "sd": 3.95404
+      }
+    },
+    {
+      "id": "medium_A_vs_easy_A",
+      "group": "ordering",
+      "config": "A",
+      "sideA": "medium A",
+      "sideB": "easy A",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.830833,
+        "low": 0.805816,
+        "high": 0.85585,
+        "n": 400,
+        "sd": 0.254507
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.8275,
+          "low": 0.792465,
+          "high": 0.862535,
+          "n": 200,
+          "sd": 0.251255
+        },
+        "T2": {
+          "mean": 0.834167,
+          "low": 0.798149,
+          "high": 0.870184,
+          "n": 200,
+          "sd": 0.258306
+        }
+      },
+      "meanScoreA": {
+        "mean": 7.306875,
+        "low": 6.969765,
+        "high": 7.643985,
+        "n": 400,
+        "sd": 3.429524
+      },
+      "meanScoreB": {
+        "mean": 14.469375,
+        "low": 14.098655,
+        "high": 14.840095,
+        "n": 400,
+        "sd": 3.771451
+      }
+    },
+    {
+      "id": "easy_A_vs_medium",
+      "group": "against the frozen level above",
+      "config": "A",
+      "sideA": "easy A",
+      "sideB": "medium",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.224375,
+        "low": 0.198024,
+        "high": 0.250726,
+        "n": 400,
+        "sd": 0.26808
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.2275,
+          "low": 0.19032,
+          "high": 0.26468,
+          "n": 200,
+          "sd": 0.266644
+        },
+        "T2": {
+          "mean": 0.22125,
+          "low": 0.183582,
+          "high": 0.258918,
+          "n": 200,
+          "sd": 0.27014
+        }
+      },
+      "meanScoreA": {
+        "mean": 13.434375,
+        "low": 13.06033,
+        "high": 13.80842,
+        "n": 400,
+        "sd": 3.805283
+      },
+      "meanScoreB": {
+        "mean": 7.178125,
+        "low": 6.864035,
+        "high": 7.492215,
+        "n": 400,
+        "sd": 3.195341
+      }
+    },
+    {
+      "id": "medium_A_vs_hard",
+      "group": "against the frozen level above",
+      "config": "A",
+      "sideA": "medium A",
+      "sideB": "hard",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.409167,
+        "low": 0.38015,
+        "high": 0.438183,
+        "n": 400,
+        "sd": 0.295196
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.432917,
+          "low": 0.390904,
+          "high": 0.474929,
+          "n": 200,
+          "sd": 0.301297
+        },
+        "T2": {
+          "mean": 0.385417,
+          "low": 0.345292,
+          "high": 0.425541,
+          "n": 200,
+          "sd": 0.287759
+        }
+      },
+      "meanScoreA": {
+        "mean": 7.828125,
+        "low": 7.503322,
+        "high": 8.152928,
+        "n": 400,
+        "sd": 3.304321
+      },
+      "meanScoreB": {
+        "mean": 5.899375,
+        "low": 5.612034,
+        "high": 6.186716,
+        "n": 400,
+        "sd": 2.923208
+      }
+    },
+    {
+      "id": "easy_CA_vs_easy",
+      "group": "learned vs frozen self",
+      "config": "CA",
+      "sideA": "easy CA",
+      "sideB": "easy",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.530625,
+        "low": 0.50224,
+        "high": 0.55901,
+        "n": 400,
+        "sd": 0.288765
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.517917,
+          "low": 0.479672,
+          "high": 0.556162,
+          "n": 200,
+          "sd": 0.274279
+        },
+        "T2": {
+          "mean": 0.543333,
+          "low": 0.501123,
+          "high": 0.585543,
+          "n": 200,
+          "sd": 0.302714
+        }
+      },
+      "meanScoreA": {
+        "mean": 9.666875,
+        "low": 9.284772,
+        "high": 10.048978,
+        "n": 400,
+        "sd": 3.88725
+      },
+      "meanScoreB": {
+        "mean": 10.93875,
+        "low": 10.556847,
+        "high": 11.320653,
+        "n": 400,
+        "sd": 3.885219
+      }
+    },
+    {
+      "id": "medium_CA_vs_medium",
+      "group": "learned vs frozen self",
+      "config": "CA",
+      "sideA": "medium CA",
+      "sideB": "medium",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.547917,
+        "low": 0.515737,
+        "high": 0.580096,
+        "n": 400,
+        "sd": 0.327373
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.545417,
+          "low": 0.502303,
+          "high": 0.588531,
+          "n": 200,
+          "sd": 0.309197
+        },
+        "T2": {
+          "mean": 0.550417,
+          "low": 0.502261,
+          "high": 0.598572,
+          "n": 200,
+          "sd": 0.345355
+        }
+      },
+      "meanScoreA": {
+        "mean": 8.013125,
+        "low": 7.64813,
+        "high": 8.37812,
+        "n": 400,
+        "sd": 3.713205
+      },
+      "meanScoreB": {
+        "mean": 8.689375,
+        "low": 8.317163,
+        "high": 9.061587,
+        "n": 400,
+        "sd": 3.786631
+      }
+    },
+    {
+      "id": "hard_CA_vs_hard",
+      "group": "learned vs frozen self",
+      "config": "CA",
+      "sideA": "hard CA",
+      "sideB": "hard",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.595833,
+        "low": 0.563902,
+        "high": 0.627764,
+        "n": 400,
+        "sd": 0.324845
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.582083,
+          "low": 0.537156,
+          "high": 0.627011,
+          "n": 200,
+          "sd": 0.322205
+        },
+        "T2": {
+          "mean": 0.609583,
+          "low": 0.56389,
+          "high": 0.655276,
+          "n": 200,
+          "sd": 0.327693
+        }
+      },
+      "meanScoreA": {
+        "mean": 6.55,
+        "low": 6.218774,
+        "high": 6.881226,
+        "n": 400,
+        "sd": 3.369664
+      },
+      "meanScoreB": {
+        "mean": 8.385,
+        "low": 8.062359,
+        "high": 8.707641,
+        "n": 400,
+        "sd": 3.282333
+      }
+    },
+    {
+      "id": "hard_CA_vs_medium_CA",
+      "group": "ordering",
+      "config": "CA",
+      "sideA": "hard CA",
+      "sideB": "medium CA",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.664583,
+        "low": 0.633048,
+        "high": 0.696119,
+        "n": 400,
+        "sd": 0.320822
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.68,
+          "low": 0.635482,
+          "high": 0.724518,
+          "n": 200,
+          "sd": 0.319263
+        },
+        "T2": {
+          "mean": 0.649167,
+          "low": 0.604207,
+          "high": 0.694126,
+          "n": 200,
+          "sd": 0.322434
+        }
+      },
+      "meanScoreA": {
+        "mean": 7.03,
+        "low": 6.66227,
+        "high": 7.39773,
+        "n": 400,
+        "sd": 3.741034
+      },
+      "meanScoreB": {
+        "mean": 10.633125,
+        "low": 10.267419,
+        "high": 10.998831,
+        "n": 400,
+        "sd": 3.720447
+      }
+    },
+    {
+      "id": "medium_CA_vs_easy_CA",
+      "group": "ordering",
+      "config": "CA",
+      "sideA": "medium CA",
+      "sideB": "easy CA",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.80875,
+        "low": 0.782746,
+        "high": 0.834754,
+        "n": 400,
+        "sd": 0.264551
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.820833,
+          "low": 0.787481,
+          "high": 0.854186,
+          "n": 200,
+          "sd": 0.239193
+        },
+        "T2": {
+          "mean": 0.796667,
+          "low": 0.756539,
+          "high": 0.836795,
+          "n": 200,
+          "sd": 0.287784
+        }
+      },
+      "meanScoreA": {
+        "mean": 8.640625,
+        "low": 8.250887,
+        "high": 9.030363,
+        "n": 400,
+        "sd": 3.964924
+      },
+      "meanScoreB": {
+        "mean": 15.419375,
+        "low": 15.030222,
+        "high": 15.808528,
+        "n": 400,
+        "sd": 3.958973
+      }
+    },
+    {
+      "id": "easy_CA_vs_medium",
+      "group": "against the frozen level above",
+      "config": "CA",
+      "sideA": "easy CA",
+      "sideB": "medium",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.217708,
+        "low": 0.191224,
+        "high": 0.244193,
+        "n": 400,
+        "sd": 0.269432
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.2175,
+          "low": 0.180136,
+          "high": 0.254864,
+          "n": 200,
+          "sd": 0.26796
+        },
+        "T2": {
+          "mean": 0.217917,
+          "low": 0.18005,
+          "high": 0.255784,
+          "n": 200,
+          "sd": 0.271568
+        }
+      },
+      "meanScoreA": {
+        "mean": 13.44125,
+        "low": 13.067426,
+        "high": 13.815074,
+        "n": 400,
+        "sd": 3.803028
+      },
+      "meanScoreB": {
+        "mean": 7.156875,
+        "low": 6.839984,
+        "high": 7.473766,
+        "n": 400,
+        "sd": 3.223832
+      }
+    },
+    {
+      "id": "medium_CA_vs_hard",
+      "group": "against the frozen level above",
+      "config": "CA",
+      "sideA": "medium CA",
+      "sideB": "hard",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.412708,
+        "low": 0.383491,
+        "high": 0.441925,
+        "n": 400,
+        "sd": 0.297233
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.425833,
+          "low": 0.38353,
+          "high": 0.468137,
+          "n": 200,
+          "sd": 0.303386
+        },
+        "T2": {
+          "mean": 0.399583,
+          "low": 0.35899,
+          "high": 0.440176,
+          "n": 200,
+          "sd": 0.291118
+        }
+      },
+      "meanScoreA": {
+        "mean": 8.406875,
+        "low": 8.055901,
+        "high": 8.757849,
+        "n": 400,
+        "sd": 3.570572
+      },
+      "meanScoreB": {
+        "mean": 6.55125,
+        "low": 6.224007,
+        "high": 6.878493,
+        "n": 400,
+        "sd": 3.329145
+      }
+    },
+    {
+      "id": "hard_vs_medium",
+      "group": "frozen reference",
+      "config": "frozen",
+      "sideA": "hard",
+      "sideB": "medium",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.633125,
+        "low": 0.603428,
+        "high": 0.662822,
+        "n": 400,
+        "sd": 0.302115
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.6375,
+          "low": 0.594497,
+          "high": 0.680503,
+          "n": 200,
+          "sd": 0.308401
+        },
+        "T2": {
+          "mean": 0.62875,
+          "low": 0.58742,
+          "high": 0.67008,
+          "n": 200,
+          "sd": 0.296405
+        }
+      },
+      "meanScoreA": {
+        "mean": 5.4725,
+        "low": 5.187675,
+        "high": 5.757325,
+        "n": 400,
+        "sd": 2.897615
+      },
+      "meanScoreB": {
+        "mean": 7.8175,
+        "low": 7.489999,
+        "high": 8.145001,
+        "n": 400,
+        "sd": 3.331771
+      }
+    },
+    {
+      "id": "medium_vs_easy",
+      "group": "frozen reference",
+      "config": "frozen",
+      "sideA": "medium",
+      "sideB": "easy",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.801458,
+        "low": 0.776845,
+        "high": 0.826072,
+        "n": 400,
+        "sd": 0.250399
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.81875,
+          "low": 0.785282,
+          "high": 0.852218,
+          "n": 200,
+          "sd": 0.240021
+        },
+        "T2": {
+          "mean": 0.784167,
+          "low": 0.747939,
+          "high": 0.820395,
+          "n": 200,
+          "sd": 0.259814
+        }
+      },
+      "meanScoreA": {
+        "mean": 6.23625,
+        "low": 5.931009,
+        "high": 6.541491,
+        "n": 400,
+        "sd": 3.105315
+      },
+      "meanScoreB": {
+        "mean": 12.554375,
+        "low": 12.178258,
+        "high": 12.930492,
+        "n": 400,
+        "sd": 3.826355
+      }
+    }
+  ],
+  "calibration": [
+    {
+      "group": "model",
+      "from": 0,
+      "to": 0.1,
+      "calls": 0,
+      "wins": 0,
+      "meanStated": null,
+      "rate": null,
+      "low": null,
+      "high": null,
+      "tooSmall": true
+    },
+    {
+      "group": "model",
+      "from": 0.1,
+      "to": 0.2,
+      "calls": 0,
+      "wins": 0,
+      "meanStated": null,
+      "rate": null,
+      "low": null,
+      "high": null,
+      "tooSmall": true
+    },
+    {
+      "group": "model",
+      "from": 0.2,
+      "to": 0.3,
+      "calls": 0,
+      "wins": 0,
+      "meanStated": null,
+      "rate": null,
+      "low": null,
+      "high": null,
+      "tooSmall": true
+    },
+    {
+      "group": "model",
+      "from": 0.3,
+      "to": 0.4,
+      "calls": 0,
+      "wins": 0,
+      "meanStated": null,
+      "rate": null,
+      "low": null,
+      "high": null,
+      "tooSmall": true
+    },
+    {
+      "group": "model",
+      "from": 0.4,
+      "to": 0.5,
+      "calls": 754,
+      "wins": 315,
+      "meanStated": 0.4752,
+      "rate": 0.417772,
+      "low": 0.383073,
+      "high": 0.453305,
+      "tooSmall": false
+    },
+    {
+      "group": "model",
+      "from": 0.5,
+      "to": 0.6,
+      "calls": 1207,
+      "wins": 577,
+      "meanStated": 0.549181,
+      "rate": 0.478045,
+      "low": 0.449979,
+      "high": 0.50625,
+      "tooSmall": false
+    },
+    {
+      "group": "model",
+      "from": 0.6,
+      "to": 0.7,
+      "calls": 839,
+      "wins": 437,
+      "meanStated": 0.639702,
+      "rate": 0.520858,
+      "low": 0.487037,
+      "high": 0.554489,
+      "tooSmall": false
+    },
+    {
+      "group": "model",
+      "from": 0.7,
+      "to": 0.8,
+      "calls": 235,
+      "wins": 145,
+      "meanStated": 0.737375,
+      "rate": 0.617021,
+      "low": 0.553461,
+      "high": 0.676818,
+      "tooSmall": false
+    },
+    {
+      "group": "model",
+      "from": 0.8,
+      "to": 0.9,
+      "calls": 36,
+      "wins": 22,
+      "meanStated": 0.839563,
+      "rate": 0.611111,
+      "low": 0.448645,
+      "high": 0.752151,
+      "tooSmall": false
+    },
+    {
+      "group": "model",
+      "from": 0.9,
+      "to": 1,
+      "calls": 0,
+      "wins": 0,
+      "meanStated": null,
+      "rate": null,
+      "low": null,
+      "high": null,
+      "tooSmall": true
+    },
+    {
+      "group": "gate",
+      "from": 0,
+      "to": 0.1,
+      "calls": 0,
+      "wins": 0,
+      "meanStated": null,
+      "rate": null,
+      "low": null,
+      "high": null,
+      "tooSmall": true
+    },
+    {
+      "group": "gate",
+      "from": 0.1,
+      "to": 0.2,
+      "calls": 0,
+      "wins": 0,
+      "meanStated": null,
+      "rate": null,
+      "low": null,
+      "high": null,
+      "tooSmall": true
+    },
+    {
+      "group": "gate",
+      "from": 0.2,
+      "to": 0.3,
+      "calls": 0,
+      "wins": 0,
+      "meanStated": null,
+      "rate": null,
+      "low": null,
+      "high": null,
+      "tooSmall": true
+    },
+    {
+      "group": "gate",
+      "from": 0.3,
+      "to": 0.4,
+      "calls": 0,
+      "wins": 0,
+      "meanStated": null,
+      "rate": null,
+      "low": null,
+      "high": null,
+      "tooSmall": true
+    },
+    {
+      "group": "gate",
+      "from": 0.4,
+      "to": 0.5,
+      "calls": 0,
+      "wins": 0,
+      "meanStated": null,
+      "rate": null,
+      "low": null,
+      "high": null,
+      "tooSmall": true
+    },
+    {
+      "group": "gate",
+      "from": 0.5,
+      "to": 0.6,
+      "calls": 0,
+      "wins": 0,
+      "meanStated": null,
+      "rate": null,
+      "low": null,
+      "high": null,
+      "tooSmall": true
+    },
+    {
+      "group": "gate",
+      "from": 0.6,
+      "to": 0.7,
+      "calls": 206,
+      "wins": 81,
+      "meanStated": 0.671167,
+      "rate": 0.393204,
+      "low": 0.32904,
+      "high": 0.461277,
+      "tooSmall": false
+    },
+    {
+      "group": "gate",
+      "from": 0.7,
+      "to": 0.8,
+      "calls": 1247,
+      "wins": 685,
+      "meanStated": 0.757831,
+      "rate": 0.549318,
+      "low": 0.521593,
+      "high": 0.576741,
+      "tooSmall": false
+    },
+    {
+      "group": "gate",
+      "from": 0.8,
+      "to": 0.9,
+      "calls": 1402,
+      "wins": 755,
+      "meanStated": 0.845711,
+      "rate": 0.538516,
+      "low": 0.512352,
+      "high": 0.56447,
+      "tooSmall": false
+    },
+    {
+      "group": "gate",
+      "from": 0.9,
+      "to": 1,
+      "calls": 1901,
+      "wins": 1122,
+      "meanStated": 0.97215,
+      "rate": 0.590216,
+      "low": 0.567948,
+      "high": 0.61212,
+      "tooSmall": false
+    }
+  ],
+  "hypotheses": {
+    "h5": {
+      "rule": "Refuted if the model's ECE is above 0.10, or if the 95% bootstrap interval of the gate's ECE minus the model's ECE includes zero or falls below it.",
+      "model": {
+        "calls": 3071,
+        "wins": 1496,
+        "winRate": 0.487138,
+        "low": 0.469487,
+        "high": 0.504821,
+        "meanStated": 0.573553,
+        "ece": 0.086415
+      },
+      "gate": {
+        "calls": 4756,
+        "wins": 2643,
+        "winRate": 0.555719,
+        "low": 0.541558,
+        "high": 0.56979,
+        "meanStated": 0.865648,
+        "ece": 0.309929
+      },
+      "modelByLevel": {
+        "easy": {
+          "calls": 219,
+          "wins": 131,
+          "winRate": 0.598174,
+          "low": 0.532089,
+          "high": 0.660873,
+          "meanStated": 0.669547,
+          "ece": 0.071373
+        },
+        "medium": {
+          "calls": 2323,
+          "wins": 1092,
+          "winRate": 0.470082,
+          "low": 0.449852,
+          "high": 0.490411,
+          "meanStated": 0.554921,
+          "ece": 0.084839
+        },
+        "hard": {
+          "calls": 529,
+          "wins": 273,
+          "winRate": 0.516068,
+          "low": 0.47352,
+          "high": 0.558384,
+          "meanStated": 0.615629,
+          "ece": 0.099561
+        }
+      },
+      "gateByLevel": {
+        "easy": {
+          "calls": 738,
+          "wins": 480,
+          "winRate": 0.650407,
+          "low": 0.615305,
+          "high": 0.68395,
+          "meanStated": 0.856975,
+          "ece": 0.206569
+        },
+        "medium": {
+          "calls": 2502,
+          "wins": 1431,
+          "winRate": 0.571942,
+          "low": 0.552459,
+          "high": 0.591206,
+          "meanStated": 0.861794,
+          "ece": 0.289851
+        },
+        "hard": {
+          "calls": 1516,
+          "wins": 732,
+          "winRate": 0.48285,
+          "low": 0.45777,
+          "high": 0.508016,
+          "meanStated": 0.87623,
+          "ece": 0.39338
+        }
+      },
+      "difference": {
+        "mean": 0.223514,
+        "low": 0.195342,
+        "high": 0.250211
+      },
+      "supported": true
+    },
+    "h6": {
+      "rule": "Refuted for a level if the 95% interval of the learned side's win share includes 50% or lies below it.",
+      "levels": {
+        "easy": {
+          "shareA": {
+            "mean": 0.527708,
+            "low": 0.4997,
+            "high": 0.555717,
+            "n": 400,
+            "sd": 0.284936
+          },
+          "supported": false
+        },
+        "medium": {
+          "shareA": {
+            "mean": 0.546667,
+            "low": 0.515994,
+            "high": 0.577339,
+            "n": 400,
+            "sd": 0.312044
+          },
+          "supported": true
+        },
+        "hard": {
+          "shareA": {
+            "mean": 0.5875,
+            "low": 0.556418,
+            "high": 0.618582,
+            "n": 400,
+            "sd": 0.316211
+          },
+          "supported": true
+        }
+      },
+      "supported": false
+    },
+    "h7": {
+      "rule": "Refuted for a configuration if either matchup's 95% interval for the stronger level includes 50% or lies below it.",
+      "configs": {
+        "C": {
+          "hard_vs_medium": {
+            "mean": 0.632917,
+            "low": 0.603739,
+            "high": 0.662094,
+            "n": 400,
+            "sd": 0.296832
+          },
+          "medium_vs_easy": {
+            "mean": 0.779583,
+            "low": 0.753275,
+            "high": 0.805891,
+            "n": 400,
+            "sd": 0.267638
+          },
+          "supported": true
+        },
+        "A": {
+          "hard_vs_medium": {
+            "mean": 0.685833,
+            "low": 0.655385,
+            "high": 0.716281,
+            "n": 400,
+            "sd": 0.309756
+          },
+          "medium_vs_easy": {
+            "mean": 0.830833,
+            "low": 0.805816,
+            "high": 0.85585,
+            "n": 400,
+            "sd": 0.254507
+          },
+          "supported": true
+        },
+        "CA": {
+          "hard_vs_medium": {
+            "mean": 0.664583,
+            "low": 0.633048,
+            "high": 0.696119,
+            "n": 400,
+            "sd": 0.320822
+          },
+          "medium_vs_easy": {
+            "mean": 0.80875,
+            "low": 0.782746,
+            "high": 0.834754,
+            "n": 400,
+            "sd": 0.264551
+          },
+          "supported": true
+        }
+      }
+    },
+    "h8": {
+      "rule": "Checked by the hidden information tests in npm test (src/lib/game/bot-strength.test.ts, bot-features.test.ts, bot-learned.test.ts); see the write up."
+    },
+    "h9": {
+      "rule": "Refuted for a configuration if the learned lower level's 95% interval includes 50% or lies above it.",
+      "configs": {
+        "C": {
+          "easy_vs_medium": {
+            "mean": 0.197292,
+            "low": 0.172951,
+            "high": 0.221632,
+            "n": 400,
+            "sd": 0.247621
+          },
+          "medium_vs_hard": {
+            "mean": 0.374792,
+            "low": 0.345022,
+            "high": 0.404561,
+            "n": 400,
+            "sd": 0.302857
+          },
+          "supported": true
+        },
+        "A": {
+          "easy_vs_medium": {
+            "mean": 0.224375,
+            "low": 0.198024,
+            "high": 0.250726,
+            "n": 400,
+            "sd": 0.26808
+          },
+          "medium_vs_hard": {
+            "mean": 0.409167,
+            "low": 0.38015,
+            "high": 0.438183,
+            "n": 400,
+            "sd": 0.295196
+          },
+          "supported": true
+        },
+        "CA": {
+          "easy_vs_medium": {
+            "mean": 0.217708,
+            "low": 0.191224,
+            "high": 0.244193,
+            "n": 400,
+            "sd": 0.269432
+          },
+          "medium_vs_hard": {
+            "mean": 0.412708,
+            "low": 0.383491,
+            "high": 0.441925,
+            "n": 400,
+            "sd": 0.297233
+          },
+          "supported": true
+        }
+      }
+    }
+  }
+}
