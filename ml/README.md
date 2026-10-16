@@ -115,3 +115,7 @@ Validation with the final settings (share won by the first side):
 | Learned medium vs frozen hard | 38.8% (35.1% to 42.4%) | 43.9% (40.1% to 47.7%) | 45.4% (41.6% to 49.3%) |
 
 Easy's learned actions do not beat frozen easy on validation. Easy uses its full strategy on only half of its decisions and remembers two cards, and its model's validation gain per decision was the smallest of the three.
+
+## Test run and what went live
+
+The settings above were run once on the test seeds with `npm run ml:evaluate`; the results, with every hypothesis, are in [the bot evaluation](../docs/experiments/bot-evaluation.md#learned-policies-results) and the raw data in [results-learned/](../results-learned). H5, H7, H8 and H9 were supported and H6 was refuted for easy. Neither policy is live: learned actions because H6 was refuted, learned calls because switching them on fails the existing tests that forbid calling on a known losing hand. Both remain in the code as strategy options.
