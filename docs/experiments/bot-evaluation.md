@@ -151,7 +151,7 @@ Easy copies come closest to the edge (the interval's low end is 49.1%), so a sma
 
 * **No human versus bot data.** Every number here is bots playing bots. Whether the gaps between levels hold against people, or how the levels feel to play, is unknown.
 * **No load or latency testing.** The evaluation calls the engine directly. Nothing here measures the realtime layer, the Vercel functions or Postgres under many simultaneous tables.
-* **Belief estimates are decision estimates, not calibrated promises.** H2 now puts a number on it: calls believed to win 64% to 100% of the time won about half the time. The gate is a useful filter (H3), but its percentages should not be read as probabilities. Calibrating them, for example by modeling final turn sticks and attacks, was not attempted.
+* **Belief estimates are decision estimates, not calibrated promises.** H2 now puts a number on it: calls believed to win 64% to 100% of the time won about half the time. The gate is a useful filter (H3), but its percentages should not be read as probabilities. Calibrating them, for example by modeling final turn sticks and attacks, was not attempted here; a learned call model was tried later (H5, in the learned policy results below).
 * **The best informed level makes the worst calls.** Hard's calls won 51.5%, against 62.3% for easy. Why was not measured.
 * **Rounds, not games.** Each seed plays one round. Full games, where the winner leads the next round, were not simulated.
 * **Equal reaction speeds.** Every level gets the same reaction time here, so hard's faster sticks in the live game are not part of these numbers, and races between sticks are not tested.
@@ -220,3 +220,114 @@ Refuted for a configuration if the learned lower level's 95% interval includes 5
 * **Other model families or data sizes.** Only the models named in the training write up are compared, at laptop scale, and the rollout values are estimates from a limited number of rollouts.
 * **Opponents other than these bots.** The models learn values against the frozen bots; how they fare against other strategies, including human habits such as bluffing keeps, is unknown.
 * **Action accuracy on the test seeds.** Agreement with the best rollout action is reported on validation seeds only; the test seeds are used for the matchups and calls above.
+
+## Learned policies: results
+
+Everything below comes from one run of `npm run ml:evaluate` on the test seeds, at commit 2dbfa66, after the models, thresholds and sharpness were fixed on validation seeds ([ml/README.md](../../ml/README.md)). The run played 23 matchups of 800 rounds each, 18,400 rounds and 9,356 Cambio calls. Raw data is in `results-learned/rounds.csv` and `results-learned/calls.csv`; summaries are in `results-learned/matchups.csv`, `results-learned/calibration.csv` and `results-learned/summary.json`. The files in `results/` are unchanged.
+
+The settings tested: call thresholds of 60% (easy), 45% (medium) and 55% (hard); every level plays its action model's top move, and medium uses its action model on half of its focused decisions and rules_v1 on the rest.
+
+| Hypothesis | Verdict | Key numbers |
+| --- | --- | --- |
+| H5, calibrated calls | **Supported** | Call model ECE 0.086 against the gate's 0.310; the difference is 0.224 (bootstrap 0.195 to 0.250) |
+| H6, learned actions beat their frozen level | **Refuted**, for easy | Medium 54.7% (51.6% to 57.7%) and hard 58.8% (55.6% to 61.9%) beat their frozen selves; easy's 52.8% interval starts at 49.97% |
+| H7, ordering survives | **Supported** in all three configurations | Hard beat medium by 63.3% to 68.6% and medium beat easy by 78.0% to 83.1%, every interval clear of 50% |
+| H8, no information leak | **Supported** | Every hidden information test passes for every level with learned calls, learned actions and both |
+| H9, levels keep their identity | **Supported** in all three configurations | No learned level's interval reaches 50% against the frozen level above it; the closest is medium with learned actions against frozen hard, 40.9% (38.0% to 43.8%) |
+
+![Learned policies on the test seeds, with 95% intervals](../images/learned-win-share.svg)
+
+### H5: the call model is better calibrated than the gate. Supported.
+
+Every call made by a seat using the learned call policy, against every call made by a frozen seat in the same matchups. The stated chance is the model's for the first group and the gate's win belief for the second.
+
+| Callers | Calls | Won | Observed win rate | 95% interval | Average stated chance | ECE |
+| --- | --- | --- | --- | --- | --- | --- |
+| Call model, all levels | 3,071 | 1,496 | 48.7% | 46.9% to 50.5% | 57.4% | 0.086 |
+| Call model, easy | 219 | 131 | 59.8% | 53.2% to 66.1% | 67.0% | 0.071 |
+| Call model, medium | 2,323 | 1,092 | 47.0% | 45.0% to 49.0% | 55.5% | 0.085 |
+| Call model, hard | 529 | 273 | 51.6% | 47.4% to 55.8% | 61.6% | 0.100 |
+| Gate, all levels | 4,756 | 2,643 | 55.6% | 54.2% to 57.0% | 86.6% | 0.310 |
+| Gate, easy | 738 | 480 | 65.0% | 61.5% to 68.4% | 85.7% | 0.207 |
+| Gate, medium | 2,502 | 1,431 | 57.2% | 55.2% to 59.1% | 86.2% | 0.290 |
+| Gate, hard | 1,516 | 732 | 48.3% | 45.8% to 50.8% | 87.6% | 0.393 |
+
+The model's ECE of 0.086 clears the 0.10 ceiling, and the interval for the gate's ECE minus the model's (0.195 to 0.250) is far from zero. The model is still overconfident: its calls won 48.7% at an average stated chance of 57.4%, and hard's ECE of 0.100 sits exactly at the ceiling. Its calls also win less often than the gate's (48.7% against 55.6%), because it calls in many positions the gate would refuse: 47.6% of its calls came at a gate belief below 64%, and those won 41.3%.
+
+![Call model next to the gate, on the test seeds](../images/learned-calibration.svg)
+
+### H6: learned actions beat their frozen level for medium and hard, not easy. Refuted.
+
+| Matchup | Share won by the first side | Test set 1 | Test set 2 | Mean final hand |
+| --- | --- | --- | --- | --- |
+| Easy with learned actions vs frozen easy | 52.8% (50.0% to 55.6%) | 50.3% (46.6% to 54.1%) | 55.2% (51.0% to 59.4%) | 10.16 vs 11.25 |
+| Medium with learned actions vs frozen medium | 54.7% (51.6% to 57.7%) | 54.5% (50.2% to 58.9%) | 54.8% (50.4% to 59.2%) | 7.34 vs 7.90 |
+| Hard with learned actions vs frozen hard | 58.8% (55.6% to 61.9%) | 57.4% (53.0% to 61.8%) | 60.1% (55.7% to 64.5%) | 6.57 vs 8.28 |
+
+Easy's interval runs from 49.97% to 55.6%, so it includes an even split by three hundredths of a point and H6 is refuted as written. Easy plays its full strategy on half of its decisions and remembers two cards, so its model has the least to work with. On validation it was even (50.1%).
+
+### H7: the level ordering survives. Supported.
+
+| Matchup | Share won by the first side | Test set 1 | Test set 2 | Mean final hand |
+| --- | --- | --- | --- | --- |
+| Hard vs medium, learned calls | 63.3% (60.4% to 66.2%) | 64.2% (60.1% to 68.2%) | 62.4% (58.2% to 66.6%) | 5.83 vs 8.12 |
+| Medium vs easy, learned calls | 78.0% (75.3% to 80.6%) | 77.3% (73.4% to 81.2%) | 78.6% (75.1% to 82.2%) | 8.33 vs 14.01 |
+| Hard vs medium, learned actions | 68.6% (65.5% to 71.6%) | 68.6% (64.1% to 73.1%) | 68.5% (64.4% to 72.7%) | 6.29 vs 10.18 |
+| Medium vs easy, learned actions | 83.1% (80.6% to 85.6%) | 82.8% (79.2% to 86.3%) | 83.4% (79.8% to 87.0%) | 7.31 vs 14.47 |
+| Hard vs medium, both | 66.5% (63.3% to 69.6%) | 68.0% (63.5% to 72.5%) | 64.9% (60.4% to 69.4%) | 7.03 vs 10.63 |
+| Medium vs easy, both | 80.9% (78.3% to 83.5%) | 82.1% (78.7% to 85.4%) | 79.7% (75.7% to 83.7%) | 8.64 vs 15.42 |
+| Hard vs medium, frozen reference | 63.3% (60.3% to 66.3%) | 63.7% (59.4% to 68.1%) | 62.9% (58.7% to 67.0%) | 5.47 vs 7.82 |
+| Medium vs easy, frozen reference | 80.1% (77.7% to 82.6%) | 81.9% (78.5% to 85.2%) | 78.4% (74.8% to 82.0%) | 6.24 vs 12.55 |
+
+### H8: no learned policy uses information its level should not have. Supported.
+
+`npm test` passes `src/lib/game/bot-learned.test.ts`, `bot-features.test.ts` and `bot-strength.test.ts`: for every level with learned calls, learned actions or both, an attempted read of an unobserved card, the deck or another seat's memory throws; permuting every unseen card, reversing the deck and giving other seats false knowledge leaves the observation, the features, the call assessment and the planned moves unchanged; each level keeps its memory limit in seeded rounds; and every level's models take the same feature list, built only from its own observation.
+
+### H9: each level keeps its identity. Supported.
+
+| Matchup | Share won by the first side | Test set 1 | Test set 2 | Mean final hand |
+| --- | --- | --- | --- | --- |
+| Easy with learned calls vs frozen medium | 19.7% (17.3% to 22.2%) | 18.0% (14.6% to 21.4%) | 21.5% (17.9% to 25.0%) | 12.55 vs 6.18 |
+| Medium with learned calls vs frozen hard | 37.5% (34.5% to 40.5%) | 37.7% (33.4% to 41.9%) | 37.3% (33.1% to 41.5%) | 8.39 vs 6.19 |
+| Easy with learned actions vs frozen medium | 22.4% (19.8% to 25.1%) | 22.8% (19.0% to 26.5%) | 22.1% (18.4% to 25.9%) | 13.43 vs 7.18 |
+| Medium with learned actions vs frozen hard | 40.9% (38.0% to 43.8%) | 43.3% (39.1% to 47.5%) | 38.5% (34.5% to 42.6%) | 7.83 vs 5.90 |
+| Easy with both vs frozen medium | 21.8% (19.1% to 24.4%) | 21.8% (18.0% to 25.5%) | 21.8% (18.0% to 25.6%) | 13.44 vs 7.16 |
+| Medium with both vs frozen hard | 41.3% (38.3% to 44.2%) | 42.6% (38.4% to 46.8%) | 40.0% (35.9% to 44.0%) | 8.41 vs 6.55 |
+
+### Learned levels against their frozen selves
+
+Not a hypothesis, but part of the run:
+
+| Matchup | Share won by the first side | Test set 1 | Test set 2 | Mean final hand |
+| --- | --- | --- | --- | --- |
+| Easy with learned calls vs frozen easy | 47.8% (45.9% to 49.8%) | 48.2% (45.5% to 51.0%) | 47.4% (44.6% to 50.2%) | 8.99 vs 9.01 |
+| Medium with learned calls vs frozen medium | 48.4% (46.1% to 50.7%) | 49.0% (45.8% to 52.1%) | 47.8% (44.4% to 51.1%) | 8.24 vs 8.18 |
+| Hard with learned calls vs frozen hard | 49.4% (47.5% to 51.3%) | 51.1% (48.3% to 53.9%) | 47.7% (45.1% to 50.3%) | 5.74 vs 5.86 |
+| Easy with both vs frozen easy | 53.1% (50.2% to 55.9%) | 51.8% (48.0% to 55.6%) | 54.3% (50.1% to 58.6%) | 9.67 vs 10.94 |
+| Medium with both vs frozen medium | 54.8% (51.6% to 58.0%) | 54.5% (50.2% to 58.9%) | 55.0% (50.2% to 59.9%) | 8.01 vs 8.69 |
+| Hard with both vs frozen hard | 59.6% (56.4% to 62.8%) | 58.2% (53.7% to 62.7%) | 61.0% (56.4% to 65.5%) | 6.55 vs 8.38 |
+
+Learned calls alone do not make a level stronger. Easy with learned calls lost a little against frozen easy, 47.8% (45.9% to 49.8%); medium and hard stayed within their intervals.
+
+### What real players get
+
+Neither learned policy is live. Both stay in the code as strategy options, with their tests and these results, behind the constants `LIVE_CALL_POLICY` and `LIVE_ACTION_POLICY` in `src/lib/game/bot-policies.ts`.
+
+* **Learned actions stay off** because H6 is refuted for easy, and the rule set before the run requires H6 for the switch. Medium and hard did gain.
+* **Learned calls stay off** even though H5, H7, H8 and H9 are supported for them. Switching the constant fails existing tests that every live bot must pass: with learned calls, all three levels call Cambio on a hand they know is losing. In the test fixture the bot holds 6 points it has seen, one opponent holds a single card worth 0, and the gate's own win belief is 0%; the call model gives 88% (easy), 98% (medium) and 98% (hard). With four unseen cards of its own against much lower opponents, it still gives 60% to 91%. The logistic model extrapolates badly in positions far from its training data. The same failure shows up in the test run: 24 of the model's 3,071 calls came at a gate belief below 10%, and 3 of them won; 6 came at a belief of exactly 0, and none won. A guarded version could not be evaluated here, because the test seeds have been used, so live bots keep the gate.
+
+### What did not work
+
+* **The call model's guarantees were not tested before the test run.** The learned policy tests covered legality, card conservation, memory and hidden information, but not the gate's behavioral guarantees (never call on a known losing hand, respect unknown cards). Those existing tests only ran against the learned calls when the live switch was tried, after the single test run.
+* **Better calibration did not mean better calls.** The model's stated chances are much closer to the truth, but it calls more often and in worse positions than the gate, and its calls won less often.
+* **Choosing among the top two moves** to make medium less sharp cost far too much (42.0% against frozen medium on validation). Using the model on half of medium's decisions worked instead.
+* **Easy's action model.** Its validation gain was the smallest, and on the test seeds it missed the H6 bar.
+* **Noisy labels.** Each candidate move had 4 rollouts, so the best move by rollout value is itself an estimate, and the frozen rule and the models both picked it only about a third of the time.
+
+### What was not measured
+
+Everything listed before the run still holds: no human play, no claim that the learned bots feel right or fun, single rounds at equal reaction speeds, nothing about live speed beyond the unit tests, no model families beyond those named, and nothing about opponents other than these bots. In addition:
+
+* **A guarded call model.** Adding the gate's guards to the call model, or retraining it to stay sane far from its data, was not tested, because there are no unused test seeds left for it.
+* **Switching levels separately.** Learned actions helped medium and hard, but the rule written before the run switches one constant for all levels, so a per level switch was not considered.
+* **Action accuracy on the test seeds.** Agreement with the best rollout move was measured on validation only.
