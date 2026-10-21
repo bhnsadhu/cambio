@@ -116,6 +116,19 @@ Validation with the final settings (share won by the first side):
 
 Easy's learned actions do not beat frozen easy on validation. Easy uses its full strategy on only half of its decisions and remembers two cards, and its model's validation gain per decision was the smallest of the three.
 
+## Speed
+
+`npm run ml:speed` times every learned action decision (the `rules_v1` choice, the candidates, their features and the forward pass, in `modelChoice` in `src/lib/game/bots.ts`) while each level plays four copies of itself with learned actions on every focused decision, on validation seeds 200001 to 200015 in both seatings (90 rounds), on the worker pool of `npm run results` with all 3 workers busy. Measured on a cloud container with a 4 core Intel Xeon at 2.80GHz, 16 GB of memory, Linux and Node 24.22.0; the raw numbers are in [reports/speed.json](reports/speed.json).
+
+| Level | Decisions | Mean | 99th percentile | Slowest |
+| --- | --- | --- | --- | --- |
+| Easy | 8,654 | 0.25 ms | 2.89 ms | 14.51 ms |
+| Medium | 5,014 | 0.26 ms | 3.31 ms | 9.07 ms |
+| Hard | 854 | 0.80 ms | 5.22 ms | 7.60 ms |
+| All | 14,522 | 0.29 ms | 3.50 ms | 14.51 ms |
+
+The 99th percentile is far under the 25 ms bound set for H13 in [the bot evaluation](../docs/experiments/bot-evaluation.md#per-level-go-live-h10-to-h15). `src/lib/game/bot-speed.test.ts` fails if any level's 99th percentile reaches that bound. Nothing here measures speed inside the Vercel functions or under real traffic.
+
 ## Test run and what went live
 
 The settings above were run once on the test seeds with `npm run ml:evaluate`; the results, with every hypothesis, are in [the bot evaluation](../docs/experiments/bot-evaluation.md#learned-policies-results) and the raw data in [results-learned/](../results-learned). H5, H7, H8 and H9 were supported and H6 was refuted for easy. Neither policy is live: learned actions because H6 was refuted, learned calls because switching them on fails the existing tests that forbid calling on a known losing hand. Both remain in the code as strategy options.
