@@ -17,7 +17,8 @@
     "ml:data": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/results/ts-hooks.mjs scripts/ml/collect.ts",
     "ml:tune": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/results/ts-hooks.mjs scripts/ml/tune.ts",
     "ml:evaluate": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/results/ts-hooks.mjs scripts/ml/evaluate.ts",
-    "ml:speed": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/results/ts-hooks.mjs scripts/levels/speed.ts"
+    "ml:speed": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/results/ts-hooks.mjs scripts/levels/speed.ts",
+    "ml:tune-mix": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/results/ts-hooks.mjs scripts/levels/tune-mix.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
