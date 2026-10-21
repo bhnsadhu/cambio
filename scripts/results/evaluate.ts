@@ -4,9 +4,15 @@
  * seeded harness, then summarized with 95% intervals across seeds.
  */
 import { playRound, type SeatSpec } from "../../src/lib/game/bot-harness";
+import { FROZEN_POLICIES } from "../../src/lib/game/bot-policies";
 import type { BotDifficulty, BotStrategy } from "../../src/lib/game/types";
 import { mean, tInterval, wilson, type Interval } from "./stats";
 
+/**
+ * Every seat names the frozen policies, gate_v1 and rules_v1, so these
+ * results never follow the live constants. `strategy` holds only the
+ * ability an ablation removes.
+ */
 export interface SideDef { label: string; difficulty: BotDifficulty; strategy?: BotStrategy }
 export interface MatchupDef {
   id: string;
@@ -73,7 +79,7 @@ export function playTask(task: Task): { round: RoundRow; calls: CallRow[] } {
   const sides: ("a" | "b")[] = task.seating === 1 ? ["a", "b", "a", "b"] : ["b", "a", "b", "a"];
   const specs: SeatSpec[] = sides.map((side) => {
     const def = matchup[side];
-    return def.strategy ? { difficulty: def.difficulty, strategy: def.strategy } : { difficulty: def.difficulty };
+    return { difficulty: def.difficulty, strategy: { ...FROZEN_POLICIES, ...def.strategy } };
   });
   const { state, steps, calls } = playRound(task.seed, specs);
   const result = state.results[0];
@@ -179,7 +185,7 @@ export function benchmark(): { matchup: string; seeds: string; level: BotDifficu
     const tally = { [first]: { share: 0, score: 0, seats: 0 }, [second]: { share: 0, score: 0, seats: 0 } } as Record<BotDifficulty, { share: number; score: number; seats: number }>;
     for (const from of [1, 101]) for (const levels of [[first, second, first, second], [second, first, second, first]]) {
       for (let seed = from; seed < from + 24; seed++) {
-        const { state } = playRound(seed, levels);
+        const { state } = playRound(seed, levels.map((difficulty): SeatSpec => ({ difficulty, strategy: { ...FROZEN_POLICIES } })));
         const result = state.results[0];
         for (const player of state.players) {
           const t = tally[player.difficulty!];
