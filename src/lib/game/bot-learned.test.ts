@@ -4,19 +4,22 @@ import { ACTION_FEATURES, CALL_FEATURES } from "./bot-features";
 import { jitterFor, playRound, type SeatSpec } from "./bot-harness";
 import { predict, type Model } from "./bot-models";
 import { observeBot } from "./bot-observation";
-import { ACTION_MODELS, CALL_MODELS } from "./bot-policies";
+import { ACTION_MODELS, CALL_MODELS, configStrategy } from "./bot-policies";
 import { forbidSecrets, permuteUnseen } from "./testkit";
 import type { BotDifficulty, BotStrategy, GameState } from "./types";
 import callFixtures from "./models/fixtures-call.json" with { type: "json" };
 import actionFixtures from "./models/fixtures-action.json" with { type: "json" };
 
 const LEVELS: BotDifficulty[] = ["easy", "medium", "hard"];
-const CONFIGS: Record<string, BotStrategy> = {
+/** A strategy for every seat, or one per level: A* gives each level its tuned action mix. */
+type Config = BotStrategy | ((level: BotDifficulty) => BotStrategy);
+const CONFIGS: Record<string, Config> = {
   C: { callPolicy: "model_v1", actionPolicy: "rules_v1" },
   A: { callPolicy: "gate_v1", actionPolicy: "model_v1" },
   CA: { callPolicy: "model_v1", actionPolicy: "model_v1" },
+  "A*": (level) => configStrategy("A*", level),
 };
-const lineup = (strategy: BotStrategy): SeatSpec[] => (["hard", "medium", "easy", "medium"] as BotDifficulty[]).map((difficulty) => ({ difficulty, strategy: { ...strategy } }));
+const lineup = (config: Config): SeatSpec[] => (["hard", "medium", "easy", "medium"] as BotDifficulty[]).map((difficulty) => ({ difficulty, strategy: { ...(typeof config === "function" ? config(difficulty) : config) } }));
 
 describe("the exported models", () => {
   it("every level's models take the same features, built only from that level's observation", () => {
