@@ -1,0 +1,14 @@
+H13 check: npx vitest run at commit d993bd6 with LIVE_ACTION_POLICY set to model_v1 for every level and LIVE_ACTION_MIX set to the tuned A* mix (easy 0.5, medium 1, hard 0.75), not committed.
+     × live tables play the frozen policies 14ms
+     × can use a blind swap entirely between opponents to take the lead 16ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/lib/game/bot-policies.test.ts > frozen bot policies > live tables play the frozen policies
+AssertionError: expected { easy: 'model_v1', …(2) } to deeply equal { easy: 'rules_v1', …(2) }
+- Expected
++ Received
+ FAIL  src/lib/game/bot-strength.test.ts > hard considers how a move changes every hand > can use a blind swap entirely between opponents to take the lead
+AssertionError: expected 'skipPower' to be 'blindSwap' // Object.is equality
+Expected: "blindSwap"
+Received: "skipPower"
+ Test Files  2 failed | 34 passed (36)
+      Tests  2 failed | 382 passed (384)

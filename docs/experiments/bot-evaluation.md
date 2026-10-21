@@ -423,3 +423,97 @@ If H10, H11, H12 and H13 all hold, A* goes live with the tuned mix for each leve
 * Behavior or speed under real traffic, beyond the per decision timing on this machine.
 * Opponents other than these bots and the beginner reference player.
 * Learned calls, which stay off.
+
+## Per level go live: results
+
+Everything below comes from single runs of the scripts named in the pre registration above, each committed before it ran and locked against a second run: `npm run ml:speed` (validation seeds), `npm run ml:tune-mix` (validation seeds, at 131fa78), `npm run audit:levels` (seeds 540001 to 540050, at a3489b2), `npm run ml:ladder` (at 4380237) and `npm run ml:evaluate-live` (at 905489c), both on seeds 520001 to 520200 and 530001 to 530200. No estimate came near its limit, so tuning used 200 rounds per matchup and every test matchup 800. Wall times on a 4 core cloud container, 3 workers: ml:speed 5.2 seconds, ml:tune-mix 263.9, audit:levels 12.3, ml:ladder 187.6, ml:evaluate-live 198.4. Raw data is in `results-tuning/`, `results-audit/`, `results-ladder/` and `results-live/`; `results/` and `results-learned/` are unchanged, byte for byte.
+
+**Tuned mix.** Easy 0.5, medium 1, hard 0.75 ([results-tuning/summary.json](../../results-tuning/summary.json)). Hard at a mix of 1 beat its frozen self by the most on validation (59.3%) but scored 84.0% against the beginner, under its 85% floor, so it did not qualify.
+
+| Hypothesis | Verdict | Key numbers |
+| --- | --- | --- |
+| H10, no level worse than its frozen self | **Holds** | Easy A* 52.8% (49.9% to 55.6%), medium A* 60.5% (57.5% to 63.5%), hard A* 56.5% (53.4% to 59.6%) |
+| H11, ordering in A* | **Holds** | Hard vs medium 58.8% (55.5% to 62.1%), medium vs easy 82.6% (80.3% to 85.0%) |
+| H12, identity in A* | **Holds** | Easy A* vs frozen medium 21.0% (18.3% to 23.8%), medium A* vs frozen hard 45.7% (42.4% to 48.9%) |
+| H13, safety and speed | **Refuted** | One existing test fails with A* live: hard skips a blind swap the test requires. Everything else passed |
+| H14, frozen bots as documented | Every measurable claim holds except reaction speed, which this run did not measure validly | See the table below |
+| H15, owner targets | A* meets four and is marginal on one; C0 meets four and misses one | Hard vs beginner: A* 84.8% (marginal), C0 78.4% (missed) |
+
+**Decision: nothing goes live.** The rule needs H10 to H13 to hold, and H13 is refuted. Live tables stay on `gate_v1` and `rules_v1` for every level.
+
+### H10: no level is worse than its frozen self. Holds.
+
+| Matchup | Share won by the first side | Seeds 520001 to 520200 | Seeds 530001 to 530200 | Mean final hand |
+| --- | --- | --- | --- | --- |
+| Easy A* (mix 0.5) vs frozen easy | 52.8% (49.9% to 55.6%) | 52.2% | 53.3% | 9.61 vs 10.23 |
+| Medium A* (mix 1) vs frozen medium | 60.5% (57.5% to 63.5%) | 60.0% | 61.0% | 7.03 vs 8.71 |
+| Hard A* (mix 0.75) vs frozen hard | 56.5% (53.4% to 59.6%) | 56.9% | 56.1% | 6.71 vs 7.76 |
+
+H10 only asks that no interval lie entirely below 50%. Easy's interval again starts just under 50%, so this run does not show that learned actions make easy stronger, only that they do not make it measurably weaker.
+
+### H11 and H12: order and identity hold in A*.
+
+| Matchup | Share won by the first side | Seeds 520001 to 520200 | Seeds 530001 to 530200 | Mean final hand |
+| --- | --- | --- | --- | --- |
+| Hard A* vs medium A* | 58.8% (55.5% to 62.1%) | 59.7% | 57.8% | 7.20 vs 9.29 |
+| Medium A* vs easy A* | 82.6% (80.3% to 85.0%) | 83.0% | 82.2% | 6.85 vs 14.54 |
+| Easy A* vs frozen medium | 21.0% (18.3% to 23.8%) | 19.0% | 23.0% | 12.73 vs 6.59 |
+| Medium A* vs frozen hard | 45.7% (42.4% to 48.9%) | 44.5% | 46.9% | 7.92 vs 6.67 |
+
+Medium with learned actions on every focused decision comes within 4.3 points of frozen hard, and the gap between hard and medium shrinks from 63.0% (C0) to 58.8% (A*).
+
+### H13: safety and speed. Refuted.
+
+* **Existing tests with A* live: one fails.** With the live constants set to A* (easy 0.5, medium 1, hard 0.75), `npx vitest run` failed two tests ([log](../../results-live/h13-existing-tests-with-astar-live.txt)). `live tables play the frozen policies` asserts the constants themselves and would change with the switch. `hard considers how a move changes every hand > can use a blind swap entirely between opponents to take the lead` in `src/lib/game/bot-strength.test.ts` is a behavior test of the live hard bot: in its fixture `rules_v1` uses a jack's blind swap between two opponents to take the lead, and hard on A* skips the power instead (`expected 'skipPower' to be 'blindSwap'`). That test was left on the live constants on purpose, because it checks behavior rather than recorded numbers, so it counts against H13. The tests that forbid calling Cambio on a known losing hand all passed.
+* **Hidden information tests: pass** for every level at its A* setting (`src/lib/game/bot-learned.test.ts`, configuration A*).
+* **Calls: no bot ever called when `gate_v1` refused.** 2,246 bot calls in the ladder and 1,884 in the live evaluation, none refused.
+* **Legality: every round finished.** 8,000 ladder rounds and 4,000 live rounds, with legal actions and all 54 cards accounted for after every action.
+* **Speed: well under the bound.** 99th percentile 3.50 ms per learned action decision over 14,522 decisions (mean 0.29 ms; hard's 99th percentile 5.22 ms), against a bound of 25 ms ([ml/README.md](../../ml/README.md#speed)).
+
+### H14: the frozen bots, measured against the docs.
+
+Frozen bots, instrumented, over 300 rounds (hard vs medium, medium vs easy, hard vs easy, seeds 540001 to 540050, both seatings). Each opportunity is counted once.
+
+| Documented claim | Measured | Tolerance | Verdict |
+| --- | --- | --- | --- |
+| Easy uses the full strategy on 50% of its opportunities | 49.9% of 17,747 effort rolls (49.2% to 50.7%) | Interval contains 50% | Holds |
+| Medium uses the full strategy on 75% | 75.1% of 17,255 (74.4% to 75.7%) | Interval contains 75% | Holds |
+| Hard always uses the full strategy | 16,377 of 16,377 | Every roll | Holds |
+| Easy remembers only its two most recently seen cards | Never more than 2 faces | 0 over 2 | Holds |
+| Medium remembers its own cards plus six opponent cards | Never more than 3 opponent faces; no own face lost while in hand | 0 over 6, 0 lost | Holds; the cap of six was never reached |
+| Hard retains every observed face | No remembered face lost while still on the table | 0 | Holds |
+| Easy misses sticks | Sticks the full strategy would make and the bot did not try: easy 55.3% of 847, medium 27.3% of 1,340, hard 0 of 1,156 | Easy > medium > hard | Holds |
+| Easy skips useful powers | Powers the full strategy would use that were skipped: easy 52.8% of 892, medium 29.9% of 686, hard 0 of 557 | Easy > medium > hard | Holds |
+| Easy sometimes keeps a draw without checking | Easy 641 lapse keeps, medium 270, hard 0 | Easy at least 1 | Holds |
+| Easy reacts slowest and hard fastest | Not measured validly (below) | Easy > medium > hard per decision type | Not measured |
+| Missed opportunities stay missed | 0 rolls changed between planning passes | 0 | Holds |
+| Bots only stick remembered matches | 0 planned sticks on an unremembered card or another rank | 0 | Holds |
+| Every call passes the same gate | 0 of 193 calls refused by `gate_v1` | 0 | Holds |
+
+The reaction delay checks in this run are invalid. The observer reported each seat's planned actions together with the plans of seats planned after it in the same pass, so delays were mixed across levels; hard's mean planned draw delay came out at 2.65 seconds, above the 2.38 seconds hard can plan at all. The run reported five of six delay orderings as holding and the call delay as refuted, and none of those six results means anything. The bug was in reporting only; bots never read it. It is fixed in 9e8f3e2, with a test that fails without the fix, but the audit seeds are spent, so reaction speed stays unmeasured here. What the code sets, not a measurement: every decision delay is scaled by 1.35 for easy, 1 for medium and 0.7 for hard, and sticks wait 3.2 to 5.2 seconds for easy, 2.0 to 3.4 for medium and 1.2 to 2.1 for hard (`src/lib/game/bots.ts`). No documented claim was contradicted, so no documentation was corrected.
+
+Effort rolls in the seeded harness come from an FNV hash of each intent, and live tables use a salted SHA-1 instead (`src/lib/server/runner.ts`). The 50% and 75% above are measured in the harness. On a separate, earlier smoke check on twenty validation seeds, easy's stick rolls came out focused about 66% of the time, so the harness hash is not equally even on every seed range; this run's seeds showed no such skew.
+
+### H15: the owner targets.
+
+| Target | Range | A* (tuned mix) | C0 (frozen) |
+| --- | --- | --- | --- |
+| Easy vs beginner | 45% to 85% | 56.4% (53.5% to 59.4%), **met** | 55.2% (52.2% to 58.2%), **met** |
+| Medium vs beginner | 65% to 95% | 78.5% (76.0% to 81.0%), **met** | 73.7% (71.1% to 76.3%), **met** |
+| Hard vs beginner | at least 85% | 84.8% (82.6% to 87.0%), **marginal** | 78.4% (75.9% to 81.0%), **missed** |
+| Hard vs medium | 55% to 75% | 58.8% (55.5% to 62.1%), **met** | 63.0% (59.9% to 66.1%), **met** |
+| Medium vs easy | 65% to 90% | 82.6% (80.3% to 85.0%), **met** | 80.2% (77.6% to 82.9%), **met** |
+
+The frozen reference numbers agree with the original evaluation: hard vs medium 63.0% here against 63.3% in H1, and medium vs easy 80.2% against 78.3%. What the README may claim follows from the live configuration, which is C0: four targets met, hard against the beginner missed.
+
+### What did not work
+
+* **H13 failed on one behavior test.** Learned actions change what hard does at a decision the frozen rules are tested on. Whether the test or the model is right about that position was not examined, and neither was changed.
+* **The reaction speed audit.** A reporting bug in the new instrumentation mixed planned delays across levels; the six delay checks of the single audit run are void.
+* **The first push of the instrumentation broke CI.** A existing test that runs close to its 30 second limit on CI (27.8 seconds before this work) timed out at 32.8 seconds under the extra test load. The two commits were reverted at once and the work landed again with lighter tests; the same test then took 28.7 seconds on CI. It has little margin with or without this work, and on this container it later timed out even at the original commit, so `bots.test.ts` now runs in a test group of its own after every other file (df93d70), with its limits and assertions unchanged.
+* **Easy's gain is still not clear.** At a mix of 0.5 its interval against frozen easy again starts just below 50%.
+* **Hard against the beginner.** Neither configuration reaches the 85% target on the point estimate; the frozen bots miss it by more than six points.
+
+### What was not measured
+
+Everything listed before the run: no human play, no claim that the bots feel right or fun, single rounds at equal reaction speeds, nothing under real traffic, and no opponents other than these bots and the beginner. Learned calls stay off and were not tested. In addition, reaction speed (above), and whether the hard fixture's blind swap is actually the better move.

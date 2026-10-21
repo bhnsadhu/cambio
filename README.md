@@ -19,7 +19,31 @@ The hypotheses were committed before any evaluation code. The full write up, wit
 
 **Can models trained on simulated play do better? Partly, and none of it is live yet.** Per level models, trained only on what each level may know and evaluated once on untouched test seeds, gave Cambio calls whose stated chances are far closer to the truth (calibration error 0.086 against the gate's 0.310) and made medium and hard stronger against their frozen selves (54.7% and 58.8% of the win share). The levels kept their order and their identity. But learned actions did not clear the bar for easy (its interval reached 49.97%), and the call model calls on hands it should know are lost when a position is far from its training data, so real players still get the original bots. Details in [the learned policy results](docs/experiments/bot-evaluation.md#learned-policies-results) and [ml/README.md](ml/README.md).
 
+**Can each level switch to learned actions on its own? Not yet.** After that first run, the owner allowed each level to go live separately. That rule was written after seeing the first run, so the only thing tuned was each level's action mix (the share of its focused decisions that use its learned action model), on validation seeds only, and the result was tested once on fresh seeds. With easy at 0.5, medium at 1 and hard at 0.75, no level did worse than its frozen self, the levels stayed ordered, and none reached the frozen level above it. But one existing behavior test fails with that setting live: in a test position, hard skips a blind swap that the frozen rules use to take the lead. The rule written before the run requires every existing test to pass, so nothing went live and every level still plays the original policies. Details in [the per level results](docs/experiments/bot-evaluation.md#per-level-go-live-results).
+
 ![Win share by matchup, with 95% intervals](docs/images/win-share.svg)
+
+## How the three levels play
+
+Real players get the frozen bots (C0). The documented behavior of each level, measured from 300 instrumented bot rounds on fresh seeds ([audit](docs/experiments/bot-evaluation.md#h14-the-frozen-bots-measured-against-the-docs)):
+
+| Documented | Easy | Medium | Hard |
+| --- | --- | --- | --- |
+| Share of opportunities played with the full strategy (50%, 75%, 100%) | 49.9% (49.2% to 50.7%) | 75.1% (74.4% to 75.7%) | 100% |
+| Memory: easy its two latest cards, medium its own cards plus six opponent cards, hard everything it has seen | Never more than 2 faces | Never more than 3 opponent faces, no own face forgotten | No seen face forgotten while on the table |
+| Easy misses sticks | Missed 55.3% of the sticks its full strategy would make | 27.3% | 0% |
+| Easy skips useful powers | Skipped 52.8% of the powers its full strategy would use | 29.9% | 0% |
+| Easy reacts slowest, hard fastest | Not measured: the audit's delay checks were void because of a reporting bug | | |
+
+Against each other and against a beginner reference player (keeps only its opening peek, never sticks or uses powers, and calls when its known cards total 2 or less), over 800 rounds per matchup on fresh seeds, with the owner's target for each ([ladder](docs/experiments/bot-evaluation.md#h15-the-owner-targets)):
+
+| Matchup | Target | Live bots (C0) | With the tuned learned actions (A*, not live) |
+| --- | --- | --- | --- |
+| Easy vs beginner | 45% to 85% | 55.2%, met | 56.4%, met |
+| Medium vs beginner | 65% to 95% | 73.7%, met | 78.5%, met |
+| Hard vs beginner | at least 85% | 78.4% (75.9% to 81.0%), missed | 84.8% (82.6% to 87.0%), marginal |
+| Hard vs medium | 55% to 75% | 63.0%, met | 58.8%, met |
+| Medium vs easy | 65% to 90% | 80.2%, met | 82.6%, met |
 
 ## Demo
 
@@ -94,7 +118,11 @@ Every move is a pure function over the current state. The server loads the state
   * The learned call model's calls had a calibration error of 0.086 against the gate's 0.310 (H5 supported), but its calls won 48.7% against the gate's 55.6%, and it calls on hands it should know are lost in unusual positions.
   * Learned actions beat their frozen level for medium (54.7%, 51.6% to 57.7%) and hard (58.8%, 55.6% to 61.9%), but not clearly for easy (52.8%, 49.97% to 55.6%), so H6 is refuted.
   * With learned calls, learned actions or both, hard still beat medium and medium still beat easy, no learned level reached the frozen level above it, and every hidden information test passed (H7, H9 and H8 supported).
-* What real players get: the original bots. Learned actions stay off because H6 was refuted for easy. Learned calls stay off because switching them on fails the existing tests that forbid calling on a known losing hand. Both remain in the code as options, each one constant away from live.
+* A per level go live, tuned on validation seeds and tested once on fresh seeds ([results](docs/experiments/bot-evaluation.md#per-level-go-live-results)):
+  * With learned actions on half of easy's focused decisions, all of medium's and three quarters of hard's, each level won at least an even share against its frozen self within its interval (easy 52.8%, medium 60.5%, hard 56.5%), hard still beat medium (58.8%) and medium still beat easy (82.6%), and neither easy nor medium reached the frozen level above it (H10, H11 and H12 held).
+  * Every bot call passed the gate, every round finished legally, and a learned action decision took 3.50 ms at the 99th percentile. But one existing behavior test fails with that setting live (hard skips a blind swap in a test position), so H13 failed and nothing went live.
+  * The frozen bots matched every documented claim the audit could measure: effort shares, memory limits, missed sticks and skipped powers by level, and the call gate. Reaction speed was not measured validly.
+* What real players get: the original bots, `gate_v1` and `rules_v1` at every level. Learned actions stay off because the per level switch failed H13 (and, before it, H6 was refuted for easy). Learned calls stay off because switching them on fails the existing tests that forbid calling on a known losing hand. Both remain in the code as options, set per level in `src/lib/game/bot-policies.ts`.
 
 **Not yet measured**
 
@@ -102,6 +130,7 @@ Every move is a pure function over the current state. The server loads the state
 * Load, latency, or behavior under real traffic beyond the concurrency races the tests stage.
 * Calibrated calls that are also safe. The learned call model is better calibrated but extrapolates badly far from its data; a guarded version was not tested, because the test seeds have been used.
 * Whether the learned policies feel right or fun to people.
+* Reaction speed by level. The audit's delay checks were void, and the seeds are spent.
 * Full games to a score. The evaluation plays single rounds at equal reaction speeds.
 * Phone play. The table is built and tested for laptop and desktop windows.
 
@@ -200,6 +229,18 @@ npm run ml:tune -- --check
 ```
 
 Collecting the data took 21 and 11 minutes on 4 cores; training takes a few minutes. The models land in `src/lib/game/models/` and the tests check the TypeScript forward pass against them. Retrained models need fresh test seeds before any claim about them, since the current ones have been used. [ml/README.md](ml/README.md) has the data schema and every validation number.
+
+### 7. The per level go live runs
+
+```bash
+npm run ml:speed          # time per learned action decision, validation seeds
+npm run ml:tune-mix       # choose each level's action mix, validation seeds
+npm run audit:levels      # the frozen bots against the docs, seeds 540001 to 540050
+npm run ml:ladder         # C0 and A* against each other and the beginner
+npm run ml:evaluate-live  # each A* level against its frozen self and the level above
+```
+
+Each prints its wall time and plays on the same worker pool as `npm run results`. On a 4 core cloud container they took 5.2, 263.9, 12.3, 187.6 and 198.4 seconds. The last four write a `run.lock` before playing and refuse to run again, because their seeds are used once; they have run, and their results are in `results-tuning/`, `results-audit/`, `results-ladder/` and `results-live/`.
 
 ## Deeper docs
 
