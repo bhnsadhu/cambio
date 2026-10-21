@@ -17,7 +17,7 @@ A real time multiplayer web app for the card game Cambio, where house bots that 
 
 * **A full product.** A live multiplayer card game for four seats, playable in the browser as a guest or with an account that keeps wins, rank, streak, friends and a leaderboard position. It runs on serverless functions and one Postgres database, with no dedicated game server.
 * **Built to be correct.** A pure rules engine decides every move, commits are version checked so simultaneous moves cannot overwrite each other, hidden cards never leave the server, and seeded bot tables, unit tests and a browser suite run in CI on every push.
-* **Plus a measured look at its bots.** House bots fill empty seats at three levels. The levels are ordered and every documented behavior the audit could measure held. The bots' Cambio calls are overconfident, and models trained on simulated games improved some measures but stay off for real players, because one safety check failed.
+* **Plus a measured look at its bots.** House bots fill empty seats at three levels. The levels are ordered and every documented behavior the audit could measure held. The bots' Cambio calls are overconfident. Models trained on simulated games improved some measures, but both learned parts stay off for real players because existing safety tests fail with them on.
 
 Every bot number below comes from bots playing bots. No human played in any of those tests.
 
@@ -61,11 +61,10 @@ Every move is a pure function over the current state. The server loads the state
 
 * **Real time sync.** Committed, redacted views stream to all four seats over Supabase Realtime. Clients discard any view older than the one they hold, and slow polling plus a refresh on tab focus recover from dropped sockets. Client generated action IDs stop a retried request from applying twice.
 * **A pure rules engine.** Every move is a function over the current state: `applyAction(state, envelope, ctx)` returns a new state or an error, in about 1,550 lines of TypeScript with no I/O.
-* **Version checked commits.** The server loads the state and its version, runs the action through the engine, and commits inside Postgres only if the version is unchanged. A losing commit reloads and runs again, so the rules decide every late arrival.
+* **Version checked commits.** The server loads the state and its version, runs the action through the engine, and commits inside Postgres only if the version is unchanged. A losing commit reloads and runs again, so the rules decide every late arrival. Bot turns run on the same path: after every human action the server starts a bot runner with `waitUntil`, and a 20 second database lease keeps it to one runner per game.
 * **Hidden information stays hidden.** The full state lives in one row with Row Level Security enabled and no policies. The browser holds only the anon key and can read only the redacted `game_views`. Tests permute every unseen card, reverse the deck, and throw on any attempted read of a card a bot has not seen, and the bots' plans must not change.
 * **Tests and CI.** Seeded bot versus bot tables play to the score and check after every action that the move was legal and all 54 cards are accounted for. Vitest covers the engine and bots, and a Playwright suite covers the whole account lifecycle against isolated Postgres containers. GitHub Actions runs typecheck, lint, the unit tests and the account suite on every push and pull request, with no real secrets.
 * **Accounts and sessions.** Passwords use salted scrypt hashes. Session tokens live in HttpOnly cookies with SameSite protection and only their hashes are stored, and login and sensitive changes have persistent request limits. Guests can play without an account.
-* **Serverless.** Vercel Functions and one Postgres database, with no dedicated game server. After every human action the server starts a bot runner with `waitUntil`, and a 20 second database lease keeps it to one runner per game.
 
 More in [docs/architecture.md](docs/architecture.md).
 
@@ -90,23 +89,23 @@ More in [docs/architecture.md](docs/architecture.md).
 
 ## Bot research
 
-The house bots also come with a written evaluation. The question, the answers and what went wrong are below. Every hypothesis was written before the code that tests it, and the detail lives in [the bot evaluation](docs/experiments/bot-evaluation.md).
+The house bots also come with a written evaluation, kept short here. Every hypothesis was pre registered: written and committed before the code that tests it. The long tables are in the collapsed sections below, the full write up with every interval and what was not measured is in [the bot evaluation](docs/experiments/bot-evaluation.md), and `npm run results` regenerates every number and chart.
 
-### The question
+**The question.** Can bots that only see what a human could see play at three clearly different skill levels, and can their Cambio calls be trusted?
 
-Can bots that only see what a human could see play at three clearly different skill levels, and can their Cambio calls be trusted?
-
-**The levels, yes. The calls, no.** Over 800 seeded rounds per matchup, hard won 63.3% of the win share against medium (95% interval 60.2% to 66.3%), and medium won 78.3% against easy (75.6% to 81.0%). Every call by the shipped bots cleared a 64% belief gate and the average belief was 87.0%, but only 54.0% of the calls won (1,440 of 2,668).
-
-The hypotheses were committed before any evaluation code. The full write up, with every interval and what was not measured, is in [the bot evaluation](docs/experiments/bot-evaluation.md), and `npm run results` regenerates every number and chart.
+**The answer: the levels, yes; the calls, no.** Over 800 seeded rounds per matchup, hard won 63.3% of the win share against medium (95% interval 60.2% to 66.3%), and medium won 78.3% against easy (75.6% to 81.0%). Every call by the shipped bots cleared a 64% belief gate and the average belief was 87.0%, but only 54.0% of the calls won (1,440 of 2,668).
 
 ![Win share by matchup, with 95% intervals](docs/images/win-share.svg)
 
-**Can models trained on simulated play do better? Partly, and none of it is live.** Per level models, trained only on what each level may know and evaluated once on untouched test seeds, gave Cambio calls whose stated chances are far closer to the truth (calibration error 0.086 against the gate's 0.310) and made medium and hard stronger against their frozen selves (54.7% and 58.8% of the win share). The levels kept their order and their identity. But learned actions did not clear the bar for easy (its interval reached 49.97%), and the call model calls on hands it should know are lost when a position is far from its training data. Details in [the learned policy results](docs/experiments/bot-evaluation.md#learned-policies-results) and [ml/README.md](ml/README.md).
+**Trained models.** Models trained on simulated games, evaluated once on held out test seeds, gave Cambio calls with far better calibrated stated chances (calibration error 0.086 against the gate's 0.310) and made medium and hard stronger against their frozen selves (54.7% and 58.8% of the win share). The levels kept their order and their identity. Learned actions did not clear the bar for easy, and the call model calls on hands it should know are lost when a position is far from its training data. Details in the collapsed sections below, [the learned policy results](docs/experiments/bot-evaluation.md#learned-policies-results) and [ml/README.md](ml/README.md).
 
-**Can each level switch to learned actions on its own? Not yet.** After that first run, the owner allowed each level to go live separately. That rule was written after seeing the first run, so the only thing tuned was each level's action mix (the share of its focused decisions that use its learned action model), on validation seeds only, and the result was tested once on fresh seeds. With easy at 0.5, medium at 1 and hard at 0.75, no level did worse than its frozen self, the levels stayed ordered, and none reached the frozen level above it. But one existing behavior test fails with that setting live: in a test position, hard skips a blind swap that the frozen rules use to take the lead. The rule written before the run requires every existing test to pass, so nothing went live and every level still plays the original policies. Details in [the per level results](docs/experiments/bot-evaluation.md#per-level-go-live-results).
+**What real players get: the original bots at every level.** Neither learned part is live.
 
-### Results at a glance
+* **Learned actions are off** because the per level switch failed an existing behavior test: with the tuned mix live, hard skips a blind swap that the frozen rules use to take the lead, and the rule written before the run requires every existing test to pass.
+* **Learned calls are off** because switching them on fails existing tests that every live bot must pass: with learned calls, all three levels call Cambio on a hand they know is losing.
+
+<details>
+<summary>Results at a glance: all fifteen hypotheses</summary>
 
 Fifteen hypotheses, each written before the code that tests it. Verdicts follow the rules fixed in advance in [the bot evaluation](docs/experiments/bot-evaluation.md). Intervals are 95% intervals.
 
@@ -121,16 +120,19 @@ Fifteen hypotheses, each written before the code that tests it. Verdicts follow 
 | H7 | The level order survives the learned policies | **Supported** | Hard beat medium 63.3% to 68.6%; medium beat easy 78.0% to 83.1%; every interval clear of 50% |
 | H8 | No learned policy uses information its level should not have | **Supported** | Every hidden information test passes for every level |
 | H9 | Each level keeps its identity | **Supported** | Closest case: medium with learned actions against frozen hard, 40.9% (38.0% to 43.8%) |
-| H10 | No level is worse than its frozen self at the tuned mix | **Holds** | Easy 52.8% (49.9% to 55.6%), medium 60.5% (57.5% to 63.5%), hard 56.5% (53.4% to 59.6%) |
-| H11 | The levels stay ordered at the tuned mix | **Holds** | Hard against medium 58.8% (55.5% to 62.1%); medium against easy 82.6% (80.3% to 85.0%) |
-| H12 | The levels keep their identity at the tuned mix | **Holds** | Easy against frozen medium 21.0% (18.3% to 23.8%); medium against frozen hard 45.7% (42.4% to 48.9%) |
+| H10 | No level is worse than its frozen self at the tuned mix | **Supported** | Easy 52.8% (49.9% to 55.6%), medium 60.5% (57.5% to 63.5%), hard 56.5% (53.4% to 59.6%) |
+| H11 | The levels stay ordered at the tuned mix | **Supported** | Hard against medium 58.8% (55.5% to 62.1%); medium against easy 82.6% (80.3% to 85.0%) |
+| H12 | The levels keep their identity at the tuned mix | **Supported** | Easy against frozen medium 21.0% (18.3% to 23.8%); medium against frozen hard 45.7% (42.4% to 48.9%) |
 | H13 | The tuned mix is safe and fast enough to go live | **Refuted** | One existing test failed: hard skips a blind swap the test requires. Speed passed: 3.50 ms at the 99th percentile against a 25 ms bound |
 | H14 | The live bots behave as documented | **Partly** | Every claim the audit could measure held; reaction speed was not measured validly |
 | H15 | The owner's strength targets are met | **Partly** | Live bots meet four of five; hard against the beginner is missed at 78.4% (75.9% to 81.0%) |
 
 **What survived.** The three levels are ordered and distinct, each ability earns its place, and the test setup is fair. A learned call model can state truer chances, and learned actions helped medium and hard. **What did not.** The shipped Cambio calls are overconfident, learned actions for easy missed the bar, and the tuned setting failed one safety test, so nothing went live.
 
-### How the levels were tested
+</details>
+
+<details>
+<summary>How the levels were tested</summary>
 
 * **Seeded rounds.** Each test plays complete rounds from a numbered seed, so the same seed deals the same cards and any result can be replayed exactly.
 * **Seats swapped.** Two sides share a table, two seats each. Every seed is played twice with the seating reversed, so neither side gets a better chair.
@@ -141,7 +143,10 @@ Together these make the comparison fair: the same deals, the same chairs, the sa
 
 This is bots against bots. No human played in any of these tests. The beginner player used in the ladder below exists only inside the tests and never sits at a live table.
 
-### Do the levels play as designed?
+</details>
+
+<details>
+<summary>Do the levels play as designed? Documented versus measured and the ladder</summary>
 
 The documented behavior of each level, measured from 300 instrumented bot rounds on fresh seeds ([audit](docs/experiments/bot-evaluation.md#h14-the-frozen-bots-measured-against-the-docs)). Real players get the frozen bots (C0), the original policies.
 
@@ -156,19 +161,22 @@ The documented behavior of each level, measured from 300 instrumented bot rounds
 
 All measurable claims held. **The one claim not measured validly is reaction speed.** The audit's instrumentation reported each seat's planned actions together with the plans of seats planned after it in the same pass, so delays were mixed across levels. Hard's mean planned draw delay came out at 2.65 seconds, above the 2.38 seconds hard can plan at all, so all six delay checks of that run are void. The bug was in reporting only, it is fixed, and the audit seeds are spent, so reaction speed stays unmeasured. What the code sets, which is not a measurement: every decision delay is scaled by 1.35 for easy, 1 for medium and 0.7 for hard.
 
-Next, the levels against each other and against a beginner reference player (keeps only its opening peek, never sticks or uses powers, and calls when its known cards total 2 or less). Each matchup is 800 rounds on fresh seeds, with the owner's target ([ladder](docs/experiments/bot-evaluation.md#h15-the-owner-targets)). A target is **met** when the result lies inside the range, **marginal** when it lies outside but its interval reaches the range, and **missed** otherwise.
+Next, the levels against each other and against a beginner reference player (keeps only its opening peek, never sticks or uses powers, and calls when its known cards total 2 or less). Each matchup is 800 rounds on fresh seeds, with the owner's target ([ladder](docs/experiments/bot-evaluation.md#h15-the-owner-targets)). A target is **Met** when the result lies inside the range, **Marginal** when it lies outside but its interval reaches the range, and **Missed** otherwise.
 
 | Matchup | Target | Live bots (C0) | With the tuned learned actions (A*, not live) |
 | --- | --- | --- | --- |
-| Easy vs beginner | 45% to 85% | 55.2% (52.2% to 58.2%), **met** | 56.4% (53.5% to 59.4%), **met** |
-| Medium vs beginner | 65% to 95% | 73.7% (71.1% to 76.3%), **met** | 78.5% (76.0% to 81.0%), **met** |
-| Hard vs beginner | at least 85% | 78.4% (75.9% to 81.0%), **missed** | 84.8% (82.6% to 87.0%), **marginal** |
-| Hard vs medium | 55% to 75% | 63.0% (59.9% to 66.1%), **met** | 58.8% (55.5% to 62.1%), **met** |
-| Medium vs easy | 65% to 90% | 80.2% (77.6% to 82.9%), **met** | 82.6% (80.3% to 85.0%), **met** |
+| Easy vs beginner | 45% to 85% | 55.2% (52.2% to 58.2%), **Met** | 56.4% (53.5% to 59.4%), **Met** |
+| Medium vs beginner | 65% to 95% | 73.7% (71.1% to 76.3%), **Met** | 78.5% (76.0% to 81.0%), **Met** |
+| Hard vs beginner | at least 85% | 78.4% (75.9% to 81.0%), **Missed** | 84.8% (82.6% to 87.0%), **Marginal** |
+| Hard vs medium | 55% to 75% | 63.0% (59.9% to 66.1%), **Met** | 58.8% (55.5% to 62.1%), **Met** |
+| Medium vs easy | 65% to 90% | 80.2% (77.6% to 82.9%), **Met** | 82.6% (80.3% to 85.0%), **Met** |
 
 The live bots miss the hard against beginner target by more than six points, and neither configuration reaches 85% on the point estimate.
 
-### Trained bot models
+</details>
+
+<details>
+<summary>Trained bot models: pipeline, speed and what it found</summary>
 
 ```mermaid
 flowchart LR
@@ -185,14 +193,23 @@ The models learn from simulated rounds. At each sampled decision, every candidat
 
 **Decision speed.** One learned action decision took a mean of 0.29 ms and 3.50 ms at the 99th percentile, over 14,522 decisions, against a bound of 25 ms (hard's 99th percentile was 5.22 ms, the slowest single decision 14.51 ms). This was timed on a 4 core cloud container. Nothing measures speed inside the Vercel functions or under real traffic ([ml/README.md](ml/README.md#speed)).
 
-#### What real players get
+**The first two answers in full.**
+
+**Can models trained on simulated play do better? Partly, and none of it is live.** Per level models, trained only on what each level may know and evaluated once on untouched test seeds, gave Cambio calls whose stated chances are far closer to the truth (calibration error 0.086 against the gate's 0.310) and made medium and hard stronger against their frozen selves (54.7% and 58.8% of the win share). The levels kept their order and their identity. But learned actions did not clear the bar for easy (its interval reached 49.97%), and the call model calls on hands it should know are lost when a position is far from its training data. Details in [the learned policy results](docs/experiments/bot-evaluation.md#learned-policies-results) and [ml/README.md](ml/README.md).
+
+**Can each level switch to learned actions on its own? Not yet.** After that first run, the owner allowed each level to go live separately. That rule was written after seeing the first run, so the only thing tuned was each level's action mix (the share of its focused decisions that use its learned action model), on validation seeds only, and the result was tested once on fresh seeds. With easy at 0.5, medium at 1 and hard at 0.75, no level did worse than its frozen self, the levels stayed ordered, and none reached the frozen level above it. But one existing behavior test fails with that setting live: in a test position, hard skips a blind swap that the frozen rules use to take the lead. The rule written before the run requires every existing test to pass, so nothing went live and every level still plays the original policies. Details in [the per level results](docs/experiments/bot-evaluation.md#per-level-go-live-results).
+
+**What real players get, in full.**
 
 **The original bots, at every level** (call policy `gate_v1`, action policy `rules_v1`). Both learned parts remain in the code as options, set per level in `src/lib/game/bot-policies.ts`.
 
 * **Learned actions stay off.** The per level switch failed H13, and before it H6 was refuted for easy. With the tuned mix live, one existing behavior test fails: `can use a blind swap entirely between opponents to take the lead`. In its fixture the frozen rules use a jack's blind swap between two opponents to take the lead, and hard with learned actions skips the power instead. The rule written before the run requires every existing test to pass. Whether the test or the model is right about that position was not examined, and neither was changed.
 * **Learned calls stay off.** Switching them on fails existing tests that every live bot must pass: with learned calls, all three levels call Cambio on a hand they know is losing. In the test fixture the bot holds 6 points it has seen, one opponent holds a single card worth 0, and the gate's own win belief is 0%; the call model gives 88% (easy), 98% (medium) and 98% (hard). The logistic model extrapolates badly in positions far from its training data. In the test run, 24 of the model's 3,071 calls came at a gate belief below 10%, and 3 of them won.
 
-### Corrections and what did not work
+</details>
+
+<details>
+<summary>Corrections and what did not work</summary>
 
 * **Guarantee tests were not run before the test run.** The learned policy tests covered legality, card conservation, memory and hidden information, but not the gate's behavioral guarantees (never call on a known losing hand, respect unknown cards). Those tests only ran against the learned calls after the single test run, when the live switch was tried, and by then the test seeds were used.
 * **Better calibration did not mean better calls.** The model's stated chances are much closer to the truth, but it calls more often and in worse positions than the gate. 47.6% of its calls came at a gate belief below 64%, and those won 41.3%.
@@ -204,13 +221,18 @@ The models learn from simulated rounds. At each sampled decision, every candidat
 * **The best informed level makes the worst calls.** Hard's calls won 51.5%, against 62.3% for easy. Why was not measured.
 * **Smaller misses.** Choosing among the top two moves to make medium less sharp cost far too much (42.0% against frozen medium on validation). The rollout labels are noisy, with 4 rollouts per candidate, so the frozen rule and the models both picked the best move only about a third of the time.
 
-### What is next, not done
+</details>
+
+<details>
+<summary>What is next, not done</summary>
 
 Taken from the evaluation's own lists of what was not measured. None of these has been done.
 
 * **Not done: a guarded call model.** Adding the gate's guards to the call model, or retraining it to stay sane far from its data, was not tested, because there are no unused test seeds left for it.
 * **Not done: a per level switch tested on fresh seeds.** The tuned mix was tested once and its seeds are spent, so a later switch, one level at a time, needs new seeds.
 * **Not done: human versus bot play.** Every number here is bots playing bots, and whether the gaps between levels hold against people, or how the levels feel to play, is unknown.
+
+</details>
 
 ## Tech Stack
 
@@ -231,23 +253,18 @@ Taken from the evaluation's own lists of what was not measured. None of these ha
 
 ## Measured and not yet measured
 
-**Measured** (bot versus bot, regenerated by `npm run results`; details in [the bot evaluation](docs/experiments/bot-evaluation.md))
+**Measured** (bot versus bot, regenerated by `npm run results`; each result links to its section of [the bot evaluation](docs/experiments/bot-evaluation.md))
 
-* Level ordering with 95% intervals, over 800 rounds per matchup and two independent seed sets (above).
-* Which abilities matter: against full hard bots, a hard bot won 37.6% with only two remembered cards, 47.1% without card counting, 44.6% without inference from public keeps, and 44.4% without the call gate.
-* Call calibration: the shipped bots' calls won 54.0% at an average belief of 87.0%, and no belief bin came within 15 points of its belief ([chart](docs/images/calibration.svg)).
-* Fairness controls: four copies of one level split the wins evenly within their intervals, and seat order changed no result.
-* The original seeded benchmark still reproduces exactly (hard 64.5 win shares to medium's 31.5, medium 82.5 to easy's 13.5), and every round finishes with only legal moves and all 54 cards accounted for after every action.
-* Hidden information: tests permute every unseen card, reverse the deck, and throw on any attempted read of a card a bot has not seen, and the bots' plans must not change.
-* Learned policies, once on 400 untouched test seeds ([results](docs/experiments/bot-evaluation.md#learned-policies-results), [chart](docs/images/learned-win-share.svg)):
-  * The learned call model's calls had a calibration error of 0.086 against the gate's 0.310 (H5 supported), but its calls won 48.7% against the gate's 55.6%, and it calls on hands it should know are lost in unusual positions.
-  * Learned actions beat their frozen level for medium (54.7%, 51.6% to 57.7%) and hard (58.8%, 55.6% to 61.9%), but not clearly for easy (52.8%, 49.97% to 55.6%), so H6 is refuted.
-  * With learned calls, learned actions or both, hard still beat medium and medium still beat easy, no learned level reached the frozen level above it, and every hidden information test passed (H7, H9 and H8 supported).
-* A per level go live, tuned on validation seeds and tested once on fresh seeds ([results](docs/experiments/bot-evaluation.md#per-level-go-live-results)):
-  * With learned actions on half of easy's focused decisions, all of medium's and three quarters of hard's, no level did measurably worse than its frozen self (easy 52.8% with an interval from 49.9%, medium 60.5%, hard 56.5%), hard still beat medium (58.8%) and medium still beat easy (82.6%), and neither easy nor medium reached the frozen level above it (H10, H11 and H12 held).
-  * Every bot call passed the gate, every round finished legally, and a learned action decision took 3.50 ms at the 99th percentile. But one existing behavior test fails with that setting live (hard skips a blind swap in a test position), so H13 failed and nothing went live.
-  * The frozen bots matched every documented claim the audit could measure: effort shares, memory limits, missed sticks and skipped powers by level, and the call gate. Reaction speed was not measured validly.
-* What real players get: the original bots, `gate_v1` and `rules_v1` at every level. Learned actions stay off because the per level switch failed H13 (and, before it, H6 was refuted for easy). Learned calls stay off because switching them on fails the existing tests that forbid calling on a known losing hand. Both remain in the code as options, set per level in `src/lib/game/bot-policies.ts`.
+* Level ordering: hard won 63.3% against medium and medium 78.3% against easy, over 800 rounds per matchup and two independent seed sets ([H1](docs/experiments/bot-evaluation.md#h1-the-three-levels-are-clearly-ordered-supported)).
+* Which abilities matter: against full hard bots, a hard bot won 37.6% with only two remembered cards, 47.1% without card counting, 44.6% without inference from public keeps, and 44.4% without the call gate ([H3](docs/experiments/bot-evaluation.md#h3-each-ability-adds-strength-supported-for-all-four)).
+* Call calibration: the shipped bots' calls won 54.0% at an average belief of 87.0%, and no belief bin came within 15 points of its belief ([H2](docs/experiments/bot-evaluation.md#h2-the-cambio-gate-refuted), [chart](docs/images/calibration.svg)).
+* Fairness controls: four copies of one level split the wins evenly within their intervals, and seat order changed no result ([H4](docs/experiments/bot-evaluation.md#h4-the-harness-is-fair-supported)).
+* The original seeded benchmark still reproduces exactly (hard 64.5 win shares to medium's 31.5, medium 82.5 to easy's 13.5), and every round finishes with only legal moves and all 54 cards accounted for after every action ([defaults check](docs/experiments/bot-evaluation.md#results)).
+* Hidden information: tests permute every unseen card, reverse the deck, and throw on any attempted read of a card a bot has not seen, and the bots' plans must not change ([H8](docs/experiments/bot-evaluation.md#h8-no-learned-policy-uses-information-its-level-should-not-have-supported)).
+* Learned policies, once on 400 untouched test seeds: the call model's calibration error was 0.086 against the gate's 0.310 (H5 supported) but its calls won 48.7% against the gate's 55.6%; learned actions beat their frozen level for medium (54.7%) and hard (58.8%) but not clearly for easy (52.8%, 49.97% to 55.6%), so H6 is refuted; order, identity and hidden information held (H7, H9 and H8 supported) ([results](docs/experiments/bot-evaluation.md#learned-policies-results), [chart](docs/images/learned-win-share.svg)).
+* A per level go live, tuned on validation seeds and tested once on fresh seeds: no level did measurably worse than its frozen self (easy 52.8% with an interval from 49.9%, medium 60.5%, hard 56.5%), order and identity held (H10, H11 and H12 supported), and a learned action decision took 3.50 ms at the 99th percentile, but one existing behavior test fails with that setting live, so H13 failed and nothing went live ([results](docs/experiments/bot-evaluation.md#per-level-go-live-results)).
+* The frozen bots matched every documented claim the audit could measure. Reaction speed was not measured validly ([H14](docs/experiments/bot-evaluation.md#h14-the-frozen-bots-measured-against-the-docs)).
+* What real players get: the original bots, `gate_v1` and `rules_v1` at every level, with both learned parts left in the code as options set per level in `src/lib/game/bot-policies.ts` ([what real players get](docs/experiments/bot-evaluation.md#what-real-players-get)).
 
 **Not yet measured**
 
