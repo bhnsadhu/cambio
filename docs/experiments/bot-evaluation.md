@@ -331,3 +331,95 @@ Everything listed before the run still holds: no human play, no claim that the l
 * **A guarded call model.** Adding the gate's guards to the call model, or retraining it to stay sane far from its data, was not tested, because there are no unused test seeds left for it.
 * **Switching levels separately.** Learned actions helped medium and hard, but the rule written before the run switches one constant for all levels, so a per level switch was not considered.
 * **Action accuracy on the test seeds.** Agreement with the best rollout move was measured on validation only.
+
+## Per level go live: H10 to H15
+
+This section was committed before any tuning code, threshold, reference player or evaluation code for it. Nothing in it will be edited; if a mistake is found, a dated correction note goes underneath it. The results will be added in their own section below.
+
+This rule was written after seeing the first learned run (H5 to H9 above). That run's rule needed every level to pass before anything went live, and easy missed H6 by three hundredths of a point, so nothing did. The owner has decided to let each level go live on its own. To keep that honest after looking at the first run, the only thing tuned is each level's action mix, it is tuned on validation seeds only, and the result is tested once on fresh seeds that no earlier run has touched.
+
+### The question
+
+Can the learned action policy go live level by level, with each level tuned to play at the strength the owner wants, without any level getting worse than its frozen self, without breaking the order or identity of the levels, and without breaking any safety test?
+
+### Setup
+
+**Configurations.** C0 is the frozen bots: call policy `gate_v1` and action policy `rules_v1` for every level. A* is the learned action policy with a per level action mix, the share of a level's focused decisions on which it uses its learned action model, with `rules_v1` on the rest. The mix uses the existing stable roll per decision, so a seeded round always mixes the same way. A mix of 0 means that level stays on `rules_v1`. Learned calls are off in both: every seat in C0 and A* uses `gate_v1`. Effort rolls (50%, 75%, 100%), lapses and memory are unchanged in both; the mix only applies when a seat is focused. Each level plays its model's top move (`ACTION_TOP_K` stays 1).
+
+**The action mix.** The only thing tuned. Each level's mix is chosen from {0, 0.25, 0.5, 0.75, 1.0} by the procedure below, on validation seeds 200001 to 200100 only, and written to a config file that the tests and the evaluation read, committed before the test run.
+
+**Reference player, the beginner.** Used only in the evaluation harness, never at a live table. It keeps only its two opening peeks: it knows the two cards it saw at the start and, after swapping a drawn card into one of those slots, the card it put there; a known card that leaves its hand is forgotten. On its turn it draws from the deck. It swaps a drawn card into the slot holding its highest known card when the drawn card is lower; otherwise it discards the drawn card. It never sticks and never uses a power (it skips every power it gets). It calls Cambio only when its known cards total at most **2**, and only after one full lap of turns, the same minimum the bots use. If it ever owes a card it gives its first card it does not know. Its seat is marked as a human seat in the engine, so the engine applies neither the bot memory caps nor the bot call gate to it; its moves wait the same one second as every bot move in the harness.
+
+**Owner targets.** The win share of the first side named:
+
+| Target | Range |
+| --- | --- |
+| Easy vs beginner | 45% to 85% |
+| Medium vs beginner | 65% to 95% |
+| Hard vs beginner | at least 85% |
+| Hard vs medium | 55% to 75% |
+| Medium vs easy | 65% to 90% |
+
+A target is **met** when the point estimate lies inside the range, **marginal** when the point estimate lies outside but its 95% interval crosses into the range, and **missed** otherwise.
+
+**Harness, sides and intervals.** As in H1 to H9: the seeded harness in `src/lib/game/bot-harness.ts`, two seats per side alternating around the table, each seed played in both seatings, a side's win share averaged per seed over its seatings, and the 95% t interval across seeds.
+
+**Seeds.** Tuning: validation seeds 200001 to 200100, both seatings, 200 rounds per matchup. Test runs: fresh seeds 520001 to 520200 and 530001 to 530200, both seatings, 800 rounds per matchup. Audit: fresh seeds 540001 to 540050, both seatings. A search of the repository found none of these fresh seeds in use. Nothing is tuned, selected or debugged on the fresh seeds. Each script uses each fresh range at most once: it writes a lock file before it plays, refuses to run if the lock exists, and the lock is committed with its results.
+
+**Speed and runs.** Every script plays on the same multi core worker pool as `npm run results` and prints its wall time. Fallbacks, decided by an estimate made before any fresh seed is played (by timing a short sample on validation seeds): if the estimated tuning time exceeds 20 minutes, tuning uses 100 rounds per matchup (seeds 200001 to 200050); if the estimated runtime of a test script exceeds 40 minutes, every matchup in that script drops to 400 rounds (seeds 520001 to 520200 only), and the write up says so.
+
+### Procedure
+
+1. **Per level constants and instrumentation.** The live action policy and its mix become per level constants whose defaults equal today's frozen policies, with an option that selects C0 or A* in tests and the evaluation without touching them. Observe only instrumentation records effort roll outcomes, remembered faces at each decision, stick and power opportunities taken or missed, and planned reaction delays; a test proves instrumented bots make identical decisions. The original evaluation, the original benchmark and every test that asserts the original numbers pin `gate_v1` and `rules_v1` explicitly, so `npm run results` writes the same bytes whatever the live constants say.
+2. **Speed.** The time per learned action decision (candidates, features and forward pass) is measured over a few thousand real decision points from validation seeds, at a mix of 1 for every level, with the mean, the 99th percentile and the machine recorded.
+3. **Tuning** (`npm run ml:tune-mix`, written to `results-tuning/`). For each level and each mix in {0, 0.25, 0.5, 0.75, 1.0}, that level at that mix plays its frozen self, the beginner, and, for easy and medium, the frozen level above it (medium and hard). Per level, the chosen mix is the one with the highest win share against its frozen self among the mixes whose win share against the beginner lies inside that level's target range and whose win share against the frozen level above is below 50% (point estimates). Ties go to the lower mix. If no mix qualifies, the mix is 0. Hard has no level above it, so only its beginner condition applies.
+4. **Audit** (`npm run audit:levels`, `results-audit/`, H14). Frozen bots (C0), instrumented, play hard vs medium, medium vs easy and hard vs easy on seeds 540001 to 540050 in both seatings (300 rounds).
+5. **Ladder** (`npm run ml:ladder`, `results-ladder/`, H11 and H15). For C0 and for A*: easy vs beginner, medium vs beginner, hard vs beginner, hard vs medium, medium vs easy. Ten matchups of 800 rounds.
+6. **Live evaluation** (`npm run ml:evaluate-live`, `results-live/`, H10 and H12). Each level whose chosen mix is above 0, in A*, against its frozen self; and easy in A* against frozen medium, and medium in A* against frozen hard. 800 rounds each.
+7. **Decision**, by the rule below, then the switch as one separate commit.
+
+The files in `results/` and `results-learned/` are not changed by any of this.
+
+### Hypotheses
+
+**H10. A level whose chosen mix is above 0 is not worse than its frozen self.**
+Measured by the live evaluation: level A* vs level C0. Refuted for a level if the 95% interval of its win share lies entirely below 50%. Holds vacuously for a level whose mix is 0.
+
+**H11. The levels stay ordered in A*.**
+Measured by the ladder: hard A* vs medium A*, and medium A* vs easy A*. Refuted if either matchup's 95% interval for the stronger side is not clear of 50% (its lower bound at or below 50%).
+
+**H12. The levels keep their identity in A*.**
+Measured by the live evaluation: easy A* vs frozen medium, and medium A* vs frozen hard. Refuted if either interval's upper bound is at or above 50%.
+
+**H13. A* is safe and fast enough.**
+Refuted if any of these fails:
+* every existing test passes with A* set as the live constants (checked with the constants set to A* before the decision, and again after the switch commit);
+* the hidden information tests pass for every level at its A* setting;
+* in the ladder and the live evaluation, no bot ever calls Cambio when `gate_v1` refuses: at every call the caller's win belief is at least 64%, its near win belief at least 80%, and its own estimate no worse than the strongest opponent's (the beginner is not a bot and is excluded);
+* every round finishes with only legal actions and all 54 cards accounted for after every action (the harness stops on the first failure);
+* the 99th percentile time per learned action decision, from step 2, is under 25 ms on this machine.
+
+**H14. The frozen bots behave as documented.**
+Measured by the audit, against every measurable claim in the checklist in [the decisions log](../decisions.md#audit-before-a-per-level-switch-oct-21-2026). Each opportunity is counted once (an effort roll by its opportunity, a stick by the top card, a power by its turn, a delay by its intent). Tolerances, fixed now:
+* **Effort rates.** The 95% Wilson interval of the share of effort rolls that came out focused contains 50% for easy and 75% for medium; for hard, every roll is focused.
+* **Memory, as hard caps.** Easy never remembers more than 2 faces at a decision. Medium never remembers more than 6 opponent faces at a decision, and never loses a face of its own while that card is still in its hand. Hard never loses a face it remembered while that card is still on the table. Each is zero violations.
+* **Orderings.** The share of sticks the full strategy would make that the bot did not try, the share of powers the full strategy would use that the bot skipped, and the mean planned delay of each decision type (draw, decide, power, stick, give, call) are each strictly ordered easy above medium above hard, by point estimate.
+* **Lapse keeps.** Easy keeps at least one draw without checking what it replaces.
+* **Zero violations** for: an effort roll that changes between planning passes of the same opportunity; a planned stick on a card the bot does not remember or of another rank; a call that `gate_v1` would refuse.
+
+H14 audits the shipped bots and never blocks the switch. If a measured behavior contradicts a claim, the documentation is corrected and the correction logged; the bots are not changed to match the docs.
+
+**H15. The owner targets are met.**
+Measured by the ladder. Each of the five targets is reported for A* and for C0 as met, marginal or missed. This decides what the README may claim about the levels and never blocks the switch.
+
+### Decision rule
+
+If H10, H11, H12 and H13 all hold, A* goes live with the tuned mix for each level (a level whose mix is 0 stays frozen), in one commit that can be reverted alone. If any of them fails, nothing goes live. Learned calls stay off whatever happens: the live call policy remains `gate_v1` for every level, because the learned call model fails the existing tests that forbid calling Cambio on a known losing hand.
+
+### What will not be measured
+
+* Any human versus bot play, and whether the bots feel right or fun to people.
+* Full games to a score; every number is single rounds at equal reaction speeds.
+* Behavior or speed under real traffic, beyond the per decision timing on this machine.
+* Opponents other than these bots and the beginner reference player.
+* Learned calls, which stay off.
