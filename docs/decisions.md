@@ -78,6 +78,37 @@ Each entry gives what changed, the commits, and what the commit message or the t
 * **Oct 15, 2026, `d763fd8`, `ec63aff`.** Learned bot policies were pre registered as H5 to H9, and the existing decisions were frozen as call policy `gate_v1` and action policy `rules_v1`, chosen through two live constants. Prompted by: the aim of making each level play more accurately, with switches decided only by a single test run.
 * **Oct 16, 2026, `47ba7ca` and this entry's commit.** Live bots stay on `gate_v1` and `rules_v1`. Prompted by: the test run. Learned actions missed H6 for easy (interval from 49.97%), and learned calls, though better calibrated (H5), fail the existing tests that forbid calling on a known losing hand. Tests: `Cambio is a comparison with the whole table` in `src/lib/game/bot-strength.test.ts`, and `live tables play the frozen policies` in `src/lib/game/bot-policies.test.ts`.
 
+### Audit before a per level switch (Oct 21, 2026)
+
+Written before the per level go live rule (H10 to H15 in [the bot evaluation](experiments/bot-evaluation.md)) and before any code for it.
+
+**How the live policies work today.** `src/lib/game/bot-policies.ts` holds two constants, `LIVE_CALL_POLICY = "gate_v1"` and `LIVE_ACTION_POLICY = "rules_v1"`, one value for all three levels. A seat with no strategy object, as at every live table, reads them through `callPolicyOf` and `actionPolicyOf`; the evaluation sets `callPolicy` and `actionPolicy` per seat instead. The original evaluation (`scripts/results/evaluate.ts`) and the original benchmark seat bots with no strategy object, so today they follow the live constants rather than naming the frozen policies.
+
+**How medium's action mix works.** When a seat plays action policy `model_v1`, every focused decision of a kind its level's model covers goes through `modelChoice` in `src/lib/game/bots.ts`. There one stable roll per decision, keyed by the decision kind, the turn count and the pile size, is compared with the level's share, `ACTION_MODEL_SHARE` (easy 1, medium 0.5, hard 1, overridable per seat by `actionModelShare`). Below the share the model re-ranks the candidates; otherwise the seat takes the `rules_v1` choice. The roll comes from the same seeded jitter as every other bot roll, so a seeded round always mixes the same way. Effort rolls (the 50%, 75% and 100%) happen first and are unchanged by the action policy.
+
+**Fresh seeds.** A search of every tracked file, the seed columns of `results/` and `results-learned/`, the training data sample and the validation reports found no use of seeds 520001 to 520200, 530001 to 530200 or 540001 to 540050. `ml/data/` is not in the repository.
+
+**What the docs claim about each level, and whether play can measure it.** Sources are [docs/bots.md](bots.md), the README and the comments in `src/lib/game/bots.ts`.
+
+| Claim | Measurable from play | How |
+| --- | --- | --- |
+| Easy uses the full strategy on 50% of its opportunities | Yes | Share of effort rolls that come out focused, one roll per opportunity |
+| Medium uses the full strategy on 75% of its opportunities | Yes | As above |
+| Hard always uses the full strategy (100%) | Yes | As above |
+| Easy remembers only its two most recently seen cards | Yes, the cap | Remembered faces at each decision; which two it keeps is not measured separately |
+| Medium remembers its own revealed cards plus six opponent cards | Yes | Remembered opponent faces at each decision, and own faces lost while still in its hand |
+| Hard retains every legitimately observed face | Yes | Faces it once remembered that are still on the table but no longer remembered |
+| Easy misses sticks | Yes, as an ordering | Share of sticks the full strategy would make that the bot did not try, by level |
+| Easy skips useful powers | Yes, as an ordering | Share of powers the full strategy would use that the bot skipped, by level |
+| Easy sometimes keeps a mediocre draw without checking what it replaces | Yes | Count of lapse keeps |
+| Easy has the slowest reactions and hard the fastest | Yes | Planned delay of each decision type, by level |
+| Missed opportunities stay missed on repeated planning passes | Yes | Effort rolls for the same opportunity that change between passes |
+| Bots only stick remembered matches | Yes | Planned sticks on a card the bot does not remember, or of another rank |
+| Every call passes the same belief gate | Yes | Calls with a win belief under 64%, a near win belief under 80%, or no estimated lead |
+| Card counting and inference from public keeps add strength | No, not from this audit | Measured by the ablations (H3) |
+| Hard compares moves against every opponent and avoids discards that let opponents shed | No | A property of the shared evaluator's code, not a rate |
+| Bots see only legitimate information | No, not from play | Covered by the hidden information tests |
+
 ## Interface
 
 ### Where notifications appear
