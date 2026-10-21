@@ -26,12 +26,12 @@ Every bot number below comes from bots playing bots. No human played in any of t
 | Feature | What it does |
 | --- | --- |
 | **Real time multiplayer** | Every move streams to all four seats over Supabase Realtime. Simultaneous moves are serialized, and the rules decide every late arrival. |
-| **Complete game engine** | Turn logic, power cards, anytime sticking, and every way a round can end, in about 1,550 lines of pure TypeScript with no I/O. |
+| **Complete game engine** | Turn logic, power cards, anytime sticking, and every way a round can end, in pure TypeScript with no I/O. |
 | **Bots that play from memory** | Three house bots fill empty seats and act only on information they have legitimately seen, at three difficulties. |
 | **Persistent accounts** | Wins, rank and streak across every table, with friends, invites and a light for whoever is playing right now. |
 | **Friends and global leaderboards** | Compare lifetime points with accepted friends or all players. Equal points share a rank, and your position stays visible even outside the current page. Guests can browse the global leaderboard. |
 | **Serverless architecture** | Runs on serverless functions and one Postgres database, with no dedicated game server. |
-| **Learned bot policies, tested before shipping** | Per level call and action models trained from rollouts of seeded play, with features limited to what each level may know, a plain TypeScript forward pass, and hypotheses written before any model code. They stay off until a test run supports them. |
+| **Learned bot policies, not live** | Per level call and action models trained from rollouts of seeded play, with features limited to what each level may know, a plain TypeScript forward pass, and hypotheses written before any model code. They stay off until a test run supports them, and none has yet. |
 | **Engine and browser regression suites** | Seeded bot versus bot tables played to the score, checking that every move is legal, no card is created or lost, and each difficulty beats the one below it. A Playwright suite covers the whole account lifecycle against an isolated database. |
 
 ## Architecture
@@ -60,7 +60,7 @@ Every move is a pure function over the current state. The server loads the state
 ## Engineering
 
 * **Real time sync.** Committed, redacted views stream to all four seats over Supabase Realtime. Clients discard any view older than the one they hold, and slow polling plus a refresh on tab focus recover from dropped sockets. Client generated action IDs stop a retried request from applying twice.
-* **A pure rules engine.** Every move is a function over the current state: `applyAction(state, envelope, ctx)` returns a new state or an error, in about 1,550 lines of TypeScript with no I/O.
+* **A pure rules engine.** Every move is a function over the current state: `applyAction(state, envelope, ctx)` returns a new state or an error, in TypeScript with no I/O.
 * **Version checked commits.** The server loads the state and its version, runs the action through the engine, and commits inside Postgres only if the version is unchanged. A losing commit reloads and runs again, so the rules decide every late arrival. Bot turns run on the same path: after every human action the server starts a bot runner with `waitUntil`, and a 20 second database lease keeps it to one runner per game.
 * **Hidden information stays hidden.** The full state lives in one row with Row Level Security enabled and no policies. The browser holds only the anon key and can read only the redacted `game_views`. Tests permute every unseen card, reverse the deck, and throw on any attempted read of a card a bot has not seen, and the bots' plans must not change.
 * **Tests and CI.** Seeded bot versus bot tables play to the score and check after every action that the move was legal and all 54 cards are accounted for. Vitest covers the engine and bots, and a Playwright suite covers the whole account lifecycle against isolated Postgres containers. GitHub Actions runs typecheck, lint, the unit tests and the account suite on every push and pull request, with no real secrets.
@@ -264,7 +264,7 @@ Taken from the evaluation's own lists of what was not measured. None of these ha
 * Learned policies, once on 400 untouched test seeds: the call model's calibration error was 0.086 against the gate's 0.310 (H5 supported) but its calls won 48.7% against the gate's 55.6%; learned actions beat their frozen level for medium (54.7%) and hard (58.8%) but not clearly for easy (52.8%, 49.97% to 55.6%), so H6 is refuted; order, identity and hidden information held (H7, H9 and H8 supported) ([results](docs/experiments/bot-evaluation.md#learned-policies-results), [chart](docs/images/learned-win-share.svg)).
 * A per level go live, tuned on validation seeds and tested once on fresh seeds: no level did measurably worse than its frozen self (easy 52.8% with an interval from 49.9%, medium 60.5%, hard 56.5%), order and identity held (H10, H11 and H12 supported), and a learned action decision took 3.50 ms at the 99th percentile, but one existing behavior test fails with that setting live, so H13 failed and nothing went live ([results](docs/experiments/bot-evaluation.md#per-level-go-live-results)).
 * The frozen bots matched every documented claim the audit could measure. Reaction speed was not measured validly ([H14](docs/experiments/bot-evaluation.md#h14-the-frozen-bots-measured-against-the-docs)).
-* What real players get: the original bots, `gate_v1` and `rules_v1` at every level, with both learned parts left in the code as options set per level in `src/lib/game/bot-policies.ts` ([what real players get](docs/experiments/bot-evaluation.md#what-real-players-get)).
+* What real players get: the original bots, `gate_v1` and `rules_v1` at every level, with both learned parts left in the code as options set per level in `src/lib/game/bot-policies.ts` ([the decision and its results](docs/experiments/bot-evaluation.md#per-level-go-live-results)).
 
 **Not yet measured**
 
@@ -347,7 +347,7 @@ npm run test:accounts
 
 This command creates isolated Postgres and PostgREST containers, applies every migration, runs the SQL account tests, starts a local app using dummy credentials, and runs the browser suite. It removes the test containers afterward. Stop any existing Next development server first so the test app can use the development build directory.
 
-The browser suite covers registration, duplicate usernames, display name changes at active tables, username changes, wrong and correct passwords, session revocation, logout, a failed logout request, delayed responses after logout, multiple tabs, legacy profile upgrades, restored stats and friends after clearing storage, seat recovery, permanent deletion, request origin checks, and the account and login pages in a 390 pixel wide window without sideways scrolling. The same run also covers gameplay, bots, presence, notifications, seat management, and the table at laptop sizes from 1024 by 768 to 1440 by 900. These tests never use the live Supabase database.
+The browser suite covers registration, duplicate usernames, display name changes at active tables, username changes, wrong and correct passwords, session revocation, logout, a failed logout request, delayed responses after logout, multiple tabs, legacy profile upgrades, restored stats and friends after clearing storage, seat recovery, permanent deletion, request origin checks, and the account and login pages in a 390 pixel wide window without sideways scrolling. The same run also covers gameplay, bots, presence, notifications, seat management, and the table at laptop window sizes. These tests never use the live Supabase database.
 
 Continuous integration runs all of the above on every push and pull request; see [.github/workflows/ci.yml](.github/workflows/ci.yml).
 
@@ -357,7 +357,7 @@ Continuous integration runs all of the above on every push and pull request; see
 npm run results
 ```
 
-This deletes and rewrites every file in `results/` and the three charts in `docs/images/`, then prints how long it took. It first replays the original seeded benchmark and stops if that no longer reproduces, then plays 6,800 seeded bot rounds across all CPU cores. On an 8 core Apple M3 it printed 107.7 and 129.5 seconds on two runs. The output is deterministic: runs with 3 and 7 workers wrote byte identical files. It needs Node 24 and no extra packages, since Node runs the TypeScript directly.
+This deletes and rewrites every file in `results/` and the three charts in `docs/images/`, then prints how long it took. It first replays the original seeded benchmark and stops if that no longer reproduces, then plays 6,800 seeded bot rounds across all CPU cores. The output is deterministic: runs with different worker counts wrote byte identical files. It needs Node 24 and no extra packages, since Node runs the TypeScript directly.
 
 ### 6. Retrain the bot models
 
@@ -370,7 +370,7 @@ npm run ml:tune -- --thresholds
 npm run ml:tune -- --check
 ```
 
-Collecting the data took 21 and 11 minutes on 4 cores; training takes a few minutes. The models land in `src/lib/game/models/` and the tests check the TypeScript forward pass against them. Retrained models need fresh test seeds before any claim about them, since the current ones have been used. [ml/README.md](ml/README.md) has the data schema and every validation number.
+Collecting the data took 21 and 11 minutes on 4 cores. The models land in `src/lib/game/models/` and the tests check the TypeScript forward pass against them. Retrained models need fresh test seeds before any claim about them, since the current ones have been used. [ml/README.md](ml/README.md) has the data schema and every validation number.
 
 ### 7. The per level go live runs
 
