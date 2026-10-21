@@ -58,6 +58,28 @@ const STICK_MS: Record<BotDifficulty, [number, number]> = {
 export type Jitter = (intent: string) => number; // [0,1)
 
 /**
+ * Observe only: what a planning pass did, for the level audit and the speed
+ * measurement. Nothing a bot decides depends on whether an observer is
+ * attached; bot-observer.test.ts plays the same rounds with and without one.
+ */
+export interface BotObserver {
+  /** Every effort roll: the opportunity's tag and whether the bot was focused. */
+  effort?(event: { botId: string; level: BotDifficulty; tag: string; focused: boolean }): void;
+  /** At each decision: the faces the bot remembers, its own cards, and every card in a hand. */
+  memory?(event: { botId: string; level: BotDifficulty; known: string[]; own: string[]; table: string[] }): void;
+  /** A stick opportunity: whether the full strategy would stick, whether the bot tried, and whether its target is a remembered match. */
+  stick?(event: { botId: string; level: BotDifficulty; topId: string; wanted: boolean; tried: boolean; rememberedMatch: boolean | null }): void;
+  /** The first choice of a power: whether the full strategy would use it, and whether the bot skipped it. */
+  power?(event: { botId: string; level: BotDifficulty; intent: string; wanted: boolean; skipped: boolean }): void;
+  /** An unfocused bot keeping a draw without checking what it replaces. */
+  lapseKeep?(event: { botId: string; level: BotDifficulty; cardId: string }): void;
+  /** Every planned action and its human paced delay. */
+  plan?(event: { botId: string; level: BotDifficulty; intent: string; action: Action; delayMs: number }): void;
+  /** Time spent on one decision made by a learned action model. */
+  modelDecision?(event: { level: BotDifficulty; kind: DecisionKind; ms: number }): void;
+}
+
+/**
  * One bot's frame of mind for a single planning pass: how hard it plays, what
  * it thinks a card it has never seen is worth, and a deterministic coin.
  */
@@ -67,6 +89,7 @@ interface Brain extends Mind {
   focused: (tag: string) => boolean;
   /** What a focused bot does, by its action policy. */
   rules: ActionRules;
+  observer?: BotObserver;
 }
 
 /**
@@ -81,23 +104,29 @@ interface ActionRules {
   give: (state: BotObservation, brain: Brain, slots: Slot[]) => string;
 }
 
-function brainFor(state: BotObservation, bot: Player, jitter: Jitter): Brain {
+function brainFor(state: BotObservation, bot: Player, jitter: Jitter, observer?: BotObserver): Brain {
   const diff = bot.difficulty ?? "medium";
   const pool = unseenValues(state, bot);
   const roll = (tag: string) => jitter(`${bot.id}:roll:${state.round}:${tag}`);
+  // One stable roll per opportunity: polling the same position must not
+  // turn a missed opportunity into repeated chances to notice it.
+  const focused = (tag: string) => diff === "hard" || roll(`skill:${tag}`) < BOT_SKILL[diff];
   return {
     bot,
     diff,
     pool,
     roll,
-    // One stable roll per opportunity: polling the same position must not
-    // turn a missed opportunity into repeated chances to notice it.
-    focused: (tag: string) => diff === "hard" || roll(`skill:${tag}`) < BOT_SKILL[diff],
+    focused: observer?.effort ? (tag: string) => {
+      const result = focused(tag);
+      observer.effort!({ botId: bot.id, level: diff, tag, focused: result });
+      return result;
+    } : focused,
     rules: actionRulesFor(bot),
+    observer,
   };
 }
 
-export function planBots(state: GameState, now: number, jitter: Jitter): BotPlan[] {
+export function planBots(state: GameState, now: number, jitter: Jitter, observer?: BotObserver): BotPlan[] {
   const plans: BotPlan[] = [];
   // A paused table has nothing for a bot to do: they already agreed to the
   // pause when it was asked for, and they cannot play until it is lifted.
@@ -151,11 +180,18 @@ export function planBots(state: GameState, now: number, jitter: Jitter): BotPlan
     plans.push({ playerId: reporter.id, action: { type: "timeout" }, delayMs: Math.max(0, due - now), intent: `timeout:${due}` });
   }
 
+  // Observations for each seat are reported once every seat has planned.
+  const reports: (() => void)[] = [];
   for (const seat of bots) {
     const observed = observeBot(state, seat.id);
     const bot = observed.players.find((p) => p.id === seat.id)!;
-    const brain = brainFor(observed, bot, jitter);
+    const brain = brainFor(observed, bot, jitter, observer);
     const pace = PACE[brain.diff];
+    const planned = plans.length;
+    if (observer) {
+      // Runs after this seat's planning, whichever way it returns below.
+      reports.push(() => observeDecision(observed, bot, brain.diff, plans.slice(planned), observer));
+    }
 
     // 1. Owed cards after a correct stick of someone else's card.
     const give = observed.pendingGives.find((g) => g.from === bot.id);
@@ -178,12 +214,17 @@ export function planBots(state: GameState, now: number, jitter: Jitter): BotPlan
         const [lo, hi] = STICK_MS[brain.diff];
         plans.push({ playerId: bot.id, action: { type: "stick", cardId: target }, delayMs: ms(lo, hi, jitter(intent), 1), intent });
       }
+      if (observer?.stick) observeStick(observed, bot, jitter, target, observer);
     }
     const pp = observed.pendingPower;
     if (pp && pp.playerId === bot.id) {
       const action = resolvePower(observed, brain);
       const intent = `${bot.id}:power:${pp.kind}:${pp.looked ? "decide" : "look"}:${observed.turnsTaken}`;
       plans.push({ playerId: bot.id, action, delayMs: ms(2600, 3800, jitter(intent), pace), intent });
+      if (observer?.power && !pp.looked) {
+        const wanted = strategicPower(observed, quietBrain(observed, bot, jitter)).type !== "skipPower";
+        observer.power({ botId: bot.id, level: brain.diff, intent, wanted, skipped: action.type === "skipPower" });
+      }
       continue;
     }
 
@@ -207,7 +248,33 @@ export function planBots(state: GameState, now: number, jitter: Jitter): BotPlan
       }
     }
   }
+  for (const report of reports) report();
   return plans;
+}
+
+/** A brain with the same rolls that plays rules_v1 and reports nothing: what the full strategy would do. */
+function quietBrain(state: BotObservation, bot: Player, jitter: Jitter): Brain {
+  return { ...brainFor(state, bot, jitter), rules: RULES_V1 };
+}
+
+function observeDecision(state: BotObservation, bot: Player, level: BotDifficulty, own: BotPlan[], observer: BotObserver) {
+  if (!own.length) return;
+  const drawn = state.turn?.playerId === bot.id ? state.turn.drawnCardId : null;
+  observer.memory?.({
+    botId: bot.id, level,
+    known: [...(state.botKnown[bot.id] ?? [])],
+    own: [...bot.hand.filter((id): id is string => !!id), ...(drawn ? [drawn] : [])],
+    table: state.players.flatMap((p) => p.hand.filter((id): id is string => !!id)),
+  });
+  for (const plan of own) observer.plan?.({ botId: bot.id, level, intent: plan.intent, action: plan.action, delayMs: plan.delayMs });
+}
+
+function observeStick(state: BotObservation, bot: Player, jitter: Jitter, target: string | null, observer: BotObserver) {
+  const top = state.cards[state.discard[state.discard.length - 1]];
+  if (!top || state.botMissedTop?.[bot.id] === top.id) return;
+  const wanted = strategicStick(state, quietBrain(state, bot, jitter), top) !== null;
+  const rememberedMatch = target ? (state.botKnown[bot.id] ?? []).includes(target) && state.cards[target]?.rank === top.rank : null;
+  observer.stick!({ botId: bot.id, level: bot.difficulty ?? "medium", topId: top.id, wanted, tried: target !== null, rememberedMatch });
 }
 
 function decideDrawn(state: BotObservation, brain: Brain, drawn: Card): Action {
@@ -218,7 +285,10 @@ function decideDrawn(state: BotObservation, brain: Brain, drawn: Card): Action {
   const slots = ownSlots(state, brain.bot);
   if (cardValue(drawn) <= 9 && brain.roll(`keep:${drawn.id}`) < 0.5) {
     const target = slots[Math.floor(brain.roll(`slot:${drawn.id}`) * slots.length)];
-    if (target) return { type: "swap", cardId: target.cardId };
+    if (target) {
+      brain.observer?.lapseKeep?.({ botId: brain.bot.id, level: brain.diff, cardId: drawn.id });
+      return { type: "swap", cardId: target.cardId };
+    }
   }
   return { type: "place" };
 }
@@ -374,6 +444,7 @@ const MODEL_V1: ActionRules = {
 };
 
 function modelChoice(state: BotObservation, brain: Brain, kind: DecisionKind): Action | null {
+  const started = brain.observer?.modelDecision ? performance.now() : 0;
   const rule = rulesV1Choice(state, brain.bot.id, kind);
   const { kinds, model } = ACTION_MODELS[brain.diff];
   if (!kinds.includes(kind)) return rule;
@@ -386,11 +457,12 @@ function modelChoice(state: BotObservation, brain: Brain, kind: DecisionKind): A
   // Or picks among its top few, again with one stable roll per decision.
   const k = Math.min(actionTopKOf(brain.diff, brain.bot.strategy), ranked.length);
   const pick = k > 1 ? ranked[Math.floor(brain.roll(`model:${kind}:${state.turnsTaken}:${state.discard.length}`) * k)] : ranked[0];
+  brain.observer?.modelDecision?.({ level: brain.diff, kind, ms: performance.now() - started });
   return pick.candidate.action;
 }
 
 function actionRulesFor(bot: Player): ActionRules {
-  switch (actionPolicyOf(bot.strategy)) {
+  switch (actionPolicyOf(bot.difficulty ?? "medium", bot.strategy)) {
     case "rules_v1": return RULES_V1;
     case "model_v1": return MODEL_V1;
   }
