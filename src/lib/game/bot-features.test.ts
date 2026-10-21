@@ -1,19 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { assessObservedCambio } from "./bot-beliefs";
 import { ACTION_FEATURES, actionKey, CALL_FEATURES, callFeatures, decisionCandidates, decisionKind, MAX_CANDIDATES, stickTop } from "./bot-features";
-import { playRound, type SeatSpec } from "./bot-harness";
-import { FROZEN_POLICIES } from "./bot-policies";
+import { playRound } from "./bot-harness";
 import { observeBot } from "./bot-observation";
 import { rulesV1Choice } from "./bots";
 import { applyAction, canStick } from "./engine";
 import { forbidSecrets, makeCtx, permuteUnseen } from "./testkit";
 import type { GameState } from "./types";
 
-/** Every state of a few seeded frozen rounds, with each seat's decision there, if any. */
+/** Every state of a few seeded rounds, with each seat's decision there, if any. */
 function decisionStates() {
   const found: { state: GameState; botId: string; kind: ReturnType<typeof decisionKind> | "stick" }[] = [];
   for (const seed of [1, 2, 3]) {
-    playRound(seed, (["hard", "medium", "easy", "hard"] as const).map((difficulty): SeatSpec => ({ difficulty, strategy: { ...FROZEN_POLICIES } })), (state) => {
+    playRound(seed, ["hard", "medium", "easy", "hard"], (state) => {
       if (state.phase !== "playing" && state.phase !== "final") return;
       for (const bot of state.players) {
         const observed = observeBot(state, bot.id);

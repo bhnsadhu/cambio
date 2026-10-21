@@ -1,15 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { jitterFor, playOut, playRound, type SeatSpec } from "./bot-harness";
-import { FROZEN_POLICIES } from "./bot-policies";
+import { jitterFor, playOut, playRound } from "./bot-harness";
 import { makeCtx } from "./testkit";
 import type { GameState } from "./types";
 
 describe("the seeded harness", () => {
   it("plays the same rounds it always has", () => {
-    // Recorded before playOut was split out of playRound, on the frozen policies.
+    // Recorded before playOut was split out of playRound.
     const recorded: [number, number, number, string][] = [[1, 52, 1, "6 16 20 0"], [2, 62, 1, "0 23 8 4"], [3, 71, 1, "3 8 18 0"], [4, 42, 1, "8 16 14 3"]];
     for (const [seed, steps, calls, scores] of recorded) {
-      const round = playRound(seed, (["hard", "medium", "easy", "hard"] as const).map((difficulty): SeatSpec => ({ difficulty, strategy: { ...FROZEN_POLICIES } })));
+      const round = playRound(seed, ["hard", "medium", "easy", "hard"]);
       expect([seed, round.steps, round.calls.length, round.state.results[0].scores.map((s) => s.score).join(" ")]).toEqual([seed, steps, calls, scores]);
     }
   });
