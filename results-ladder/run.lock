@@ -1,0 +1,6 @@
+{
+  "script": "npm run ml:ladder",
+  "seeds": "seeds 520001 to 520200 and 530001 to 530200",
+  "commit": "4380237398d4868c04d451b4fdb7f378c8a91570",
+  "startedAt": "2026-10-21T08:58:12.458Z"
+}

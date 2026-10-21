@@ -1,0 +1,637 @@
+{
+  "question": "Do easy, medium and hard play at the strength the owner wants, with the tuned action mix (A*) and frozen (C0)?",
+  "seeds": [
+    {
+      "name": "T1",
+      "from": 520001,
+      "count": 200
+    },
+    {
+      "name": "T2",
+      "from": 530001,
+      "count": 200
+    }
+  ],
+  "fallback": false,
+  "estimateSeconds": 224.211002,
+  "roundsPerMatchup": 800,
+  "mix": {
+    "easy": 0.5,
+    "medium": 1,
+    "hard": 0.75
+  },
+  "matchups": [
+    {
+      "id": "easy_vs_beginner_C0",
+      "sideA": "easy C0",
+      "sideB": "beginner",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.552083,
+        "low": 0.522061,
+        "high": 0.582105,
+        "n": 400,
+        "sd": 0.305425
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.54125,
+          "low": 0.497992,
+          "high": 0.584508,
+          "n": 200,
+          "sd": 0.310234
+        },
+        "T2": {
+          "mean": 0.562917,
+          "low": 0.520956,
+          "high": 0.604877,
+          "n": 200,
+          "sd": 0.300927
+        }
+      },
+      "meanScoreA": {
+        "mean": 15.3925,
+        "low": 15.077586,
+        "high": 15.707414,
+        "n": 400,
+        "sd": 3.203715
+      },
+      "meanScoreB": {
+        "mean": 15.6025,
+        "low": 15.316398,
+        "high": 15.888602,
+        "n": 400,
+        "sd": 2.910603
+      },
+      "botCalls": 32,
+      "callsRefusedByGate": 0
+    },
+    {
+      "id": "medium_vs_beginner_C0",
+      "sideA": "medium C0",
+      "sideB": "beginner",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.736875,
+        "low": 0.710955,
+        "high": 0.762795,
+        "n": 400,
+        "sd": 0.263691
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.7025,
+          "low": 0.664475,
+          "high": 0.740525,
+          "n": 200,
+          "sd": 0.272701
+        },
+        "T2": {
+          "mean": 0.77125,
+          "low": 0.736342,
+          "high": 0.806158,
+          "n": 200,
+          "sd": 0.250348
+        }
+      },
+      "meanScoreA": {
+        "mean": 11.394375,
+        "low": 11.05129,
+        "high": 11.73746,
+        "n": 400,
+        "sd": 3.490311
+      },
+      "meanScoreB": {
+        "mean": 15.89625,
+        "low": 15.60709,
+        "high": 16.18541,
+        "n": 400,
+        "sd": 2.941714
+      },
+      "botCalls": 148,
+      "callsRefusedByGate": 0
+    },
+    {
+      "id": "hard_vs_beginner_C0",
+      "sideA": "hard C0",
+      "sideB": "beginner",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.784167,
+        "low": 0.758779,
+        "high": 0.809554,
+        "n": 400,
+        "sd": 0.258278
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.770417,
+          "low": 0.734089,
+          "high": 0.806744,
+          "n": 200,
+          "sd": 0.260526
+        },
+        "T2": {
+          "mean": 0.797917,
+          "low": 0.762231,
+          "high": 0.833602,
+          "n": 200,
+          "sd": 0.255923
+        }
+      },
+      "meanScoreA": {
+        "mean": 9.789375,
+        "low": 9.453694,
+        "high": 10.125056,
+        "n": 400,
+        "sd": 3.414987
+      },
+      "meanScoreB": {
+        "mean": 16.14375,
+        "low": 15.848154,
+        "high": 16.439346,
+        "n": 400,
+        "sd": 3.00719
+      },
+      "botCalls": 142,
+      "callsRefusedByGate": 0
+    },
+    {
+      "id": "hard_vs_medium_C0",
+      "sideA": "hard C0",
+      "sideB": "medium C0",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.63,
+        "low": 0.599327,
+        "high": 0.660673,
+        "n": 400,
+        "sd": 0.312044
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.628333,
+          "low": 0.584874,
+          "high": 0.671793,
+          "n": 200,
+          "sd": 0.311675
+        },
+        "T2": {
+          "mean": 0.631667,
+          "low": 0.587997,
+          "high": 0.675337,
+          "n": 200,
+          "sd": 0.313185
+        }
+      },
+      "meanScoreA": {
+        "mean": 5.526875,
+        "low": 5.24158,
+        "high": 5.81217,
+        "n": 400,
+        "sd": 2.902401
+      },
+      "meanScoreB": {
+        "mean": 7.814375,
+        "low": 7.501955,
+        "high": 8.126795,
+        "n": 400,
+        "sd": 3.178347
+      },
+      "botCalls": 427,
+      "callsRefusedByGate": 0
+    },
+    {
+      "id": "medium_vs_easy_C0",
+      "sideA": "medium C0",
+      "sideB": "easy C0",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.8025,
+        "low": 0.776334,
+        "high": 0.828666,
+        "n": 400,
+        "sd": 0.266192
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.807917,
+          "low": 0.767813,
+          "high": 0.84802,
+          "n": 200,
+          "sd": 0.287609
+        },
+        "T2": {
+          "mean": 0.797083,
+          "low": 0.763129,
+          "high": 0.831037,
+          "n": 200,
+          "sd": 0.243505
+        }
+      },
+      "meanScoreA": {
+        "mean": 6.28375,
+        "low": 5.989337,
+        "high": 6.578163,
+        "n": 400,
+        "sd": 2.995159
+      },
+      "meanScoreB": {
+        "mean": 12.485625,
+        "low": 12.120411,
+        "high": 12.850839,
+        "n": 400,
+        "sd": 3.715435
+      },
+      "botCalls": 461,
+      "callsRefusedByGate": 0
+    },
+    {
+      "id": "easy_vs_beginner_Astar",
+      "sideA": "easy A*",
+      "sideB": "beginner",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.564375,
+        "low": 0.534786,
+        "high": 0.593964,
+        "n": 400,
+        "sd": 0.301021
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.560417,
+          "low": 0.51768,
+          "high": 0.603153,
+          "n": 200,
+          "sd": 0.306492
+        },
+        "T2": {
+          "mean": 0.568333,
+          "low": 0.527037,
+          "high": 0.60963,
+          "n": 200,
+          "sd": 0.296165
+        }
+      },
+      "meanScoreA": {
+        "mean": 15.7925,
+        "low": 15.45606,
+        "high": 16.12894,
+        "n": 400,
+        "sd": 3.422715
+      },
+      "meanScoreB": {
+        "mean": 16.56,
+        "low": 16.26207,
+        "high": 16.85793,
+        "n": 400,
+        "sd": 3.030933
+      },
+      "botCalls": 29,
+      "callsRefusedByGate": 0
+    },
+    {
+      "id": "medium_vs_beginner_Astar",
+      "sideA": "medium A*",
+      "sideB": "beginner",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.785208,
+        "low": 0.759924,
+        "high": 0.810493,
+        "n": 400,
+        "sd": 0.257226
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.765,
+          "low": 0.729062,
+          "high": 0.800938,
+          "n": 200,
+          "sd": 0.257734
+        },
+        "T2": {
+          "mean": 0.805417,
+          "low": 0.769753,
+          "high": 0.84108,
+          "n": 200,
+          "sd": 0.255765
+        }
+      },
+      "meanScoreA": {
+        "mean": 10.955,
+        "low": 10.56759,
+        "high": 11.34241,
+        "n": 400,
+        "sd": 3.94124
+      },
+      "meanScoreB": {
+        "mean": 17.161875,
+        "low": 16.856177,
+        "high": 17.467573,
+        "n": 400,
+        "sd": 3.109965
+      },
+      "botCalls": 149,
+      "callsRefusedByGate": 0
+    },
+    {
+      "id": "hard_vs_beginner_Astar",
+      "sideA": "hard A*",
+      "sideB": "beginner",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.847917,
+        "low": 0.825607,
+        "high": 0.870227,
+        "n": 400,
+        "sd": 0.226965
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.843333,
+          "low": 0.811462,
+          "high": 0.875205,
+          "n": 200,
+          "sd": 0.228571
+        },
+        "T2": {
+          "mean": 0.8525,
+          "low": 0.821011,
+          "high": 0.883989,
+          "n": 200,
+          "sd": 0.225829
+        }
+      },
+      "meanScoreA": {
+        "mean": 9.76625,
+        "low": 9.41474,
+        "high": 10.11776,
+        "n": 400,
+        "sd": 3.576025
+      },
+      "meanScoreB": {
+        "mean": 17.8125,
+        "low": 17.523875,
+        "high": 18.101125,
+        "n": 400,
+        "sd": 2.936275
+      },
+      "botCalls": 160,
+      "callsRefusedByGate": 0
+    },
+    {
+      "id": "hard_vs_medium_Astar",
+      "sideA": "hard A*",
+      "sideB": "medium A*",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.587708,
+        "low": 0.55453,
+        "high": 0.620887,
+        "n": 400,
+        "sd": 0.337534
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.597083,
+          "low": 0.550959,
+          "high": 0.643208,
+          "n": 200,
+          "sd": 0.330788
+        },
+        "T2": {
+          "mean": 0.578333,
+          "low": 0.530266,
+          "high": 0.626401,
+          "n": 200,
+          "sd": 0.344722
+        }
+      },
+      "meanScoreA": {
+        "mean": 7.195,
+        "low": 6.855857,
+        "high": 7.534143,
+        "n": 400,
+        "sd": 3.450206
+      },
+      "meanScoreB": {
+        "mean": 9.295,
+        "low": 8.907614,
+        "high": 9.682386,
+        "n": 400,
+        "sd": 3.941001
+      },
+      "botCalls": 311,
+      "callsRefusedByGate": 0
+    },
+    {
+      "id": "medium_vs_easy_Astar",
+      "sideA": "medium A*",
+      "sideB": "easy A*",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.82625,
+        "low": 0.802998,
+        "high": 0.849502,
+        "n": 400,
+        "sd": 0.236554
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.83,
+          "low": 0.798573,
+          "high": 0.861427,
+          "n": 200,
+          "sd": 0.225385
+        },
+        "T2": {
+          "mean": 0.8225,
+          "low": 0.787957,
+          "high": 0.857043,
+          "n": 200,
+          "sd": 0.24773
+        }
+      },
+      "meanScoreA": {
+        "mean": 6.84625,
+        "low": 6.508659,
+        "high": 7.183841,
+        "n": 400,
+        "sd": 3.434418
+      },
+      "meanScoreB": {
+        "mean": 14.54375,
+        "low": 14.169376,
+        "high": 14.918124,
+        "n": 400,
+        "sd": 3.808622
+      },
+      "botCalls": 387,
+      "callsRefusedByGate": 0
+    }
+  ],
+  "targets": [
+    {
+      "pair": "easy_vs_beginner",
+      "range": [
+        0.45,
+        0.85
+      ],
+      "C0": {
+        "shareA": {
+          "mean": 0.552083,
+          "low": 0.522061,
+          "high": 0.582105,
+          "n": 400,
+          "sd": 0.305425
+        },
+        "verdict": "met"
+      },
+      "A*": {
+        "shareA": {
+          "mean": 0.564375,
+          "low": 0.534786,
+          "high": 0.593964,
+          "n": 400,
+          "sd": 0.301021
+        },
+        "verdict": "met"
+      }
+    },
+    {
+      "pair": "medium_vs_beginner",
+      "range": [
+        0.65,
+        0.95
+      ],
+      "C0": {
+        "shareA": {
+          "mean": 0.736875,
+          "low": 0.710955,
+          "high": 0.762795,
+          "n": 400,
+          "sd": 0.263691
+        },
+        "verdict": "met"
+      },
+      "A*": {
+        "shareA": {
+          "mean": 0.785208,
+          "low": 0.759924,
+          "high": 0.810493,
+          "n": 400,
+          "sd": 0.257226
+        },
+        "verdict": "met"
+      }
+    },
+    {
+      "pair": "hard_vs_beginner",
+      "range": [
+        0.85,
+        1
+      ],
+      "C0": {
+        "shareA": {
+          "mean": 0.784167,
+          "low": 0.758779,
+          "high": 0.809554,
+          "n": 400,
+          "sd": 0.258278
+        },
+        "verdict": "missed"
+      },
+      "A*": {
+        "shareA": {
+          "mean": 0.847917,
+          "low": 0.825607,
+          "high": 0.870227,
+          "n": 400,
+          "sd": 0.226965
+        },
+        "verdict": "marginal"
+      }
+    },
+    {
+      "pair": "hard_vs_medium",
+      "range": [
+        0.55,
+        0.75
+      ],
+      "C0": {
+        "shareA": {
+          "mean": 0.63,
+          "low": 0.599327,
+          "high": 0.660673,
+          "n": 400,
+          "sd": 0.312044
+        },
+        "verdict": "met"
+      },
+      "A*": {
+        "shareA": {
+          "mean": 0.587708,
+          "low": 0.55453,
+          "high": 0.620887,
+          "n": 400,
+          "sd": 0.337534
+        },
+        "verdict": "met"
+      }
+    },
+    {
+      "pair": "medium_vs_easy",
+      "range": [
+        0.65,
+        0.9
+      ],
+      "C0": {
+        "shareA": {
+          "mean": 0.8025,
+          "low": 0.776334,
+          "high": 0.828666,
+          "n": 400,
+          "sd": 0.266192
+        },
+        "verdict": "met"
+      },
+      "A*": {
+        "shareA": {
+          "mean": 0.82625,
+          "low": 0.802998,
+          "high": 0.849502,
+          "n": 400,
+          "sd": 0.236554
+        },
+        "verdict": "met"
+      }
+    }
+  ],
+  "h11": {
+    "rule": "Refuted if hard A* vs medium A* or medium A* vs easy A* has a 95% interval for the stronger side whose lower bound is at or below 50%.",
+    "hard_vs_medium": {
+      "mean": 0.587708,
+      "low": 0.55453,
+      "high": 0.620887,
+      "n": 400,
+      "sd": 0.337534
+    },
+    "medium_vs_easy": {
+      "mean": 0.82625,
+      "low": 0.802998,
+      "high": 0.849502,
+      "n": 400,
+      "sd": 0.236554
+    },
+    "holds": true
+  },
+  "h13": {
+    "roundsExpected": 8000,
+    "roundsFinished": 8000,
+    "botCalls": 2246,
+    "callsRefusedByGate": 0,
+    "holds": true
+  }
+}
