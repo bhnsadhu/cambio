@@ -1,0 +1,417 @@
+{
+  "question": "Do the frozen bots behave as the docs say? (H14; audits the shipped bots and never blocks the switch)",
+  "seeds": [
+    {
+      "name": "AU",
+      "from": 540001,
+      "count": 50
+    }
+  ],
+  "rounds": 300,
+  "matchups": [
+    "hard_vs_medium_C0",
+    "medium_vs_easy_C0",
+    "hard_vs_easy_C0"
+  ],
+  "counting": "Each opportunity once: an effort roll by its opportunity tag, a stick by the top card, a power by its turn, a delay by its intent.",
+  "perLevel": {
+    "easy": {
+      "effortRolls": 17747,
+      "effortFocused": 8863,
+      "effortChanged": 0,
+      "decisions": 19042,
+      "maxKnown": 2,
+      "maxOpponentKnown": 2,
+      "overTwo": 0,
+      "opponentOverSix": 0,
+      "ownLost": 16230,
+      "tableLost": 16650,
+      "sticksWanted": 847,
+      "sticksMissed": 468,
+      "stickTargetsNotRemembered": 0,
+      "powersWanted": 892,
+      "powersSkipped": 471,
+      "lapseKeeps": 641,
+      "delays": {
+        "draw": {
+          "n": 2867,
+          "sum": 8984376
+        },
+        "decide": {
+          "n": 2847,
+          "sum": 11036538
+        },
+        "power": {
+          "n": 843,
+          "sum": 3124895
+        },
+        "stick": {
+          "n": 741,
+          "sum": 2017667
+        },
+        "give": {
+          "n": 212,
+          "sum": 544466
+        },
+        "call": {
+          "n": 76,
+          "sum": 225667
+        }
+      }
+    },
+    "medium": {
+      "effortRolls": 17255,
+      "effortFocused": 12956,
+      "effortChanged": 0,
+      "decisions": 18671,
+      "maxKnown": 7,
+      "maxOpponentKnown": 3,
+      "overTwo": 6432,
+      "opponentOverSix": 0,
+      "ownLost": 0,
+      "tableLost": 0,
+      "sticksWanted": 1340,
+      "sticksMissed": 366,
+      "stickTargetsNotRemembered": 0,
+      "powersWanted": 686,
+      "powersSkipped": 205,
+      "lapseKeeps": 270,
+      "delays": {
+        "draw": {
+          "n": 2651,
+          "sum": 7670243
+        },
+        "decide": {
+          "n": 2635,
+          "sum": 9480148
+        },
+        "power": {
+          "n": 746,
+          "sum": 2500537
+        },
+        "stick": {
+          "n": 868,
+          "sum": 2179942
+        },
+        "give": {
+          "n": 204,
+          "sum": 507528
+        },
+        "call": {
+          "n": 66,
+          "sum": 207567
+        }
+      }
+    },
+    "hard": {
+      "effortRolls": 16377,
+      "effortFocused": 16377,
+      "effortChanged": 0,
+      "decisions": 17829,
+      "maxKnown": 6,
+      "maxOpponentKnown": 3,
+      "overTwo": 5062,
+      "opponentOverSix": 0,
+      "ownLost": 0,
+      "tableLost": 0,
+      "sticksWanted": 1156,
+      "sticksMissed": 0,
+      "stickTargetsNotRemembered": 0,
+      "powersWanted": 557,
+      "powersSkipped": 0,
+      "lapseKeeps": 0,
+      "delays": {
+        "draw": {
+          "n": 2547,
+          "sum": 6754999
+        },
+        "decide": {
+          "n": 2528,
+          "sum": 8299844
+        },
+        "power": {
+          "n": 683,
+          "sum": 2173843
+        },
+        "stick": {
+          "n": 901,
+          "sum": 1958061
+        },
+        "give": {
+          "n": 232,
+          "sum": 496895
+        },
+        "call": {
+          "n": 68,
+          "sum": 172000
+        }
+      }
+    }
+  },
+  "effort": {
+    "easy": {
+      "k": 8863,
+      "n": 17747,
+      "rate": 0.499408,
+      "low": 0.492053,
+      "high": 0.506764
+    },
+    "medium": {
+      "k": 12956,
+      "n": 17255,
+      "rate": 0.750855,
+      "low": 0.744346,
+      "high": 0.757252
+    },
+    "hard": {
+      "k": 16377,
+      "n": 16377,
+      "rate": 1,
+      "low": 0.999765,
+      "high": 1
+    }
+  },
+  "stickMiss": {
+    "easy": {
+      "k": 468,
+      "n": 847,
+      "rate": 0.552538,
+      "low": 0.51889,
+      "high": 0.585713
+    },
+    "medium": {
+      "k": 366,
+      "n": 1340,
+      "rate": 0.273134,
+      "low": 0.249951,
+      "high": 0.297614
+    },
+    "hard": {
+      "k": 0,
+      "n": 1156,
+      "rate": 0,
+      "low": 0,
+      "high": 0.003312
+    }
+  },
+  "powerMiss": {
+    "easy": {
+      "k": 471,
+      "n": 892,
+      "rate": 0.528027,
+      "low": 0.495216,
+      "high": 0.560597
+    },
+    "medium": {
+      "k": 205,
+      "n": 686,
+      "rate": 0.298834,
+      "low": 0.265777,
+      "high": 0.334131
+    },
+    "hard": {
+      "k": 0,
+      "n": 557,
+      "rate": 0,
+      "low": 0,
+      "high": 0.006849
+    }
+  },
+  "delay": {
+    "draw": {
+      "easy": {
+        "n": 2867,
+        "meanMs": 3133.720265
+      },
+      "medium": {
+        "n": 2651,
+        "meanMs": 2893.339495
+      },
+      "hard": {
+        "n": 2547,
+        "meanMs": 2652.13938
+      }
+    },
+    "decide": {
+      "easy": {
+        "n": 2847,
+        "meanMs": 3876.550053
+      },
+      "medium": {
+        "n": 2635,
+        "meanMs": 3597.779127
+      },
+      "hard": {
+        "n": 2528,
+        "meanMs": 3283.166139
+      }
+    },
+    "power": {
+      "easy": {
+        "n": 843,
+        "meanMs": 3706.874259
+      },
+      "medium": {
+        "n": 746,
+        "meanMs": 3351.926273
+      },
+      "hard": {
+        "n": 683,
+        "meanMs": 3182.786237
+      }
+    },
+    "stick": {
+      "easy": {
+        "n": 741,
+        "meanMs": 2722.897436
+      },
+      "medium": {
+        "n": 868,
+        "meanMs": 2511.453917
+      },
+      "hard": {
+        "n": 901,
+        "meanMs": 2173.208657
+      }
+    },
+    "give": {
+      "easy": {
+        "n": 212,
+        "meanMs": 2568.235849
+      },
+      "medium": {
+        "n": 204,
+        "meanMs": 2487.882353
+      },
+      "hard": {
+        "n": 232,
+        "meanMs": 2141.788793
+      }
+    },
+    "call": {
+      "easy": {
+        "n": 76,
+        "meanMs": 2969.302632
+      },
+      "medium": {
+        "n": 66,
+        "meanMs": 3144.954545
+      },
+      "hard": {
+        "n": 68,
+        "meanMs": 2529.411765
+      }
+    }
+  },
+  "checks": [
+    {
+      "claim": "Easy uses the full strategy on 50% of its opportunities",
+      "measured": "49.9% of 17747 rolls (49.2% to 50.7%)",
+      "tolerance": "Wilson 95% interval contains 50%",
+      "holds": true
+    },
+    {
+      "claim": "Medium uses the full strategy on 75% of its opportunities",
+      "measured": "75.1% of 17255 rolls (74.4% to 75.7%)",
+      "tolerance": "Wilson 95% interval contains 75%",
+      "holds": true
+    },
+    {
+      "claim": "Hard always uses the full strategy",
+      "measured": "16377 of 16377 rolls focused",
+      "tolerance": "every roll focused",
+      "holds": true
+    },
+    {
+      "claim": "Easy remembers only its two most recently seen cards",
+      "measured": "at most 2 faces at 19042 decisions; 0 over 2",
+      "tolerance": "0 decisions over 2",
+      "holds": true
+    },
+    {
+      "claim": "Medium remembers its own revealed cards plus six opponent cards",
+      "measured": "at most 3 opponent faces; 0 decisions over 6; 0 with an own face lost while in hand",
+      "tolerance": "0 decisions over 6 and 0 own faces lost",
+      "holds": true
+    },
+    {
+      "claim": "Hard retains every legitimately observed face",
+      "measured": "0 of 17829 decisions with a remembered face lost while still on the table (at most 6 faces)",
+      "tolerance": "0 decisions",
+      "holds": true
+    },
+    {
+      "claim": "Easy misses sticks",
+      "measured": "easy 55.3% of 847, medium 27.3% of 1340, hard 0.0% of 1156",
+      "tolerance": "missed share easy > medium > hard",
+      "holds": true
+    },
+    {
+      "claim": "Easy skips useful powers",
+      "measured": "easy 52.8% of 892, medium 29.9% of 686, hard 0.0% of 557",
+      "tolerance": "skipped share easy > medium > hard",
+      "holds": true
+    },
+    {
+      "claim": "Easy sometimes keeps a mediocre draw without checking what it replaces",
+      "measured": "easy 641, medium 270, hard 0",
+      "tolerance": "easy at least 1",
+      "holds": true
+    },
+    {
+      "claim": "Easy reacts slowest and hard fastest: draw",
+      "measured": "easy 3.13 s (2867), medium 2.89 s (2651), hard 2.65 s (2547)",
+      "tolerance": "mean planned delay easy > medium > hard",
+      "holds": true
+    },
+    {
+      "claim": "Easy reacts slowest and hard fastest: decide",
+      "measured": "easy 3.88 s (2847), medium 3.60 s (2635), hard 3.28 s (2528)",
+      "tolerance": "mean planned delay easy > medium > hard",
+      "holds": true
+    },
+    {
+      "claim": "Easy reacts slowest and hard fastest: power",
+      "measured": "easy 3.71 s (843), medium 3.35 s (746), hard 3.18 s (683)",
+      "tolerance": "mean planned delay easy > medium > hard",
+      "holds": true
+    },
+    {
+      "claim": "Easy reacts slowest and hard fastest: stick",
+      "measured": "easy 2.72 s (741), medium 2.51 s (868), hard 2.17 s (901)",
+      "tolerance": "mean planned delay easy > medium > hard",
+      "holds": true
+    },
+    {
+      "claim": "Easy reacts slowest and hard fastest: give",
+      "measured": "easy 2.57 s (212), medium 2.49 s (204), hard 2.14 s (232)",
+      "tolerance": "mean planned delay easy > medium > hard",
+      "holds": true
+    },
+    {
+      "claim": "Easy reacts slowest and hard fastest: call",
+      "measured": "easy 2.97 s (76), medium 3.14 s (66), hard 2.53 s (68)",
+      "tolerance": "mean planned delay easy > medium > hard",
+      "holds": false
+    },
+    {
+      "claim": "Missed opportunities stay missed on repeated planning passes",
+      "measured": "0 rolls changed",
+      "tolerance": "0",
+      "holds": true
+    },
+    {
+      "claim": "Bots only stick remembered matches",
+      "measured": "0 planned sticks on an unremembered card or another rank",
+      "tolerance": "0",
+      "holds": true
+    },
+    {
+      "claim": "Every call passes the same belief gate",
+      "measured": "0 of 193 calls refused by gate_v1",
+      "tolerance": "0",
+      "holds": true
+    }
+  ],
+  "holds": false
+}

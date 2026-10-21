@@ -1,0 +1,19 @@
+claim,measured,tolerance,holds
+Easy uses the full strategy on 50% of its opportunities,49.9% of 17747 rolls (49.2% to 50.7%),Wilson 95% interval contains 50%,true
+Medium uses the full strategy on 75% of its opportunities,75.1% of 17255 rolls (74.4% to 75.7%),Wilson 95% interval contains 75%,true
+Hard always uses the full strategy,16377 of 16377 rolls focused,every roll focused,true
+Easy remembers only its two most recently seen cards,at most 2 faces at 19042 decisions; 0 over 2,0 decisions over 2,true
+Medium remembers its own revealed cards plus six opponent cards,at most 3 opponent faces; 0 decisions over 6; 0 with an own face lost while in hand,0 decisions over 6 and 0 own faces lost,true
+Hard retains every legitimately observed face,0 of 17829 decisions with a remembered face lost while still on the table (at most 6 faces),0 decisions,true
+Easy misses sticks,"easy 55.3% of 847, medium 27.3% of 1340, hard 0.0% of 1156",missed share easy > medium > hard,true
+Easy skips useful powers,"easy 52.8% of 892, medium 29.9% of 686, hard 0.0% of 557",skipped share easy > medium > hard,true
+Easy sometimes keeps a mediocre draw without checking what it replaces,"easy 641, medium 270, hard 0",easy at least 1,true
+Easy reacts slowest and hard fastest: draw,"easy 3.13 s (2867), medium 2.89 s (2651), hard 2.65 s (2547)",mean planned delay easy > medium > hard,true
+Easy reacts slowest and hard fastest: decide,"easy 3.88 s (2847), medium 3.60 s (2635), hard 3.28 s (2528)",mean planned delay easy > medium > hard,true
+Easy reacts slowest and hard fastest: power,"easy 3.71 s (843), medium 3.35 s (746), hard 3.18 s (683)",mean planned delay easy > medium > hard,true
+Easy reacts slowest and hard fastest: stick,"easy 2.72 s (741), medium 2.51 s (868), hard 2.17 s (901)",mean planned delay easy > medium > hard,true
+Easy reacts slowest and hard fastest: give,"easy 2.57 s (212), medium 2.49 s (204), hard 2.14 s (232)",mean planned delay easy > medium > hard,true
+Easy reacts slowest and hard fastest: call,"easy 2.97 s (76), medium 3.14 s (66), hard 2.53 s (68)",mean planned delay easy > medium > hard,false
+Missed opportunities stay missed on repeated planning passes,0 rolls changed,0,true
+Bots only stick remembered matches,0 planned sticks on an unremembered card or another rank,0,true
+Every call passes the same belief gate,0 of 193 calls refused by gate_v1,0,true

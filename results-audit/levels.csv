@@ -1,0 +1,4 @@
+level,effort_rolls,effort_focused,effort_changed,decisions,max_known,max_opponent_known,over_two,opponent_over_six,own_lost,table_lost,sticks_wanted,sticks_missed,stick_targets_not_remembered,powers_wanted,powers_skipped,lapse_keeps,draw_n,draw_mean_ms,decide_n,decide_mean_ms,power_n,power_mean_ms,stick_n,stick_mean_ms,give_n,give_mean_ms,call_n,call_mean_ms
+easy,17747,8863,0,19042,2,2,0,0,16230,16650,847,468,0,892,471,641,2867,3133.720265,2847,3876.550053,843,3706.874259,741,2722.897436,212,2568.235849,76,2969.302632
+medium,17255,12956,0,18671,7,3,6432,0,0,0,1340,366,0,686,205,270,2651,2893.339495,2635,3597.779127,746,3351.926273,868,2511.453917,204,2487.882353,66,3144.954545
+hard,16377,16377,0,17829,6,3,5062,0,0,0,1156,0,0,557,0,0,2547,2652.13938,2528,3283.166139,683,3182.786237,901,2173.208657,232,2141.788793,68,2529.411765
