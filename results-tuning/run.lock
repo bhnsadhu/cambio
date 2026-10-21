@@ -1,0 +1,6 @@
+{
+  "script": "npm run ml:tune-mix",
+  "seeds": "validation seeds 200001 to 200100",
+  "commit": "131fa783a2f9fcdc1c5b7448bc7c7c4d312c67b4",
+  "startedAt": "2026-10-21T08:49:39.015Z"
+}

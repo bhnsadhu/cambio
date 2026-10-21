@@ -1,4 +1,8 @@
 {
-  "status": "untuned: every level at a mix of 0 until npm run ml:tune-mix chooses one",
-  "mix": { "easy": 0, "medium": 0, "hard": 0 }
+  "status": "chosen by npm run ml:tune-mix on validation seeds 200001 to 200100, both seatings; see results-tuning/summary.json",
+  "mix": {
+    "easy": 0.5,
+    "medium": 1,
+    "hard": 0.75
+  }
 }

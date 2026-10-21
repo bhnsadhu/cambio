@@ -1,0 +1,680 @@
+{
+  "procedure": "Pre-registered in docs/experiments/bot-evaluation.md, H10 to H15: highest share against the frozen self among mixes whose share against the beginner is inside the level's target range and whose share against the frozen level above is below 50% (point estimates); ties to the lower mix; 0 if none qualifies.",
+  "seeds": [
+    {
+      "name": "V",
+      "from": 200001,
+      "count": 100
+    }
+  ],
+  "roundsPerMatchup": 200,
+  "estimateSeconds": 324.111708,
+  "workers": 3,
+  "grid": [
+    {
+      "id": "easy_mix0_vs_easy",
+      "level": "easy",
+      "mix": 0,
+      "against": "self",
+      "share": {
+        "mean": 0.5,
+        "low": 0.5,
+        "high": 0.5,
+        "n": 100,
+        "sd": 0
+      }
+    },
+    {
+      "id": "easy_mix0_vs_beginner",
+      "level": "easy",
+      "mix": 0,
+      "against": "beginner",
+      "share": {
+        "mean": 0.536667,
+        "low": 0.473154,
+        "high": 0.60018,
+        "n": 100,
+        "sd": 0.32009
+      }
+    },
+    {
+      "id": "easy_mix0_vs_medium",
+      "level": "easy",
+      "mix": 0,
+      "against": "above",
+      "share": {
+        "mean": 0.185833,
+        "low": 0.131531,
+        "high": 0.240135,
+        "n": 100,
+        "sd": 0.27367
+      }
+    },
+    {
+      "id": "easy_mix0.25_vs_easy",
+      "level": "easy",
+      "mix": 0.25,
+      "against": "self",
+      "share": {
+        "mean": 0.486667,
+        "low": 0.432168,
+        "high": 0.541165,
+        "n": 100,
+        "sd": 0.274659
+      }
+    },
+    {
+      "id": "easy_mix0.25_vs_beginner",
+      "level": "easy",
+      "mix": 0.25,
+      "against": "beginner",
+      "share": {
+        "mean": 0.57,
+        "low": 0.507699,
+        "high": 0.632301,
+        "n": 100,
+        "sd": 0.313984
+      }
+    },
+    {
+      "id": "easy_mix0.25_vs_medium",
+      "level": "easy",
+      "mix": 0.25,
+      "against": "above",
+      "share": {
+        "mean": 0.189167,
+        "low": 0.13636,
+        "high": 0.241973,
+        "n": 100,
+        "sd": 0.266133
+      }
+    },
+    {
+      "id": "easy_mix0.5_vs_easy",
+      "level": "easy",
+      "mix": 0.5,
+      "against": "self",
+      "share": {
+        "mean": 0.554167,
+        "low": 0.495441,
+        "high": 0.612892,
+        "n": 100,
+        "sd": 0.295964
+      }
+    },
+    {
+      "id": "easy_mix0.5_vs_beginner",
+      "level": "easy",
+      "mix": 0.5,
+      "against": "beginner",
+      "share": {
+        "mean": 0.565,
+        "low": 0.501694,
+        "high": 0.628306,
+        "n": 100,
+        "sd": 0.31905
+      }
+    },
+    {
+      "id": "easy_mix0.5_vs_medium",
+      "level": "easy",
+      "mix": 0.5,
+      "against": "above",
+      "share": {
+        "mean": 0.201667,
+        "low": 0.145695,
+        "high": 0.257638,
+        "n": 100,
+        "sd": 0.282083
+      }
+    },
+    {
+      "id": "easy_mix0.75_vs_easy",
+      "level": "easy",
+      "mix": 0.75,
+      "against": "self",
+      "share": {
+        "mean": 0.485,
+        "low": 0.425666,
+        "high": 0.544334,
+        "n": 100,
+        "sd": 0.29903
+      }
+    },
+    {
+      "id": "easy_mix0.75_vs_beginner",
+      "level": "easy",
+      "mix": 0.75,
+      "against": "beginner",
+      "share": {
+        "mean": 0.555,
+        "low": 0.493704,
+        "high": 0.616296,
+        "n": 100,
+        "sd": 0.308916
+      }
+    },
+    {
+      "id": "easy_mix0.75_vs_medium",
+      "level": "easy",
+      "mix": 0.75,
+      "against": "above",
+      "share": {
+        "mean": 0.253333,
+        "low": 0.198471,
+        "high": 0.308195,
+        "n": 100,
+        "sd": 0.276492
+      }
+    },
+    {
+      "id": "easy_mix1_vs_easy",
+      "level": "easy",
+      "mix": 1,
+      "against": "self",
+      "share": {
+        "mean": 0.515,
+        "low": 0.452803,
+        "high": 0.577197,
+        "n": 100,
+        "sd": 0.313461
+      }
+    },
+    {
+      "id": "easy_mix1_vs_beginner",
+      "level": "easy",
+      "mix": 1,
+      "against": "beginner",
+      "share": {
+        "mean": 0.535,
+        "low": 0.476425,
+        "high": 0.593575,
+        "n": 100,
+        "sd": 0.295206
+      }
+    },
+    {
+      "id": "easy_mix1_vs_medium",
+      "level": "easy",
+      "mix": 1,
+      "against": "above",
+      "share": {
+        "mean": 0.208333,
+        "low": 0.1579,
+        "high": 0.258767,
+        "n": 100,
+        "sd": 0.254174
+      }
+    },
+    {
+      "id": "medium_mix0_vs_medium",
+      "level": "medium",
+      "mix": 0,
+      "against": "self",
+      "share": {
+        "mean": 0.5,
+        "low": 0.5,
+        "high": 0.5,
+        "n": 100,
+        "sd": 0
+      }
+    },
+    {
+      "id": "medium_mix0_vs_beginner",
+      "level": "medium",
+      "mix": 0,
+      "against": "beginner",
+      "share": {
+        "mean": 0.7375,
+        "low": 0.682264,
+        "high": 0.792736,
+        "n": 100,
+        "sd": 0.278377
+      }
+    },
+    {
+      "id": "medium_mix0_vs_hard",
+      "level": "medium",
+      "mix": 0,
+      "against": "above",
+      "share": {
+        "mean": 0.385,
+        "low": 0.323186,
+        "high": 0.446814,
+        "n": 100,
+        "sd": 0.31153
+      }
+    },
+    {
+      "id": "medium_mix0.25_vs_medium",
+      "level": "medium",
+      "mix": 0.25,
+      "against": "self",
+      "share": {
+        "mean": 0.501667,
+        "low": 0.436579,
+        "high": 0.566754,
+        "n": 100,
+        "sd": 0.328026
+      }
+    },
+    {
+      "id": "medium_mix0.25_vs_beginner",
+      "level": "medium",
+      "mix": 0.25,
+      "against": "beginner",
+      "share": {
+        "mean": 0.7775,
+        "low": 0.724318,
+        "high": 0.830682,
+        "n": 100,
+        "sd": 0.268024
+      }
+    },
+    {
+      "id": "medium_mix0.25_vs_hard",
+      "level": "medium",
+      "mix": 0.25,
+      "against": "above",
+      "share": {
+        "mean": 0.356667,
+        "low": 0.292215,
+        "high": 0.421119,
+        "n": 100,
+        "sd": 0.324824
+      }
+    },
+    {
+      "id": "medium_mix0.5_vs_medium",
+      "level": "medium",
+      "mix": 0.5,
+      "against": "self",
+      "share": {
+        "mean": 0.525,
+        "low": 0.458672,
+        "high": 0.591328,
+        "n": 100,
+        "sd": 0.334279
+      }
+    },
+    {
+      "id": "medium_mix0.5_vs_beginner",
+      "level": "medium",
+      "mix": 0.5,
+      "against": "beginner",
+      "share": {
+        "mean": 0.7625,
+        "low": 0.707264,
+        "high": 0.817736,
+        "n": 100,
+        "sd": 0.278377
+      }
+    },
+    {
+      "id": "medium_mix0.5_vs_hard",
+      "level": "medium",
+      "mix": 0.5,
+      "against": "above",
+      "share": {
+        "mean": 0.376667,
+        "low": 0.313715,
+        "high": 0.439619,
+        "n": 100,
+        "sd": 0.317264
+      }
+    },
+    {
+      "id": "medium_mix0.75_vs_medium",
+      "level": "medium",
+      "mix": 0.75,
+      "against": "self",
+      "share": {
+        "mean": 0.5575,
+        "low": 0.494101,
+        "high": 0.620899,
+        "n": 100,
+        "sd": 0.319515
+      }
+    },
+    {
+      "id": "medium_mix0.75_vs_beginner",
+      "level": "medium",
+      "mix": 0.75,
+      "against": "beginner",
+      "share": {
+        "mean": 0.7775,
+        "low": 0.718978,
+        "high": 0.836022,
+        "n": 100,
+        "sd": 0.294938
+      }
+    },
+    {
+      "id": "medium_mix0.75_vs_hard",
+      "level": "medium",
+      "mix": 0.75,
+      "against": "above",
+      "share": {
+        "mean": 0.443333,
+        "low": 0.371551,
+        "high": 0.515116,
+        "n": 100,
+        "sd": 0.361767
+      }
+    },
+    {
+      "id": "medium_mix1_vs_medium",
+      "level": "medium",
+      "mix": 1,
+      "against": "self",
+      "share": {
+        "mean": 0.6,
+        "low": 0.541104,
+        "high": 0.658896,
+        "n": 100,
+        "sd": 0.296822
+      }
+    },
+    {
+      "id": "medium_mix1_vs_beginner",
+      "level": "medium",
+      "mix": 1,
+      "against": "beginner",
+      "share": {
+        "mean": 0.79,
+        "low": 0.734609,
+        "high": 0.845391,
+        "n": 100,
+        "sd": 0.279158
+      }
+    },
+    {
+      "id": "medium_mix1_vs_hard",
+      "level": "medium",
+      "mix": 1,
+      "against": "above",
+      "share": {
+        "mean": 0.456667,
+        "low": 0.392541,
+        "high": 0.520792,
+        "n": 100,
+        "sd": 0.323179
+      }
+    },
+    {
+      "id": "hard_mix0_vs_hard",
+      "level": "hard",
+      "mix": 0,
+      "against": "self",
+      "share": {
+        "mean": 0.5,
+        "low": 0.5,
+        "high": 0.5,
+        "n": 100,
+        "sd": 0
+      }
+    },
+    {
+      "id": "hard_mix0_vs_beginner",
+      "level": "hard",
+      "mix": 0,
+      "against": "beginner",
+      "share": {
+        "mean": 0.806667,
+        "low": 0.752059,
+        "high": 0.861274,
+        "n": 100,
+        "sd": 0.27521
+      }
+    },
+    {
+      "id": "hard_mix0.25_vs_hard",
+      "level": "hard",
+      "mix": 0.25,
+      "against": "self",
+      "share": {
+        "mean": 0.514167,
+        "low": 0.451365,
+        "high": 0.576968,
+        "n": 100,
+        "sd": 0.316506
+      }
+    },
+    {
+      "id": "hard_mix0.25_vs_beginner",
+      "level": "hard",
+      "mix": 0.25,
+      "against": "beginner",
+      "share": {
+        "mean": 0.89,
+        "low": 0.849917,
+        "high": 0.930083,
+        "n": 100,
+        "sd": 0.20201
+      }
+    },
+    {
+      "id": "hard_mix0.5_vs_hard",
+      "level": "hard",
+      "mix": 0.5,
+      "against": "self",
+      "share": {
+        "mean": 0.534167,
+        "low": 0.474846,
+        "high": 0.593488,
+        "n": 100,
+        "sd": 0.298964
+      }
+    },
+    {
+      "id": "hard_mix0.5_vs_beginner",
+      "level": "hard",
+      "mix": 0.5,
+      "against": "beginner",
+      "share": {
+        "mean": 0.856667,
+        "low": 0.809132,
+        "high": 0.904201,
+        "n": 100,
+        "sd": 0.239563
+      }
+    },
+    {
+      "id": "hard_mix0.75_vs_hard",
+      "level": "hard",
+      "mix": 0.75,
+      "against": "self",
+      "share": {
+        "mean": 0.548333,
+        "low": 0.480944,
+        "high": 0.615722,
+        "n": 100,
+        "sd": 0.339625
+      }
+    },
+    {
+      "id": "hard_mix0.75_vs_beginner",
+      "level": "hard",
+      "mix": 0.75,
+      "against": "beginner",
+      "share": {
+        "mean": 0.86,
+        "low": 0.811957,
+        "high": 0.908043,
+        "n": 100,
+        "sd": 0.242126
+      }
+    },
+    {
+      "id": "hard_mix1_vs_hard",
+      "level": "hard",
+      "mix": 1,
+      "against": "self",
+      "share": {
+        "mean": 0.593333,
+        "low": 0.522816,
+        "high": 0.66385,
+        "n": 100,
+        "sd": 0.35539
+      }
+    },
+    {
+      "id": "hard_mix1_vs_beginner",
+      "level": "hard",
+      "mix": 1,
+      "against": "beginner",
+      "share": {
+        "mean": 0.84,
+        "low": 0.790888,
+        "high": 0.889112,
+        "n": 100,
+        "sd": 0.247513
+      }
+    }
+  ],
+  "selection": [
+    {
+      "level": "easy",
+      "beginnerTarget": [
+        0.45,
+        0.85
+      ],
+      "rows": [
+        {
+          "mix": 0,
+          "self": 0.5,
+          "beginner": 0.536667,
+          "above": 0.185833,
+          "qualifies": true
+        },
+        {
+          "mix": 0.25,
+          "self": 0.486667,
+          "beginner": 0.57,
+          "above": 0.189167,
+          "qualifies": true
+        },
+        {
+          "mix": 0.5,
+          "self": 0.554167,
+          "beginner": 0.565,
+          "above": 0.201667,
+          "qualifies": true
+        },
+        {
+          "mix": 0.75,
+          "self": 0.485,
+          "beginner": 0.555,
+          "above": 0.253333,
+          "qualifies": true
+        },
+        {
+          "mix": 1,
+          "self": 0.515,
+          "beginner": 0.535,
+          "above": 0.208333,
+          "qualifies": true
+        }
+      ],
+      "chosen": 0.5,
+      "anyQualified": true
+    },
+    {
+      "level": "medium",
+      "beginnerTarget": [
+        0.65,
+        0.95
+      ],
+      "rows": [
+        {
+          "mix": 0,
+          "self": 0.5,
+          "beginner": 0.7375,
+          "above": 0.385,
+          "qualifies": true
+        },
+        {
+          "mix": 0.25,
+          "self": 0.501667,
+          "beginner": 0.7775,
+          "above": 0.356667,
+          "qualifies": true
+        },
+        {
+          "mix": 0.5,
+          "self": 0.525,
+          "beginner": 0.7625,
+          "above": 0.376667,
+          "qualifies": true
+        },
+        {
+          "mix": 0.75,
+          "self": 0.5575,
+          "beginner": 0.7775,
+          "above": 0.443333,
+          "qualifies": true
+        },
+        {
+          "mix": 1,
+          "self": 0.6,
+          "beginner": 0.79,
+          "above": 0.456667,
+          "qualifies": true
+        }
+      ],
+      "chosen": 1,
+      "anyQualified": true
+    },
+    {
+      "level": "hard",
+      "beginnerTarget": [
+        0.85,
+        1
+      ],
+      "rows": [
+        {
+          "mix": 0,
+          "self": 0.5,
+          "beginner": 0.806667,
+          "above": null,
+          "qualifies": false
+        },
+        {
+          "mix": 0.25,
+          "self": 0.514167,
+          "beginner": 0.89,
+          "above": null,
+          "qualifies": true
+        },
+        {
+          "mix": 0.5,
+          "self": 0.534167,
+          "beginner": 0.856667,
+          "above": null,
+          "qualifies": true
+        },
+        {
+          "mix": 0.75,
+          "self": 0.548333,
+          "beginner": 0.86,
+          "above": null,
+          "qualifies": true
+        },
+        {
+          "mix": 1,
+          "self": 0.593333,
+          "beginner": 0.84,
+          "above": null,
+          "qualifies": false
+        }
+      ],
+      "chosen": 0.75,
+      "anyQualified": true
+    }
+  ],
+  "chosen": {
+    "easy": 0.5,
+    "medium": 1,
+    "hard": 0.75
+  }
+}
