@@ -60,7 +60,7 @@ export type Jitter = (intent: string) => number; // [0,1)
 /**
  * Observe only: what a planning pass did, for the level audit and the speed
  * measurement. Nothing a bot decides depends on whether an observer is
- * attached; bot-observer.test.ts plays the same rounds with and without one.
+ * attached; bot-policies.test.ts plays the same rounds with and without one.
  */
 export interface BotObserver {
   /** Every effort roll: the opportunity's tag and whether the bot was focused. */
