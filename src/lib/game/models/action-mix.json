@@ -1,4 +1,0 @@
-{
-  "status": "untuned: every level at a mix of 0 until npm run ml:tune-mix chooses one",
-  "mix": { "easy": 0, "medium": 0, "hard": 0 }
-}
