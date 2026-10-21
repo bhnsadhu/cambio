@@ -1,0 +1,314 @@
+{
+  "question": "Is each level with learned actions at its tuned mix no worse than its frozen self, and does each level stay below the frozen level above it?",
+  "seeds": [
+    {
+      "name": "T1",
+      "from": 520001,
+      "count": 200
+    },
+    {
+      "name": "T2",
+      "from": 530001,
+      "count": 200
+    }
+  ],
+  "fallback": false,
+  "estimateSeconds": 221.399928,
+  "roundsPerMatchup": 800,
+  "mix": {
+    "easy": 0.5,
+    "medium": 1,
+    "hard": 0.75
+  },
+  "matchups": [
+    {
+      "id": "easy_Astar_vs_easy_C0",
+      "sideA": "easy A*",
+      "sideB": "easy C0",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.527708,
+        "low": 0.499194,
+        "high": 0.556222,
+        "n": 400,
+        "sd": 0.290082
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.5225,
+          "low": 0.48232,
+          "high": 0.56268,
+          "n": 200,
+          "sd": 0.288156
+        },
+        "T2": {
+          "mean": 0.532917,
+          "low": 0.492114,
+          "high": 0.57372,
+          "n": 200,
+          "sd": 0.292625
+        }
+      },
+      "meanScoreA": {
+        "mean": 9.61375,
+        "low": 9.220416,
+        "high": 10.007084,
+        "n": 400,
+        "sd": 4.001511
+      },
+      "meanScoreB": {
+        "mean": 10.225625,
+        "low": 9.845742,
+        "high": 10.605508,
+        "n": 400,
+        "sd": 3.864667
+      },
+      "botCalls": 404,
+      "callsRefusedByGate": 0
+    },
+    {
+      "id": "medium_Astar_vs_medium_C0",
+      "sideA": "medium A*",
+      "sideB": "medium C0",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.605,
+        "low": 0.575188,
+        "high": 0.634812,
+        "n": 400,
+        "sd": 0.303287
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.600417,
+          "low": 0.558411,
+          "high": 0.642423,
+          "n": 200,
+          "sd": 0.301251
+        },
+        "T2": {
+          "mean": 0.609583,
+          "low": 0.566916,
+          "high": 0.652251,
+          "n": 200,
+          "sd": 0.305996
+        }
+      },
+      "meanScoreA": {
+        "mean": 7.031875,
+        "low": 6.688356,
+        "high": 7.375394,
+        "n": 400,
+        "sd": 3.494726
+      },
+      "meanScoreB": {
+        "mean": 8.709375,
+        "low": 8.353461,
+        "high": 9.065289,
+        "n": 400,
+        "sd": 3.620821
+      },
+      "botCalls": 367,
+      "callsRefusedByGate": 0
+    },
+    {
+      "id": "hard_Astar_vs_hard_C0",
+      "sideA": "hard A*",
+      "sideB": "hard C0",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.564792,
+        "low": 0.533806,
+        "high": 0.595777,
+        "n": 400,
+        "sd": 0.315224
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.56875,
+          "low": 0.523297,
+          "high": 0.614203,
+          "n": 200,
+          "sd": 0.325969
+        },
+        "T2": {
+          "mean": 0.560833,
+          "low": 0.518323,
+          "high": 0.603344,
+          "n": 200,
+          "sd": 0.304868
+        }
+      },
+      "meanScoreA": {
+        "mean": 6.715,
+        "low": 6.372979,
+        "high": 7.057021,
+        "n": 400,
+        "sd": 3.479491
+      },
+      "meanScoreB": {
+        "mean": 7.756875,
+        "low": 7.438942,
+        "high": 8.074808,
+        "n": 400,
+        "sd": 3.234436
+      },
+      "botCalls": 332,
+      "callsRefusedByGate": 0
+    },
+    {
+      "id": "easy_Astar_vs_medium_C0",
+      "sideA": "easy A*",
+      "sideB": "medium C0",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.210417,
+        "low": 0.182982,
+        "high": 0.237852,
+        "n": 400,
+        "sd": 0.279103
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.190417,
+          "low": 0.153609,
+          "high": 0.227224,
+          "n": 200,
+          "sd": 0.26397
+        },
+        "T2": {
+          "mean": 0.230417,
+          "low": 0.189596,
+          "high": 0.271238,
+          "n": 200,
+          "sd": 0.292754
+        }
+      },
+      "meanScoreA": {
+        "mean": 12.726875,
+        "low": 12.348565,
+        "high": 13.105185,
+        "n": 400,
+        "sd": 3.848672
+      },
+      "meanScoreB": {
+        "mean": 6.585625,
+        "low": 6.285083,
+        "high": 6.886167,
+        "n": 400,
+        "sd": 3.057513
+      },
+      "botCalls": 455,
+      "callsRefusedByGate": 0
+    },
+    {
+      "id": "medium_Astar_vs_hard_C0",
+      "sideA": "medium A*",
+      "sideB": "hard C0",
+      "rounds": 800,
+      "shareA": {
+        "mean": 0.456875,
+        "low": 0.424295,
+        "high": 0.489455,
+        "n": 400,
+        "sd": 0.331445
+      },
+      "shareABySet": {
+        "T1": {
+          "mean": 0.444583,
+          "low": 0.398569,
+          "high": 0.490597,
+          "n": 200,
+          "sd": 0.329996
+        },
+        "T2": {
+          "mean": 0.469167,
+          "low": 0.422697,
+          "high": 0.515636,
+          "n": 200,
+          "sd": 0.333261
+        }
+      },
+      "meanScoreA": {
+        "mean": 7.916875,
+        "low": 7.580159,
+        "high": 8.253591,
+        "n": 400,
+        "sd": 3.425514
+      },
+      "meanScoreB": {
+        "mean": 6.675,
+        "low": 6.364398,
+        "high": 6.985602,
+        "n": 400,
+        "sd": 3.15985
+      },
+      "botCalls": 326,
+      "callsRefusedByGate": 0
+    }
+  ],
+  "h10": {
+    "rule": "Refuted for a level whose mix is above 0 if the 95% interval of its win share against its frozen self lies entirely below 50%. Holds vacuously at a mix of 0.",
+    "levels": {
+      "easy": {
+        "mix": 0.5,
+        "shareA": {
+          "mean": 0.527708,
+          "low": 0.499194,
+          "high": 0.556222,
+          "n": 400,
+          "sd": 0.290082
+        },
+        "holds": true
+      },
+      "medium": {
+        "mix": 1,
+        "shareA": {
+          "mean": 0.605,
+          "low": 0.575188,
+          "high": 0.634812,
+          "n": 400,
+          "sd": 0.303287
+        },
+        "holds": true
+      },
+      "hard": {
+        "mix": 0.75,
+        "shareA": {
+          "mean": 0.564792,
+          "low": 0.533806,
+          "high": 0.595777,
+          "n": 400,
+          "sd": 0.315224
+        },
+        "holds": true
+      }
+    },
+    "holds": true
+  },
+  "h12": {
+    "rule": "Refuted if the 95% interval of easy A* vs frozen medium or medium A* vs frozen hard has an upper bound at or above 50%.",
+    "easy_vs_medium": {
+      "mean": 0.210417,
+      "low": 0.182982,
+      "high": 0.237852,
+      "n": 400,
+      "sd": 0.279103
+    },
+    "medium_vs_hard": {
+      "mean": 0.456875,
+      "low": 0.424295,
+      "high": 0.489455,
+      "n": 400,
+      "sd": 0.331445
+    },
+    "holds": true
+  },
+  "h13": {
+    "roundsExpected": 4000,
+    "roundsFinished": 4000,
+    "botCalls": 1884,
+    "callsRefusedByGate": 0,
+    "holds": true
+  }
+}

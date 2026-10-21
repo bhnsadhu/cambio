@@ -1,0 +1,6 @@
+id,side_a,side_b,rounds,share_a,share_a_low,share_a_high,share_a_set_T1,share_a_set_T1_low,share_a_set_T1_high,share_a_set_T2,share_a_set_T2_low,share_a_set_T2_high,mean_score_a,mean_score_b,bot_calls,calls_refused_by_gate
+easy_Astar_vs_easy_C0,easy A*,easy C0,800,0.527708,0.499194,0.556222,0.5225,0.48232,0.56268,0.532917,0.492114,0.57372,9.61375,10.225625,404,0
+medium_Astar_vs_medium_C0,medium A*,medium C0,800,0.605,0.575188,0.634812,0.600417,0.558411,0.642423,0.609583,0.566916,0.652251,7.031875,8.709375,367,0
+hard_Astar_vs_hard_C0,hard A*,hard C0,800,0.564792,0.533806,0.595777,0.56875,0.523297,0.614203,0.560833,0.518323,0.603344,6.715,7.756875,332,0
+easy_Astar_vs_medium_C0,easy A*,medium C0,800,0.210417,0.182982,0.237852,0.190417,0.153609,0.227224,0.230417,0.189596,0.271238,12.726875,6.585625,455,0
+medium_Astar_vs_hard_C0,medium A*,hard C0,800,0.456875,0.424295,0.489455,0.444583,0.398569,0.490597,0.469167,0.422697,0.515636,7.916875,6.675,326,0

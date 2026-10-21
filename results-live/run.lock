@@ -1,0 +1,6 @@
+{
+  "script": "npm run ml:evaluate-live",
+  "seeds": "seeds 520001 to 520200 and 530001 to 530200",
+  "commit": "905489cb08546660fb2c312f8d5b2d90807a8eb7",
+  "startedAt": "2026-10-21T09:01:30.653Z"
+}
