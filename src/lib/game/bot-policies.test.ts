@@ -33,7 +33,12 @@ describe("frozen bot policies", () => {
   });
 
   it("naming the frozen policies plays exactly the rounds the frozen bots play, and an observer changes no decision", () => {
-    const { events, observer } = recorder();
+    const { events, observer: counter } = recorder();
+    // Every planned action is reported for the seat that planned it, at that seat's level.
+    const observer: BotObserver = { ...counter, plan: (event) => {
+      counter.plan!(event);
+      expect(event.intent.startsWith(`${event.botId}:`), event.intent).toBe(true);
+    } };
     for (let seed = 1; seed <= 4; seed++) {
       const named = playRound(seed, LEVELS.map((difficulty): SeatSpec => ({ difficulty, strategy: { ...FROZEN } })));
       // C0 played with every observer hook attached.

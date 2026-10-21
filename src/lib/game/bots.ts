@@ -190,7 +190,8 @@ export function planBots(state: GameState, now: number, jitter: Jitter, observer
     const planned = plans.length;
     if (observer) {
       // Runs after this seat's planning, whichever way it returns below.
-      reports.push(() => observeDecision(observed, bot, brain.diff, plans.slice(planned), observer));
+      // Later seats push their own plans after this one, so keep this seat's only.
+      reports.push(() => observeDecision(observed, bot, brain.diff, plans.slice(planned).filter((plan) => plan.playerId === bot.id), observer));
     }
 
     // 1. Owed cards after a correct stick of someone else's card.
