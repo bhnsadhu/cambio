@@ -15,13 +15,84 @@ A real time multiplayer web app for the card game Cambio, where house bots that 
 
 ## At a glance
 
-* **What it is.** A live multiplayer card game with four seats, where house bots at three levels (easy, medium, hard) fill any empty seat.
-* **What was tested.** Whether the three bot levels really play at different strengths, and whether models trained on simulated games could make them play better.
-* **What was found.** The levels are ordered, and every documented behavior the audit could measure held. The bots' Cambio calls are overconfident. Trained models improved some measures but stay off for real players, because one safety check failed.
+* **A full product.** A live multiplayer card game for four seats, playable in the browser as a guest or with an account that keeps wins, rank, streak, friends and a leaderboard position. It runs on serverless functions and one Postgres database, with no dedicated game server.
+* **Built to be correct.** A pure rules engine decides every move, commits are version checked so simultaneous moves cannot overwrite each other, hidden cards never leave the server, and seeded bot tables, unit tests and a browser suite run in CI on every push.
+* **Plus a measured look at its bots.** House bots fill empty seats at three levels. The levels are ordered and every documented behavior the audit could measure held. The bots' Cambio calls are overconfident, and models trained on simulated games improved some measures but stay off for real players, because one safety check failed.
 
-Every number below comes from bots playing bots. No human played in any test.
+Every bot number below comes from bots playing bots. No human played in any of those tests.
 
-## The question
+## What is built
+
+| Feature | What it does |
+| --- | --- |
+| **Real time multiplayer** | Every move streams to all four seats over Supabase Realtime. Simultaneous moves are serialized, and the rules decide every late arrival. |
+| **Complete game engine** | Turn logic, power cards, anytime sticking, and every way a round can end, in about 1,550 lines of pure TypeScript with no I/O. |
+| **Bots that play from memory** | Three house bots fill empty seats and act only on information they have legitimately seen, at three difficulties. |
+| **Persistent accounts** | Wins, rank and streak across every table, with friends, invites and a light for whoever is playing right now. |
+| **Friends and global leaderboards** | Compare lifetime points with accepted friends or all players. Equal points share a rank, and your position stays visible even outside the current page. Guests can browse the global leaderboard. |
+| **Serverless architecture** | Runs on serverless functions and one Postgres database, with no dedicated game server. |
+| **Learned bot policies, tested before shipping** | Per level call and action models trained from rollouts of seeded play, with features limited to what each level may know, a plain TypeScript forward pass, and hypotheses written before any model code. They stay off until a test run supports them. |
+| **Engine and browser regression suites** | Seeded bot versus bot tables played to the score, checking that every move is legal, no card is created or lost, and each difficulty beats the one below it. A Playwright suite covers the whole account lifecycle against an isolated database. |
+
+## Architecture
+
+```mermaid
+flowchart TB
+  player["Player's browser<br/>anon key only"]
+  functions["Vercel Functions<br/>pure rules engine<br/>bot turns via waitUntil"]
+  subgraph postgres["Supabase Postgres"]
+    games[("games<br/>secret state, RLS")]
+    views[("game_views<br/>redacted view")]
+  end
+  realtime["Supabase Realtime"]
+  seats["Every seat's browser"]
+
+  player -->|"Step 1: action"| functions
+  functions -->|"Step 2: version checked commit,<br/>retried on conflict"| postgres
+  games -->|"Step 3: same commit"| views
+  views -->|"Step 4: Postgres Changes"| realtime
+  realtime -->|"Step 5: new view"| seats
+  functions -.->|"private view:<br/>drawn card, reveals"| seats
+```
+
+Every move is a pure function over the current state. The server loads the state and its version, runs the action through the engine, and commits only if the version is unchanged; a losing commit reloads and runs again, so the rules decide every late arrival. More in [docs/architecture.md](docs/architecture.md).
+
+## Engineering
+
+* **Real time sync.** Committed, redacted views stream to all four seats over Supabase Realtime. Clients discard any view older than the one they hold, and slow polling plus a refresh on tab focus recover from dropped sockets. Client generated action IDs stop a retried request from applying twice.
+* **A pure rules engine.** Every move is a function over the current state: `applyAction(state, envelope, ctx)` returns a new state or an error, in about 1,550 lines of TypeScript with no I/O.
+* **Version checked commits.** The server loads the state and its version, runs the action through the engine, and commits inside Postgres only if the version is unchanged. A losing commit reloads and runs again, so the rules decide every late arrival.
+* **Hidden information stays hidden.** The full state lives in one row with Row Level Security enabled and no policies. The browser holds only the anon key and can read only the redacted `game_views`. Tests permute every unseen card, reverse the deck, and throw on any attempted read of a card a bot has not seen, and the bots' plans must not change.
+* **Tests and CI.** Seeded bot versus bot tables play to the score and check after every action that the move was legal and all 54 cards are accounted for. Vitest covers the engine and bots, and a Playwright suite covers the whole account lifecycle against isolated Postgres containers. GitHub Actions runs typecheck, lint, the unit tests and the account suite on every push and pull request, with no real secrets.
+* **Accounts and sessions.** Passwords use salted scrypt hashes. Session tokens live in HttpOnly cookies with SameSite protection and only their hashes are stored, and login and sensitive changes have persistent request limits. Guests can play without an account.
+* **Serverless.** Vercel Functions and one Postgres database, with no dedicated game server. After every human action the server starts a bot runner with `waitUntil`, and a 20 second database lease keeps it to one runner per game.
+
+More in [docs/architecture.md](docs/architecture.md).
+
+## Product decisions
+
+**The game**
+
+* **The ready check comes after the deal.** It used to run before the deal, on a screen of its own with nothing on the table, which the commit called "the wrong half of the sequence." The round now deals, checks that every seat is ready, then opens the peek.
+* **Sticking is open to every seat at every moment.** The old rule refused a stick from the player mid turn, which, in the commit's words, "took the one reaction the game runs on away from whoever was mid turn."
+* **Sticking stays open through the final turn.** The round used to score the instant the last final turn ended, so "a player who stuck one match and reached for a second lost the round out from under them." It now holds the round open on a short window, and an incorrect stick does not prolong it.
+* **The table narrates itself.** Playtesters "could follow their own moves and nobody else's," so one announcement at a time now names the move, who made it and whose card it touched.
+* **Pausing and playing again need the whole table.** Any player can ask to pause and every seat answers, and another round starts only when every seat asks. The decisions log gives the purpose as inferred, not stated: one player should not decide for everyone else.
+
+**The bots and their evaluation**
+
+* **The hypotheses were written before the code.** The evaluation document was committed before any evaluation code, and the learned policy hypotheses before any model, training or data logging code. Mistakes get a dated correction note underneath instead of an edit.
+* **The rule for going live was fixed in advance.** Each switch is one constant, and the rule says which results must hold before it moves. The outcome was decided by the rule, not by how the result looked afterward.
+* **The switch was not forced when a safety check failed.** The tuned setting passed the strength, order, identity, call, legality and speed checks and failed one existing behavior test. Nothing went live, and neither the test nor the model was changed to get past it.
+* **The second rule was written after seeing the first run, and says so.** Easy missed H6 by three hundredths of a point, so nothing went live. To keep the new rule honest, only each level's action mix was tuned, on validation seeds only, and the result was tested once on fresh seeds that are locked after a single use.
+* **Bots only see what a human could see.** Each bot receives a separate observation holding only its own seat's knowledge, and tests change hidden faces, reverse the deck and give other seats false knowledge without changing any move. The decisions log records the purpose as inferred, not stated: a bot should not use information a human at the table could not see.
+* **Documentation follows the measurement.** When the evaluation showed the calls won 54.0% against a 64% gate, the bot doc stopped calling the Cambio rule cautious. For the audit the rule was set in advance: if a measured behavior contradicts a claim, the documentation is corrected and the bots are not changed to match it.
+
+## Bot research
+
+The house bots also come with a written evaluation. The question, the answers and what went wrong are below. Every hypothesis was written before the code that tests it, and the detail lives in [the bot evaluation](docs/experiments/bot-evaluation.md).
+
+### The question
 
 Can bots that only see what a human could see play at three clearly different skill levels, and can their Cambio calls be trusted?
 
@@ -35,7 +106,7 @@ The hypotheses were committed before any evaluation code. The full write up, wit
 
 **Can each level switch to learned actions on its own? Not yet.** After that first run, the owner allowed each level to go live separately. That rule was written after seeing the first run, so the only thing tuned was each level's action mix (the share of its focused decisions that use its learned action model), on validation seeds only, and the result was tested once on fresh seeds. With easy at 0.5, medium at 1 and hard at 0.75, no level did worse than its frozen self, the levels stayed ordered, and none reached the frozen level above it. But one existing behavior test fails with that setting live: in a test position, hard skips a blind swap that the frozen rules use to take the lead. The rule written before the run requires every existing test to pass, so nothing went live and every level still plays the original policies. Details in [the per level results](docs/experiments/bot-evaluation.md#per-level-go-live-results).
 
-## Results at a glance
+### Results at a glance
 
 Fifteen hypotheses, each written before the code that tests it. Verdicts follow the rules fixed in advance in [the bot evaluation](docs/experiments/bot-evaluation.md). Intervals are 95% intervals.
 
@@ -59,7 +130,7 @@ Fifteen hypotheses, each written before the code that tests it. Verdicts follow 
 
 **What survived.** The three levels are ordered and distinct, each ability earns its place, and the test setup is fair. A learned call model can state truer chances, and learned actions helped medium and hard. **What did not.** The shipped Cambio calls are overconfident, learned actions for easy missed the bar, and the tuned setting failed one safety test, so nothing went live.
 
-## How the levels were tested
+### How the levels were tested
 
 * **Seeded rounds.** Each test plays complete rounds from a numbered seed, so the same seed deals the same cards and any result can be replayed exactly.
 * **Seats swapped.** Two sides share a table, two seats each. Every seed is played twice with the seating reversed, so neither side gets a better chair.
@@ -70,7 +141,7 @@ Together these make the comparison fair: the same deals, the same chairs, the sa
 
 This is bots against bots. No human played in any of these tests. The beginner player used in the ladder below exists only inside the tests and never sits at a live table.
 
-## Do the levels play as designed?
+### Do the levels play as designed?
 
 The documented behavior of each level, measured from 300 instrumented bot rounds on fresh seeds ([audit](docs/experiments/bot-evaluation.md#h14-the-frozen-bots-measured-against-the-docs)). Real players get the frozen bots (C0), the original policies.
 
@@ -97,7 +168,7 @@ Next, the levels against each other and against a beginner reference player (kee
 
 The live bots miss the hard against beginner target by more than six points, and neither configuration reaches 85% on the point estimate.
 
-## Trained bot models
+### Trained bot models
 
 ```mermaid
 flowchart LR
@@ -114,35 +185,14 @@ The models learn from simulated rounds. At each sampled decision, every candidat
 
 **Decision speed.** One learned action decision took a mean of 0.29 ms and 3.50 ms at the 99th percentile, over 14,522 decisions, against a bound of 25 ms (hard's 99th percentile was 5.22 ms, the slowest single decision 14.51 ms). This was timed on a 4 core cloud container. Nothing measures speed inside the Vercel functions or under real traffic ([ml/README.md](ml/README.md#speed)).
 
-### What real players get
+#### What real players get
 
 **The original bots, at every level** (call policy `gate_v1`, action policy `rules_v1`). Both learned parts remain in the code as options, set per level in `src/lib/game/bot-policies.ts`.
 
 * **Learned actions stay off.** The per level switch failed H13, and before it H6 was refuted for easy. With the tuned mix live, one existing behavior test fails: `can use a blind swap entirely between opponents to take the lead`. In its fixture the frozen rules use a jack's blind swap between two opponents to take the lead, and hard with learned actions skips the power instead. The rule written before the run requires every existing test to pass. Whether the test or the model is right about that position was not examined, and neither was changed.
 * **Learned calls stay off.** Switching them on fails existing tests that every live bot must pass: with learned calls, all three levels call Cambio on a hand they know is losing. In the test fixture the bot holds 6 points it has seen, one opponent holds a single card worth 0, and the gate's own win belief is 0%; the call model gives 88% (easy), 98% (medium) and 98% (hard). The logistic model extrapolates badly in positions far from its training data. In the test run, 24 of the model's 3,071 calls came at a gate belief below 10%, and 3 of them won.
 
-## Product decisions
-
-* **The hypotheses were written before the code.** The evaluation document was committed before any evaluation code, and the learned policy hypotheses before any model, training or data logging code. A hypothesis cannot be bent to fit a result it has not seen, and mistakes get a dated correction note underneath instead of an edit.
-* **The rule for going live was fixed in advance.** Each switch is one constant, and the rule says which results must hold before it moves. The outcome was decided by the rule, not by how the result looked afterward.
-* **The switch was not forced when a safety check failed.** The tuned setting passed the strength, order, identity, call, legality and speed checks and failed one existing behavior test. Nothing went live, and neither the test nor the model was changed to get past it.
-* **The second rule was written after seeing the first run, and says so.** Easy missed H6 by three hundredths of a point, so nothing went live. To keep the new rule honest, only each level's action mix was tuned, on validation seeds only, and the result was tested once on fresh seeds that are locked after a single use.
-* **Bots only see what a human could see.** Each bot receives a separate observation holding only its own seat's knowledge, and tests change hidden faces, reverse the deck and give other seats false knowledge without changing any move. The decisions log records the purpose as inferred, not stated: a bot should not use information a human at the table could not see.
-* **Documentation follows the measurement.** When the evaluation showed the calls won 54.0% against a 64% gate, the bot doc stopped calling the Cambio rule cautious. For the audit the rule was set in advance: if a measured behavior contradicts a claim, the documentation is corrected and the bots are not changed to match it.
-* **Sticking is open to every seat at every moment.** The old rule refused a stick from the player mid turn, which, in the commit's words, "took the one reaction the game runs on away from whoever was mid turn."
-
-## Engineering
-
-* **Real time sync.** Committed, redacted views stream to all four seats over Supabase Realtime. Clients discard any view older than the one they hold, and slow polling plus a refresh on tab focus recover from dropped sockets. Client generated action IDs stop a retried request from applying twice.
-* **A pure rules engine.** Every move is a function over the current state: `applyAction(state, envelope, ctx)` returns a new state or an error, in about 1,550 lines of TypeScript with no I/O.
-* **Version checked commits.** The server loads the state and its version, runs the action through the engine, and commits inside Postgres only if the version is unchanged. A losing commit reloads and runs again, so the rules decide every late arrival.
-* **Hidden information stays hidden.** The full state lives in one row with Row Level Security enabled and no policies. The browser holds only the anon key and can read only the redacted `game_views`. Tests permute every unseen card, reverse the deck, and throw on any attempted read of a card a bot has not seen, and the bots' plans must not change.
-* **Tests and CI.** Seeded bot versus bot tables play to the score and check after every action that the move was legal and all 54 cards are accounted for. Vitest covers the engine and bots, and a Playwright suite covers the whole account lifecycle against isolated Postgres containers. GitHub Actions runs typecheck, lint, the unit tests and the account suite on every push and pull request, with no real secrets.
-* **Serverless.** Vercel Functions and one Postgres database, with no dedicated game server. After every human action the server starts a bot runner with `waitUntil`, and a 20 second database lease keeps it to one runner per game.
-
-More in [docs/architecture.md](docs/architecture.md).
-
-## Corrections and what did not work
+### Corrections and what did not work
 
 * **Guarantee tests were not run before the test run.** The learned policy tests covered legality, card conservation, memory and hidden information, but not the gate's behavioral guarantees (never call on a known losing hand, respect unknown cards). Those tests only ran against the learned calls after the single test run, when the live switch was tried, and by then the test seeds were used.
 * **Better calibration did not mean better calls.** The model's stated chances are much closer to the truth, but it calls more often and in worse positions than the gate. 47.6% of its calls came at a gate belief below 64%, and those won 41.3%.
@@ -154,49 +204,13 @@ More in [docs/architecture.md](docs/architecture.md).
 * **The best informed level makes the worst calls.** Hard's calls won 51.5%, against 62.3% for easy. Why was not measured.
 * **Smaller misses.** Choosing among the top two moves to make medium less sharp cost far too much (42.0% against frozen medium on validation). The rollout labels are noisy, with 4 rollouts per candidate, so the frozen rule and the models both picked the best move only about a third of the time.
 
-## What is next, not done
+### What is next, not done
 
 Taken from the evaluation's own lists of what was not measured. None of these has been done.
 
 * **Not done: a guarded call model.** Adding the gate's guards to the call model, or retraining it to stay sane far from its data, was not tested, because there are no unused test seeds left for it.
 * **Not done: a per level switch tested on fresh seeds.** The tuned mix was tested once and its seeds are spent, so a later switch, one level at a time, needs new seeds.
 * **Not done: human versus bot play.** Every number here is bots playing bots, and whether the gaps between levels hold against people, or how the levels feel to play, is unknown.
-
-## Architecture
-
-```mermaid
-flowchart TB
-  player["Player's browser<br/>anon key only"]
-  functions["Vercel Functions<br/>pure rules engine<br/>bot turns via waitUntil"]
-  subgraph postgres["Supabase Postgres"]
-    games[("games<br/>secret state, RLS")]
-    views[("game_views<br/>redacted view")]
-  end
-  realtime["Supabase Realtime"]
-  seats["Every seat's browser"]
-
-  player -->|"Step 1: action"| functions
-  functions -->|"Step 2: version checked commit,<br/>retried on conflict"| postgres
-  games -->|"Step 3: same commit"| views
-  views -->|"Step 4: Postgres Changes"| realtime
-  realtime -->|"Step 5: new view"| seats
-  functions -.->|"private view:<br/>drawn card, reveals"| seats
-```
-
-Every move is a pure function over the current state. The server loads the state and its version, runs the action through the engine, and commits only if the version is unchanged; a losing commit reloads and runs again, so the rules decide every late arrival. More in [docs/architecture.md](docs/architecture.md).
-
-## Highlights
-
-| Feature | What it does |
-| --- | --- |
-| **Real time multiplayer** | Every move streams to all four seats over Supabase Realtime. Simultaneous moves are serialized, and the rules decide every late arrival. |
-| **Complete game engine** | Turn logic, power cards, anytime sticking, and every way a round can end, in about 1,550 lines of pure TypeScript with no I/O. |
-| **Bots that play from memory** | Three house bots fill empty seats and act only on information they have legitimately seen, at three difficulties. |
-| **Persistent accounts** | Wins, rank and streak across every table, with friends, invites and a light for whoever is playing right now. |
-| **Friends and global leaderboards** | Compare lifetime points with accepted friends or all players. Equal points share a rank, and your position stays visible even outside the current page. Guests can browse the global leaderboard. |
-| **Serverless architecture** | Runs on serverless functions and one Postgres database, with no dedicated game server. |
-| **Learned bot policies, tested before shipping** | Per level call and action models trained from rollouts of seeded play, with features limited to what each level may know, a plain TypeScript forward pass, and hypotheses written before any model code. They stay off until a test run supports them. |
-| **Engine and browser regression suites** | Seeded bot versus bot tables played to the score, checking that every move is legal, no card is created or lost, and each difficulty beats the one below it. A Playwright suite covers the whole account lifecycle against an isolated database. |
 
 ## Tech Stack
 
