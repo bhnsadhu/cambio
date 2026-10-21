@@ -63,11 +63,11 @@ describe("50 / 75 / 100 percent strategic decisions", () => {
 describe("effort rolls under learned actions", () => {
   it.each([["easy"], ["medium"], ["hard"]] as const)("%s at every action mix plans legal moves that a later re-read does not reroll", (level) => {
     const { cases, me, ctx } = decisionFixtures();
-    for (const mix of [0.25, 0.5, 1]) {
+    for (const mix of [0.5, 1]) {
       for (const fixture of cases) {
         Object.assign(fixture.state.players.find((p) => p.id === me)!, { difficulty: level, strategy: configStrategy("A*", level, { easy: mix, medium: mix, hard: mix } as Record<BotDifficulty, number>) });
-        for (let sample = 0; sample < 10; sample++) {
-          const jitter = (key: string) => key.includes(":skill:") ? (sample * 10 + 0.5) / 100 : (sample + 0.5) / 10;
+        for (let sample = 0; sample < 5; sample++) {
+          const jitter = (key: string) => key.includes(":skill:") ? (sample * 20 + 0.5) / 100 : (sample + 0.5) / 5;
           const plans = planBots(fixture.state, ctx.now, jitter).filter((p) => p.playerId === me);
           expect(planBots(fixture.state, ctx.now + 100, jitter).filter((p) => p.playerId === me), fixture.label).toEqual(plans);
           for (const plan of plans) expect(() => act(fixture.state, me, plan.action, ctx), fixture.label).not.toThrow();

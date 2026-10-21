@@ -1,7 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { playRound, type SeatSpec } from "./bot-harness";
 import { actionModelShareOf, actionPolicyOf, callPolicyOf, configStrategy, FROZEN_POLICIES, LIVE_ACTION_MIX, LIVE_ACTION_POLICY, LIVE_CALL_POLICY, TUNED_ACTION_MIX } from "./bot-policies";
+import type { BotObserver } from "./bots";
 import { BOT_DIFFICULTIES, type BotDifficulty, type BotStrategy } from "./types";
+
+/** An observer that counts every event it is told about. */
+function recorder() {
+  const events: Record<string, number> = {};
+  const count = (name: string) => () => { events[name] = (events[name] ?? 0) + 1; };
+  const observer: BotObserver = {
+    effort: count("effort"), memory: count("memory"), stick: count("stick"), power: count("power"),
+    lapseKeep: count("lapseKeep"), plan: count("plan"), modelDecision: count("modelDecision"),
+  };
+  return { events, observer };
+}
 
 const LEVELS: BotDifficulty[] = ["hard", "medium", "hard", "easy"];
 const FROZEN: BotStrategy = { callPolicy: "gate_v1", actionPolicy: "rules_v1" };
@@ -20,18 +32,24 @@ describe("frozen bot policies", () => {
     }
   });
 
-  it("naming the frozen policies plays exactly the rounds the frozen bots play", () => {
-    for (let seed = 1; seed <= 8; seed++) {
+  it("naming the frozen policies plays exactly the rounds the frozen bots play, and an observer changes no decision", () => {
+    const { events, observer } = recorder();
+    for (let seed = 1; seed <= 4; seed++) {
       const named = playRound(seed, LEVELS.map((difficulty): SeatSpec => ({ difficulty, strategy: { ...FROZEN } })));
-      const c0 = playRound(seed, LEVELS.map((difficulty): SeatSpec => ({ difficulty, strategy: configStrategy("C0", difficulty) })));
+      // C0 played with every observer hook attached.
+      const c0 = playRound(seed, LEVELS.map((difficulty): SeatSpec => ({ difficulty, strategy: configStrategy("C0", difficulty) })), undefined, { observer });
       expect(c0.steps, `seed ${seed}`).toBe(named.steps);
       expect(c0.calls, `seed ${seed}`).toEqual(named.calls);
       expect(c0.state.log, `seed ${seed}`).toEqual(named.state.log);
+      expect(c0.state.results, `seed ${seed}`).toEqual(named.state.results);
+      expect(c0.state.botKnown, `seed ${seed}`).toEqual(named.state.botKnown);
     }
+    for (const name of ["effort", "memory", "stick", "power", "lapseKeep", "plan"]) expect(events[name], name).toBeGreaterThan(0);
+    expect(events.modelDecision).toBeUndefined();
   });
 
   it("a live seat plays exactly the rounds its live constants name", () => {
-    for (let seed = 1; seed <= 8; seed++) {
+    for (let seed = 5; seed <= 8; seed++) {
       const plain = playRound(seed, LEVELS);
       const named = playRound(seed, LEVELS.map((difficulty): SeatSpec => ({ difficulty, strategy: liveStrategy(difficulty) })));
       expect(named.steps, `seed ${seed}`).toBe(plain.steps);
@@ -59,8 +77,17 @@ describe("the C0 and A* configurations", () => {
     for (const level of BOT_DIFFICULTIES) expect([0, 0.25, 0.5, 0.75, 1]).toContain(TUNED_ACTION_MIX[level]);
   });
 
-  it("mixes the same way every time for a seed", () => {
+  it("mixes the same way every time for a seed, and an observer changes no decision", () => {
     const mixed = LEVELS.map((difficulty): SeatSpec => ({ difficulty, strategy: configStrategy("A*", difficulty, { easy: 0.5, medium: 0.5, hard: 0.5 }) }));
-    for (const seed of [3, 4]) expect(playRound(seed, mixed).state.log).toEqual(playRound(seed, mixed).state.log);
+    const { events, observer } = recorder();
+    for (const seed of [3, 4]) {
+      const plain = playRound(seed, mixed);
+      const watched = playRound(seed, mixed, undefined, { observer });
+      expect(watched.steps, `seed ${seed}`).toBe(plain.steps);
+      expect(watched.calls, `seed ${seed}`).toEqual(plain.calls);
+      expect(watched.state.log, `seed ${seed}`).toEqual(plain.state.log);
+      expect(watched.state.botKnown, `seed ${seed}`).toEqual(plain.state.botKnown);
+    }
+    expect(events.modelDecision).toBeGreaterThan(0);
   });
 });

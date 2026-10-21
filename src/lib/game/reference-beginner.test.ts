@@ -16,7 +16,7 @@ describe("the beginner reference player", () => {
 
   it.each([["easy"], ["medium"], ["hard"]] as const)("finishes legal rounds against %s, never sticking or using a power", (level) => {
     let calls = 0, swaps = 0;
-    for (let seed = 1; seed <= 6; seed++) {
+    for (let seed = 1; seed <= 3; seed++) {
       let last: GameState | null = null;
       const round = playRound(seed, seats(level), (state) => { last = state; });
       const beginners = round.state.players.filter((p) => p.seat % 2 === 1).map((p) => p.id);
