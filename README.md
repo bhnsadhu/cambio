@@ -5,7 +5,7 @@
 [![CI](https://github.com/bhnsadhu/cambio/actions/workflows/ci.yml/badge.svg)](https://github.com/bhnsadhu/cambio/actions/workflows/ci.yml)
 [![Players](https://img.shields.io/endpoint?url=https%3A%2F%2Fcambio.bhanusadhu.com%2Fapi%2Fstats%3Fformat%3Dshields)](https://cambio.bhanusadhu.com/leaderboard?scope=all)
 
-A real time multiplayer web app for the card game Cambio, also known as Cabo, where house bots that see only what a human could see fill every empty seat.
+A real time multiplayer web app for the card game Cambio, where house bots that see only what a human could see fill every empty seat.
 
 **Play it live: [cambio.bhanusadhu.com](https://cambio.bhanusadhu.com)**
 
