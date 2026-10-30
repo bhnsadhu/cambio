@@ -23,7 +23,7 @@ const BUTTON_VARIANTS: Record<Variant, string> = {
   accent: "bg-accent text-bg hover:brightness-110",
   ghost: "bg-transparent text-ink-2 hover:text-ink hover:bg-surface-2",
   /** The one destructive look. Red is never used for anything reversible. */
-  danger: "bg-red text-white hover:brightness-110",
+  danger: "bg-red-strong text-white hover:brightness-110",
 };
 
 /**

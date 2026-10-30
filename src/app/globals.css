@@ -6,7 +6,8 @@
  * Sampled from the live app's store screenshots and offsuit.app:
  *   ground      #000000   true black, no felt
  *   pill/panel  #202028   cool charcoal (action pills, stat card)
- *   card        #f8f8f8   with #0a0a0a rank and #ff5a52 red suits
+ *   card        #f8f8f8   with #0a0a0a rank and #d2322a red suits (the
+ *                         sampled #ff5a52 is 2.9:1 on the card face)
  *   card back   white with a fine black diagonal hatch, inset in a white frame
  *   accent      #4ff0a8   mint, used for money and the stat that matters
  *   text        white at 1 / 0.7 / 0.5 (0.5 is the lowest that holds 4.5:1
@@ -40,6 +41,12 @@
   --color-accent-soft: rgb(79 240 168 / 0.14);
   --color-accent-ink: #4ff0a8;
   --color-red: #ff5a52;
+  /*
+   * Red that holds 4.5:1 against the white card and against white text: the
+   * hearts and diamonds on a face, and the destructive button. Set once, so a
+   * card reads the same in either theme.
+   */
+  --color-red-strong: #d2322a;
 
   --radius-panel: 24px;
   --radius-card: 14px;

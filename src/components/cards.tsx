@@ -27,7 +27,7 @@ export function FaceCard({ card, size = "md", className = "", elRef, style }: { 
   const s = SIZES[size];
   const joker = card.rank === "JOKER";
   const ten = card.rank === "10";
-  const color = joker ? "text-joker" : isRed(card.suit) ? "text-red" : "text-card-ink";
+  const color = joker ? "text-joker" : isRed(card.suit) ? "text-red-strong" : "text-card-ink";
   return (
     <div
       ref={elRef}
