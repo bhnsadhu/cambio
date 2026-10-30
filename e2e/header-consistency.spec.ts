@@ -30,10 +30,11 @@ async function websiteNavigation(page: Page, account: boolean, active: string | 
   const nav = header(page).getByRole("navigation", { name: "Main navigation", exact: true });
   await expect(nav).toBeVisible();
   await expect(header(page).getByRole("link", { name: "Cambio home", exact: true })).toHaveAttribute("href", "/");
+  await expect(header(page).getByRole("link", { name: "Source code on GitHub", exact: true })).toHaveAttribute("href", "https://github.com/bhnsadhu/cambio");
   const labels = await nav.locator("[data-header-control]").evaluateAll((elements) => elements.map((element) =>
     element.getAttribute("aria-label") ?? element.textContent?.trim()));
   expect(labels).toEqual([
-    "Tables", "Leaderboard", ...(account ? ["Your record", "Account settings"] : ["Log in"]), "How to play", "Repository", ...(back ? [back] : []),
+    "Tables", "Leaderboard", ...(account ? ["Your record", "Account settings"] : ["Log in"]), "How to play", ...(back ? [back] : []),
   ]);
   const current = nav.locator('[aria-current="page"]');
   await expect(current).toHaveCount(active ? 1 : 0);

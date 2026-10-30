@@ -30,10 +30,12 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
   </HeaderButton>;
 }
 
-export function HeaderBar({ children, context, status, label, className = "" }: {
+export function HeaderBar({ children, context, status, edge, label, className = "" }: {
   children: ReactNode;
   context?: ReactNode;
   status?: ReactNode;
+  /** Controls that leave the app, set beside the theme switch rather than in the navigation. */
+  edge?: ReactNode;
   label: string;
   className?: string;
 }) {
@@ -43,7 +45,10 @@ export function HeaderBar({ children, context, status, label, className = "" }: 
       {context}
       {status}
     </div>
-    <ThemeToggle className="ml-auto xl:col-start-3 xl:row-start-1 xl:justify-self-end" />
+    <div className="ml-auto flex items-center gap-2 xl:col-start-3 xl:row-start-1 xl:justify-self-end">
+      {edge}
+      <ThemeToggle />
+    </div>
     <nav aria-label={label} className="flex min-w-0 basis-full flex-wrap items-center justify-center gap-2 xl:basis-auto">
       {children}
     </nav>
