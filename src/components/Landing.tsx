@@ -22,10 +22,6 @@ import { Notification } from "./Notification";
 import { GuestSetup } from "./GuestPlayer";
 import { Button, Field, inputClass, PlayerName } from "./ui";
 
-/** What the hero's live line types. Shown in capitals; no dashes. */
-const GUEST_PHRASES = ["let’s play", "lowest hand wins", "remember your cards", "call cambio when you’re low", "one code, your friends, game on"];
-const accountPhrases = (name: string) => [`welcome back, ${name}`, "ready for a round?", "lowest hand wins", "call cambio when you’re low"];
-
 export function Landing() {
   const router = useRouter();
   const social = useSocial();
@@ -97,7 +93,7 @@ export function Landing() {
     <main className="site-shell">
       <AppHeader active="tables" loginNext={next} onLogin={rememberGuest} />
       <RecentTable />
-      <Hero phrases={profile ? accountPhrases(profile.displayName) : GUEST_PHRASES}>
+      <Hero>
         <p className="t-body mt-5 max-w-[520px] text-ink-2">
           Remember your cards. Finish with the lowest hand. Play with friends, or let the house bots{" "}
           <PlayerName name="Cameron" isBot />, <PlayerName name="Camila" isBot /> and <PlayerName name="Cami" isBot /> take the empty seats.

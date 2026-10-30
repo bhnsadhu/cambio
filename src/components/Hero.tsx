@@ -1,92 +1,30 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import type { Card } from "@/lib/game/types";
 import { EASE_IN_OUT } from "@/lib/client/motion";
 import { CardBack, FaceCard } from "./cards";
 import { Logo } from "./Logo";
-import { Pip } from "./ui";
 
 /**
  * The landing hero, for guests and account holders alike: the mark large and
  * centered, dealing itself once per session and then breathing slowly, with a
- * few faint cards drifting behind it and a live line typing above the title.
+ * few faint cards drifting behind it. The title follows the mark directly.
  */
-export function Hero({ phrases, children }: { phrases: string[]; children?: ReactNode }) {
+export function Hero({ children }: { children?: ReactNode }) {
   return (
     <section aria-labelledby="hero-title" className="relative isolate flex flex-col items-center pt-8 pb-10 text-center sm:pt-12 lg:pb-14">
       <HeroDrift />
       {/* One size per breakpoint; the hidden one waits and never claims the intro. */}
       <div className="sm:hidden"><Logo size={208} mode="animated" intro="hero" breathe /></div>
       <div className="hidden sm:block"><Logo size={300} mode="animated" intro="hero" breathe /></div>
-      <TypedLine phrases={phrases} className="mt-7" />
-      <h1 id="hero-title" className="t-display mt-4 max-w-[760px] text-[28px]! sm:text-[44px]! lg:text-[60px]!">The memory card game,<br />live with friends.</h1>
+      <h1 id="hero-title" className="t-display mt-8 max-w-[760px] text-[28px]! sm:text-[44px]! lg:text-[60px]!">The memory card game,<br />live with friends.</h1>
       {children}
     </section>
   );
 }
 
 const reducedQuery = "(prefers-reduced-motion: reduce)";
-function subscribeReduced(listener: () => void) {
-  const query = window.matchMedia(reducedQuery);
-  query.addEventListener("change", listener);
-  return () => query.removeEventListener("change", listener);
-}
-function useReducedMotion() {
-  return useSyncExternalStore(subscribeReduced, () => window.matchMedia(reducedQuery).matches, () => false);
-}
-
-const TYPE_MS = 55;
-const ERASE_MS = 26;
-const HOLD_MS = 2600;
-const GAP_MS = 380;
-
-/**
- * A short live line that types a phrase, holds it, erases it and types the
- * next. Decoration only: screen readers get the title, not the typing.
- */
-function TypedLine({ phrases, className = "" }: { phrases: string[]; className?: string }) {
-  const reduced = useReducedMotion();
-  const [text, setText] = useState(phrases[0]);
-  const shown = useRef(phrases[0]);
-  const key = phrases.join("|");
-
-  useEffect(() => {
-    if (reduced) return;
-    const list = key.split("|");
-    let alive = true;
-    let timer = 0;
-    const wait = (ms: number) => new Promise<void>((resolve, reject) => {
-      timer = window.setTimeout(() => (alive ? resolve() : reject()), ms);
-    });
-    const put = (value: string) => { shown.current = value; setText(value); };
-    const erase = async () => { while (shown.current) { put(shown.current.slice(0, -1)); await wait(ERASE_MS); } };
-    const type = async (phrase: string) => {
-      for (let i = 1; i <= phrase.length; i++) { put(phrase.slice(0, i)); await wait(TYPE_MS + (i % 3) * 12); }
-    };
-    void (async () => {
-      let i = 0;
-      // A changed set of phrases, such as a welcome once the account is known, types itself in.
-      if (shown.current !== list[0]) { await erase(); await wait(GAP_MS); await type(list[0]); }
-      for (;;) {
-        await wait(HOLD_MS);
-        await erase();
-        i = (i + 1) % list.length;
-        await wait(GAP_MS);
-        await type(list[i]);
-      }
-    })().catch(() => { /* Stopped: the line unmounted or its phrases changed. */ });
-    return () => { alive = false; window.clearTimeout(timer); };
-  }, [key, reduced]);
-
-  return (
-    <p aria-hidden className={`t-caption inline-flex h-4 items-center gap-2.5 uppercase text-accent-ink ${className}`}>
-      <Pip />
-      <span className="tracking-[0.16em]">{reduced ? phrases[0] : text}</span>
-      <span className="caret inline-block h-3.5 w-[1.5px] bg-accent" />
-    </p>
-  );
-}
 
 const KING: Card = { id: "drift-king", rank: "K", suit: "H" };
 
