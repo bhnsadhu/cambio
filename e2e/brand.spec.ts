@@ -121,12 +121,8 @@ test("reduced motion skips every logo and card animation", async ({ browser }) =
   expect(await running(page, '[aria-labelledby="hero-title"]')).toBe(0);
   const opacities = await hero(page).locator("[data-logo-card]").evaluateAll((cards) => cards.map((c) => getComputedStyle(c).opacity));
   expect(opacities).toEqual(Array(8).fill("1"));
-  const line = page.locator('[aria-labelledby="hero-title"] p[aria-hidden]').first();
-  const typed = await line.textContent();
   await hero(page).click();
   expect(await running(page, "[data-logo]")).toBe(0);
-  await page.waitForTimeout(1500);
-  expect(await line.textContent()).toBe(typed);
 
   await page.getByRole("button", { name: "How to play" }).click();
   const dialog = page.getByRole("dialog", { name: "How Cambio works" });
@@ -251,10 +247,10 @@ test("an account holder's landing does not rearrange when the account check retu
 });
 
 /**
- * The landing page's alignment contract: the mark, the live line, the
- * headline and the blurb share one center axis; cards in a row share their top
- * and bottom edges; nothing leaves the viewport. Checked for guests and
- * account holders at phone, tablet and desktop widths.
+ * The landing page's alignment contract: the mark and headline share one center
+ * axis; cards in a row share their top and bottom edges; nothing leaves the
+ * viewport. Checked for guests and account holders at phone, tablet and desktop
+ * widths.
  */
 for (const account of [false, true]) {
   for (const width of [390, 768, 1024, 1440]) {
@@ -284,7 +280,6 @@ for (const account of [false, true]) {
         return {
           axis: rect(heroSection).cx,
           logo: rect(logo).cx,
-          line: rect(heroSection.querySelector("p[aria-hidden]")).cx,
           title: rect(heroSection.querySelector("h1")).cx,
           forms,
           overflow: document.documentElement.scrollWidth > innerWidth,
@@ -292,7 +287,7 @@ for (const account of [false, true]) {
         };
       });
       expect(m.overflow).toBe(false);
-      for (const key of ["logo", "line", "title"] as const) expect(Math.abs(m[key] - m.axis), key).toBeLessThanOrEqual(0.6);
+      for (const key of ["logo", "title"] as const) expect(Math.abs(m[key] - m.axis), key).toBeLessThanOrEqual(0.6);
       expect(m.forms).toHaveLength(2);
       for (const f of m.forms) { expect(f.l).toBeGreaterThanOrEqual(0); expect(f.r).toBeLessThanOrEqual(m.vw); }
       // Side by side: equal tops and bottoms. Stacked: same left and right edges.
