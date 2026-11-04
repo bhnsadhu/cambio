@@ -110,6 +110,12 @@ export function Landing() {
         </div>
       )}
       <Notifications social={social} />
+      <p className="t-footnote mt-14 text-center text-ink-3">
+        Designed and built by{" "}
+        <a href="https://bhanusadhu.com" className="font-medium text-ink-2 underline-offset-4 hover:text-ink hover:underline">
+          Bhanu Sadhu
+        </a>
+      </p>
     </main>
   );
 }
