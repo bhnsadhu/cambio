@@ -358,6 +358,9 @@ The browser suite covers registration, duplicate usernames, display name changes
 
 Continuous integration runs all of the above on every push and pull request; see [.github/workflows/ci.yml](.github/workflows/ci.yml).
 
+<details>
+<summary>Reproduce the bot research: regenerate the evaluation, retrain the models, and the per level runs</summary>
+
 ### 5. Regenerate the bot evaluation
 
 ```bash
@@ -390,6 +393,8 @@ npm run ml:evaluate-live  # each A* level against its frozen self and the level 
 ```
 
 Each prints its wall time and plays on the same worker pool as `npm run results`. On a 4 core cloud container they took 5.2, 263.9, 12.3, 187.6 and 198.4 seconds. The last four write a `run.lock` before playing and refuse to run again, because their seeds are used once; they have run, and their results are in `results-tuning/`, `results-audit/`, `results-ladder/` and `results-live/`.
+
+</details>
 
 ## Deeper docs
 
