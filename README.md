@@ -2,7 +2,7 @@
 
 # Cambio
 
-[![CI](https://github.com/bhnsadhu/cambio/actions/workflows/ci.yml/badge.svg)](https://github.com/bhnsadhu/cambio/actions/workflows/ci.yml)
+[![CI](https://github.com/bhnsadhu/cambio/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
 [![Players](https://img.shields.io/endpoint?url=https%3A%2F%2Fcambio.bhanusadhu.com%2Fapi%2Fstats%3Fformat%3Dshields)](https://cambio.bhanusadhu.com/leaderboard?scope=all)
 
 A real time multiplayer web app for the card game Cambio, where house bots that see only what a human could see fill every empty seat.
@@ -240,7 +240,7 @@ Taken from the evaluation's own lists of what was not measured. None of these ha
 
 </details>
 
-## Tech Stack
+## Tech stack
 
 | Component | Technology |
 | --- | --- |
@@ -287,7 +287,7 @@ Taken from the evaluation's own lists of what was not measured. None of these ha
 * Full games to a score. The evaluation plays single rounds at equal reaction speeds.
 * Phone play. The table is built and tested for laptop and desktop windows.
 
-## Run It Locally
+## Run it locally
 
 You need a Supabase project.
 
@@ -426,3 +426,7 @@ Each prints its wall time and plays on the same worker pool as `npm run results`
 * **Held out seeds.** Seeds kept out of training and tuning and used once for the final test, so the result cannot be tuned to fit.
 * **Rollout.** A simulated finish of a round from a given position, used to learn how good a move was.
 * **Frozen bot.** A bot playing the original policies, `gate_v1` and `rules_v1`, unchanged by any learned model.
+
+---
+
+Designed and built by me, [Bhanu Sadhu](https://bhanusadhu.com).
