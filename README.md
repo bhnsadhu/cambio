@@ -13,6 +13,8 @@ A real time multiplayer web app for the card game Cambio, where house bots that 
 
 *One full round against the three house bots, sped up about seven times. Recorded on the local test database, not the live site.*
 
+**Jump to:** [What is built](#what-is-built) · [Architecture](#architecture) · [Engineering](#engineering) · [Product decisions](#product-decisions) · [Bot research](#bot-research) · [Run it locally](#run-it-locally)
+
 ## At a glance
 
 * **A full product.** A live multiplayer card game for four seats, playable in the browser as a guest or with an account that keeps wins, rank, streak, friends and a leaderboard position. It runs on serverless functions and one Postgres database, with no dedicated game server.
