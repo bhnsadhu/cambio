@@ -3,7 +3,7 @@ import { AccountSession } from "@/lib/client/profile";
 import { NotificationProvider } from "@/components/Notification";
 import { SITE_DESCRIPTION, SITE_URL } from "@/lib/site";
 import { PREPAINT_SCRIPT } from "@/lib/client/prepaint";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
@@ -42,6 +42,14 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [shareImage],
   },
+};
+
+// The browser chrome matches the page: black in the dark theme, warm paper in the light one.
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+    { media: "(prefers-color-scheme: light)", color: "#f5f0e8" },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
