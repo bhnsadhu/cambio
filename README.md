@@ -46,7 +46,7 @@ In the demo, Ace's final hand is 6♥ A♥ K♥ K♠ = 6 + 1 − 1 + 0 = **6**, 
 flowchart TD
   subgraph b["Four browsers"]
     direction LR
-    ui["Table UI<br/>Next.js, React"] ~~~ hook["useGame<br/>Realtime, polling fallback"]
+    ui["Table UI<br/>Next.js, React"] ~~~ hook["useGame<br/>Realtime views, polling fallback"]
   end
   subgraph v["Vercel functions"]
     direction LR
@@ -59,10 +59,9 @@ flowchart TD
   end
   b -->|"moves"| v
   v -->|"secret-gated RPCs"| db
-  db -.->|"Realtime: views only"| b
 ```
 
-The rules live in one deterministic reducer with time, randomness and IDs injected, so the UI and server never reimplement a rule. The full game state, every card included, sits in a Postgres row the browser can't read. Each player receives only the view `view.ts` lets them see. → [docs/architecture.md](docs/architecture.md), [docs/engine.md](docs/engine.md)
+The rules live in one deterministic reducer with time, randomness and IDs injected, so the UI and server never reimplement a rule. The full game state, every card included, sits in a Postgres row the browser can't read. Each player receives only the view `view.ts` lets them see, streamed back over Supabase Realtime. → [docs/architecture.md](docs/architecture.md), [docs/engine.md](docs/engine.md)
 
 ## Hard problems
 
