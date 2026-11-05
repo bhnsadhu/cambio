@@ -11,7 +11,7 @@
 
 **[Play it → cambio.bhanusadhu.com](https://cambio.bhanusadhu.com)** · play as a guest in seconds, or make an account to keep your record.
 
-![Demo: a guest named Ace opens a table, three bots fill the empty seats, Ace peeks at two kings, draws an ace and places it, the bots take their turns while one sticks a matching card, Ace calls Cambio, and the scoreboard shows Ace winning with 6 against 17, 19 and 33](docs/images/demo.gif)
+![Demo, in the dark theme: a guest named Ace opens a table, three bots fill the empty seats, Ace peeks at a 9 and a king, draws the king of diamonds and swaps it in for the 9, the bots take their turns, Ace calls Cambio, and the scoreboard shows Ace winning with 9 against 14, 15 and 21](docs/images/demo.gif)
 
 ## The problem
 
@@ -27,7 +27,7 @@ The goal: **a full four-seat table in one click, with bots that play fair and pl
 4. **Stick.** Anyone can slap down a card that matches the top of the pile at any moment, even on someone else's turn. Wrong guesses cost a penalty card.
 5. **Call Cambio.** Everyone else gets one last turn, then hands are scored. Lowest total wins: a red king is −1, a black king or joker 0, an ace 1, faces 10.
 
-In the demo, Ace's final hand is 6♥ A♥ K♥ K♠ = 6 + 1 − 1 + 0 = **6**, the lowest at the table, so the call wins.
+In the demo, Ace's final hand is J♣, a joker, K♦ and K♠: 10 + 0 − 1 + 0 = **9**, the lowest at the table, so the call wins.
 
 ## Product decisions
 
