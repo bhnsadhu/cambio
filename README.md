@@ -426,7 +426,3 @@ Each prints its wall time and plays on the same worker pool as `npm run results`
 * **Held out seeds.** Seeds kept out of training and tuning and used once for the final test, so the result cannot be tuned to fit.
 * **Rollout.** A simulated finish of a round from a given position, used to learn how good a move was.
 * **Frozen bot.** A bot playing the original policies, `gate_v1` and `rules_v1`, unchanged by any learned model.
-
----
-
-Designed and built by me, [Bhanu Sadhu](https://bhanusadhu.com).
