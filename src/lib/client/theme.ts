@@ -1,13 +1,13 @@
 /**
  * Dark or light. The choice lives on <html data-theme> and in local storage;
- * with no saved choice, the system's preference decides.
+ * with no saved choice, the theme is dark, whatever the system prefers.
  */
 export type Theme = "dark" | "light";
 
 const KEY = "cambio:theme";
 
 /** Runs before first paint (inlined into the document head), so a page never paints in the wrong theme. */
-export const THEME_SCRIPT = `(function(){var t;try{t=localStorage.getItem("${KEY}")}catch(e){}try{if(t!=="dark"&&t!=="light")t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"}catch(e){t="dark"}document.documentElement.setAttribute("data-theme",t)})();`;
+export const THEME_SCRIPT = `(function(){var t;try{t=localStorage.getItem("${KEY}")}catch(e){}if(t!=="dark"&&t!=="light")t="dark";document.documentElement.setAttribute("data-theme",t)})();`;
 
 export function currentTheme(): Theme {
   return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";

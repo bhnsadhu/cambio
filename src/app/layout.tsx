@@ -44,13 +44,8 @@ export const metadata: Metadata = {
   },
 };
 
-// The browser chrome matches the page: black in the dark theme, warm paper in the light one.
-export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
-    { media: "(prefers-color-scheme: light)", color: "#f5f0e8" },
-  ],
-};
+// The browser chrome matches the page's default: black, the dark theme.
+export const viewport: Viewport = { themeColor: "#000000" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
