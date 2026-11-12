@@ -51,7 +51,7 @@ flowchart TD
   subgraph server["Next.js on Vercel"]
     direction LR
     api["Route handler"] --> engine["Rules engine<br/>pure functions"] --> commit["Version-checked<br/>commit"]
-    runner["Bot runner<br/>with a lease"]
+    commit ~~~ runner["Bot runner<br/>with a lease"]
   end
   subgraph db["Supabase Postgres"]
     direction LR
