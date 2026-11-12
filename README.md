@@ -7,142 +7,142 @@
 
 # Cambio
 
-**The memory card game Cambio (also called Cabo), live in the browser with friends or three house bots.** Remember four face-down cards, swap and stick your way down, and call Cambio when you think your hand is the lowest at the table.
+**A real-time, four-seat memory card game in the browser, with house bots at three skill levels whose strength was measured, not assumed.** Share a five-character code and play.
 
-**[Play it → cambio.bhanusadhu.com](https://cambio.bhanusadhu.com)** · play as a guest in seconds, or make an account to keep your record.
+**[Play it → cambio.bhanusadhu.com](https://cambio.bhanusadhu.com)** · free, play as a guest or make an account
 
-![Demo, in the dark theme: a guest named Ace opens a table, three bots fill the empty seats, Ace peeks at a 9 and a king, draws the king of diamonds and swaps it in for the 9, the bots take their turns, Ace calls Cambio, and the scoreboard shows Ace winning with 9 against 14, 15 and 21](docs/images/demo.gif)
+![A full round in dark mode: a guest opens a table, three house bots fill the empty seats, everyone peeks at their cards, then the player draws, swaps and calls Cambio as the bots take their turns](docs/images/demo.gif)
 
 ## The problem
 
-Cambio is a favourite with friends because it mixes memory, bluffing and quick reactions, but it needs a physical deck and four people in one room. Online card sites rarely have it, and the ones that do can't fill a table when only one or two friends are around. Bots in casual card games are usually either hopeless or quietly cheating, since the code can see every card.
+Cambio (also called Cabo) is a game of remembering four face-down cards you may look at only twice, then swapping, matching and bluffing your way to the lowest hand. It is played in person with a deck of cards. Online versions either hand a lone player a trivial bot or need a custom game server, and the hard part of both is the same: **every player must see a shared table in real time while every other player's cards stay hidden.**
 
-The goal: **a full four-seat table in one click, with bots that play fair and play at a level you choose.**
+Cambio's goal is a table that stays in sync across four browsers, never leaks a hidden card, and has opponents worth playing.
 
 ## How it works
 
-1. **Open a table.** Pick a name and an avatar and share the five-character code. Seats nobody takes go to Cameron, Camila and Cami, each set to easy, medium or hard.
-2. **Peek.** Four cards land face down at every seat. When everyone says they're ready, each player sees their own bottom two for five seconds.
-3. **Draw and decide.** Swap the drawn card into your hand, push it onto an opponent, or place it on the pile to use its power: peek at your card or someone else's, blind-swap two players' cards, or look at two and choose.
-4. **Stick.** Anyone can slap down a card that matches the top of the pile at any moment, even on someone else's turn. Wrong guesses cost a penalty card.
-5. **Call Cambio.** Everyone else gets one last turn, then hands are scored. Lowest total wins: a red king is −1, a black king or joker 0, an ace 1, faces 10.
+1. **Open a table.** Enter a display name, press **Open a table** and share the code. Up to four seats, and three house bots (Cameron, Camila and Cami at easy, medium and hard) fill any empty ones.
+2. **Ready check, then peek.** Cards are dealt face down and everyone sees their own bottom two for five seconds, all at once.
+3. **Play turns.** Draw, then either use the card's power or swap it into any hand at the table. Anyone may "stick" a card they think matches the pile, at any moment.
+4. **Call Cambio.** Call at the start of your turn instead of drawing and everyone else gets one more turn.
+5. **Score.** Hands are revealed, the lowest total wins and leads the next round. Accounts keep a record, friends and a leaderboard.
 
-In the demo, Ace's final hand is J♣, a joker, K♦ and K♠: 10 + 0 − 1 + 0 = **9**, the lowest at the table, so the call wins.
+The full rules are in [docs/how-to-play.md](docs/how-to-play.md).
 
 ## Product decisions
 
 | Decision | Trade-off |
 | --- | --- |
-| **House bots fill every empty seat** | Three difficulty levels had to be built and measured. In return one person can play a real four-seat round right away, and friends can join the next round. |
-| **Guests first, accounts optional** | A guest's results aren't saved. But nobody has to sign up to try it, and creating an account mid-round keeps the same seat, hand and avatar. |
-| **Sticking is open at every moment, including your own turn** | It complicates the turn logic (the table arms the stick when the turn already owns the click). The old rule took away the one reaction the game runs on from whoever was mid-turn. |
-| **Difficulty means how often a bot plays its best, not what it can see** | Easy plays its full strategy on 50% of decisions, medium 75%, hard 100%, all with the same legal information as a human. That is harder to tune than letting hard peek, but it is fair and measurable. |
-| **Learned bot policies stay off** | Trained models made medium and hard stronger on test seeds. They stay off because with them live, hard skipped a blind swap that wins the round and an existing test failed, and the learned call model called on hands it should have known were lost. |
-| **No game server** | Every move is a short serverless function plus a version-checked write in Postgres, which makes concurrency the hard part. In return there is nothing to keep running between games. |
+| **Guests play at once, accounts are optional** | No sign-up wall, so a guest's stats are table-only. An account adds a username, avatar, friends, presence and the record books. |
+| **Bots fill empty seats** | A table never waits for four people. The cost is a lot of work to make the bots fair and fun, which became half the project. |
+| **Sticking is open to every seat at every moment** | Early versions refused a stick on your own turn. Allowing it made the game faster and more chaotic, and made the rules and the UI harder to get right. |
+| **Pausing needs every seat to agree** | One player cannot freeze a table, and bots agree instantly. Pausing is slower than a host button. |
+| **Three bot levels with different memory, not different luck** | Easy forgets all but its last two cards. Hard remembers every legitimately seen card. Each level is a real play style, and no level cheats. |
+| **Keep better-calibrated bots off** | Learned bot policies beat the hand-written ones but failed a safety test, so they ship disabled. See the results below. |
 
 ## Architecture
 
 ```mermaid
 flowchart TD
-  subgraph b["Four browsers"]
+  subgraph browsers["Four browsers"]
     direction LR
-    ui["Table UI<br/>Next.js, React"] ~~~ hook["useGame<br/>Realtime views, polling fallback"]
+    ui["Table UI"] ~~~ hook["useGame<br/>Realtime"] ~~~ id["Action IDs"]
   end
-  subgraph v["Vercel functions"]
+  subgraph server["Next.js on Vercel"]
     direction LR
-    api["Action route<br/>client action ID"] --> store["runAction<br/>load, reduce, commit"] --> engine["Rules engine<br/>pure reducer"]
-    engine ~~~ runner["Bot runner<br/>20 s lease"]
+    api["Route handler"] --> engine["Rules engine<br/>pure functions"] --> commit["Version-checked<br/>commit"]
+    runner["Bot runner<br/>with a lease"]
   end
   subgraph db["Supabase Postgres"]
     direction LR
-    games[("games<br/>full secret state")] --> commit["game_commit<br/>version check"] --> views[("game_views<br/>redacted per seat")]
+    games["games<br/>secret state"] --> views["game_views<br/>redacted"]
   end
-  b -->|"moves"| v
-  v -->|"secret-gated RPCs"| db
+  browsers --> server
+  server --> db
 ```
 
-The rules live in one deterministic reducer with time, randomness and IDs injected, so the UI and server never reimplement a rule. The full game state, every card included, sits in a Postgres row the browser can't read. Each player receives only the view `view.ts` lets them see, streamed back over Supabase Realtime. → [docs/architecture.md](docs/architecture.md), [docs/engine.md](docs/engine.md)
+Every action is a pure function from the secret game state to a new state. The server loads the state with its version, applies the action through the engine and commits with a compare-and-swap inside Postgres, retrying against the winner if two players act in the same few milliseconds. Browsers receive only redacted `game_views` over Supabase Realtime and can read nothing else. See [docs/architecture.md](docs/architecture.md).
 
 ## Hard problems
 
-**Four players acting in the same instant.** Two sticks can land in the same few milliseconds. Each action loads the state and its version, runs through the engine, and commits only if the version hasn't moved (`game_commit`). The loser reloads and runs again against the winner's state, so the rules decide the late action ("too late", no penalty). Client-generated action IDs stop a retried request from applying twice, and views older than the one a browser holds are discarded. → [`src/lib/server/store.ts`](src/lib/server/store.ts)
+**Hidden information in a shared real-time game.** The full state, including every card, lives in one JSONB row behind Row Level Security with no policies, reachable only through `SECURITY DEFINER` functions that need a shared secret. Browsers hold only an anon key and can read only the redacted view for their seat. Reshuffled cards get fresh IDs, so a card seen in the discard pile cannot be traced back into the deck. Fairness tests change hidden faces, reverse the deck and replace opponents' private knowledge, and fail if a bot's moves change. See [src/lib/game](src/lib/game).
 
-**Hiding cards from the people holding the browser.** The `games` table has row-level security on and no policies, so the browser's key can't read it at all. Every server read and write goes through `SECURITY DEFINER` functions that need a shared secret. Reshuffled discards get new IDs so they can't be traced back into the deck, and the table narration carries card IDs, never ranks. → [`src/lib/game/view.ts`](src/lib/game/view.ts)
+**Two players, one millisecond.** Version-checked commits make one action lose, reload and re-run against the winner's state, so the rules decide the outcome and nothing is dropped or applied twice. Client-generated action IDs make a retried request idempotent, and clients discard any view older than the one they hold.
 
-**Bots that can't cheat.** Each bot decides from a separate observation holding only what its seat legitimately saw. Fairness tests swap the hidden cards, reverse the deck and replace opponents' private knowledge, then check the bot's moves don't change. Other tests throw on any attempt to read a secret. → [`src/lib/game/bot-observation.ts`](src/lib/game/bot-observation.ts)
+**Bots that only know what a human could know.** A bot's strategy receives an observation of its own seat's memory, its own draws, private power reveals and public movements, never the deck order or another seat's cards. The test suite throws on any attempted secret read. The three levels differ in memory and how often they use the full strategy (50%, 75% and 100% of tactical opportunities), measured at 49.9%, 75.1% and 100% in an instrumented audit. See [docs/bots.md](docs/bots.md).
 
-**Measuring strength honestly.** Bot changes were tested with pre-registered hypotheses over 800 rounds per matchup on fresh seeds. The evaluation found the bots overconfident: calls made at an average **87.0%** belief won only **54.0%** of the time (1,440 of 2,668). The call gate still earns its place, since a hard bot without it won only **44.4%** against full hard bots. → [the bot evaluation](docs/experiments/bot-evaluation.md)
+**Proving the bots, not asserting it.** The evaluation was committed with its hypotheses before any code ran. Over 800 rounds per matchup, hard won **63.3%** of the win share against medium (95% interval 60.2% to 66.3%) and medium **78.3%** against easy (75.6% to 81.0%). Removing memory dropped a hard bot to **37.6%** against full hard. And one hypothesis was refuted: the bots' Cambio calls, made at an average 87.0% belief of winning, **won only 54.0%**.
 
-<p align="center"><img src="docs/images/calibration.svg" width="82%" alt="Chart: Cambio calls grouped by the caller's win belief, showing actual win rates well below the stated beliefs, with 95% intervals"></p>
+![Win share by matchup with 95% intervals: hard beats medium and medium beats easy, each interval well clear of an even split](docs/images/win-share.svg)
 
 ## Results
 
-- **384** unit tests across 36 files. They pin every rule (ready check, anytime sticks, final-turn sticks, zero-card endings, scoring with red kings and jokers), bot fairness and memory limits, and the difficulty ordering. They also fail on any unfinished round, illegal move, or lost or duplicated card.
-- **29** Playwright specs, including final scores and zero-card endings checked in four live browsers, host handoff, guest-to-account seats, presence and friends.
-- **Bot ladder**, 800 rounds per matchup with 95% intervals:
+- **384 unit and integration tests in 36 files** (Vitest). The rules engine has no I/O, so rules are tested as pure functions, along with hidden-information projections, bot fairness and Postgres functions.
+- **109 Playwright tests in 29 files** covering table flow, seat and host management, presence, notifications, accounts, and the leaderboard.
+- **Bot ladder, 800 rounds per matchup on fresh seeds:** hard beats medium 63.0%, medium beats easy 80.2%, easy beats a minimal beginner reference 55.2% and medium beats it 73.7%. Hard reaches 78.4% against the beginner, **missing its 85% target**.
+- **Learned bots:** a learned call model cut calibration error (ECE) from **0.310 to 0.086**, and learned actions helped medium (54.7%) and hard (58.8%) against their hand-written selves but not easy. They stay off: with learned calls, a bot called Cambio on a hand it knew was losing, and with learned actions one existing behavior test failed.
+- **Reproducible:** `npm run results` regenerates every table and chart from scratch, byte-identical across runs.
 
-| Matchup | Owner's target | Live bots |
-| --- | --- | --- |
-| Easy vs a beginner reference player | 45% to 85% | **55.2%** (52.2% to 58.2%), met |
-| Medium vs a beginner reference player | 65% to 95% | **73.7%** (71.1% to 76.3%), met |
-| Hard vs a beginner reference player | at least 85% | **78.4%** (75.9% to 81.0%), missed |
-| Hard vs medium | 55% to 75% | **63.0%** (59.9% to 66.1%), met |
-| Medium vs easy | 65% to 90% | **80.2%** (77.6% to 82.9%), met |
+![Hard with one ability removed, against full hard: removing memory costs the most, then inference from public keeps, the Cambio gate and card counting](docs/images/ablations.svg)
 
-The beginner is a reference player that only exists in the evaluation: it remembers its opening peek, swaps in lower cards, and never sticks or uses powers. Hard misses its target against it. The learned action policy reaches 84.8% there, still just short, and stays off for the reasons above. Not measured: how real players rate the bots, or how long they keep playing. There is no analytics.
+**Not measured:** play against real people, whether the bots feel fun, real reaction speed, and behavior under real traffic. The reaction-speed audit was void because of a bug in its own instrumentation.
 
 ## How it was built
 
-1. **Engine first.** The rules engine, the real-time backend, a first bot and the table UI all landed in the first commit.
-2. **A social layer.** Profiles, a permanent record of every scored round, friends, presence, invites, a leaderboard and seven rank tiers.
-3. **Rules shaped by playtests.** Sticking opened to every seat at every moment, the round start became deal, then ready check, then peek, and final-turn sticks got a window so a run of matches isn't cut off.
-4. **Bots, measured.** Three levels became shares of full-strength play, each bot got its own observation, and the bot docs were audited against 300 instrumented rounds: every claim the audit could measure held.
-5. **Learned policies, tried and kept off.** Call and action models trained from rollouts, run in plain TypeScript, tested once on fresh seeds, and left disabled when they broke an existing test.
-6. **Polish.** Four-browser final-score checks, the card-arc logo, and red suits redrawn to hold 4.5:1 contrast.
+- **Rules and sync first.** A pure rules engine, the Supabase schema and Realtime views, and a table UI that played a full round.
+- **Social layer.** Guests and accounts, avatars, friends, presence, a leaderboard and record books.
+- **Rules by playing.** Ready checks, anytime sticking, unanimous pausing and host succession each came from a game that felt wrong, and each is recorded with the tests that pin it in [docs/decisions.md](docs/decisions.md).
+- **Bots that cannot cheat.** Every strategy was restricted to its own seat's observation, with tests that fail on any secret read.
+- **A pre-registered evaluation.** Hypotheses were written down before the harness, and one came back refuted.
+- **Learned policies, shelved.** Models were trained and tuned on separate seeds, tested once, and kept off because of the safety failure.
 
 ## Tech stack
 
 | Layer | Technology |
 | --- | --- |
-| App | Next.js (App Router), React, TypeScript, Tailwind CSS |
-| Data and real time | Supabase Postgres, Realtime, `SECURITY DEFINER` RPCs |
-| Server | Vercel functions, bot runner via `waitUntil` |
-| Bot training | Python (NumPy, scikit-learn), models exported to a TypeScript forward pass |
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind 4 |
+| Backend | Next.js route handlers, Vercel `waitUntil` for bot turns, salted scrypt sessions |
+| Data | Supabase Postgres with Row Level Security, `SECURITY DEFINER` functions and Realtime |
+| Bot learning | Python (scikit-learn, NumPy) for fitting, a plain TypeScript forward pass at runtime |
 | Testing | Vitest, Playwright |
+| Hosting | Vercel and Supabase |
 
 ## Run it locally
 
 ```bash
 npm install
-npm run dev              # http://localhost:3000
-npm test                 # unit tests: engine, bots, views, server
-npx playwright test      # browser specs
-npm run results          # regenerate the bot evaluation (CSV + charts)
+npm run dev              # needs a Supabase project and the variables below
+npm run typecheck && npm run lint && npm test
+npm run results          # regenerate the bot evaluation tables and charts
+npm run ml:evaluate      # learned-policy evaluation on the test seeds
 ```
 
-Copy the Supabase keys and `CAMBIO_SERVER_SECRET` into `.env.local` (the secret must match `private.server_config.server_secret` in the database), and apply `supabase/migrations`. Pushes to `main` deploy on Vercel.
+Environment variables are `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `CAMBIO_SERVER_SECRET`, which must equal the server secret stored in Supabase. Pushing to `main` deploys to Vercel.
 
 ## Project structure
 
-```
-src/lib/game/        # Rules engine, bots, bot observations, redacted views
-src/lib/server/      # runAction with version-checked commits, bot runner, social writes
-src/lib/client/      # useGame hook, Realtime subscription, watchdog, card animations
-src/components/      # Table UI, profile cards, friends panel
-supabase/            # Schema, migrations and RPCs
-scripts/             # Bot evaluation, ML data collection, ladders and audits
-ml/                  # Training for the learned policies (Python)
-e2e/                 # Playwright specs
-docs/                # Rules, architecture, engine, bots, decisions, experiments
+```text
+src/lib/game/     pure rules engine, bot strategies, redacted views, bot harness
+src/lib/server/   load, apply and commit with a version check, bot runner
+src/lib/client/   useGame hook, Realtime subscription, card flights
+src/components/   table UI, profiles, friends panel
+supabase/         schema, RPCs and database tests
+ml/               training code for the learned policies
+scripts/          evaluation and ablation scripts
+results/          raw and summary evaluation data
+docs/             architecture, bots, rules, decisions, experiments
+e2e/              Playwright specs
 ```
 
 ## What's next
 
-Known limits:
-- Hard bots fall short of the 85% target against a beginner.
-- Bot beliefs are decision estimates, not calibrated odds.
-- There is no matchmaking with strangers; tables are joined by code or invite.
+**Known limits**
 
-Next: tune hard against the beginner target without breaking the existing tests, recalibrate the call beliefs, and measure how real players rate each level.
+- No evidence from real players on whether the bots feel right or fun.
+- Hard misses its own target against a beginner reference, and learned calls need a guard before they are safe.
+- The bots' Cambio calls are overconfident: they believe 87.0% and win 54.0%.
+- Reaction speed is set by constants, not measured.
 
-[How to play](docs/how-to-play.md) · [Architecture](docs/architecture.md) · [Engine](docs/engine.md) · [Bots](docs/bots.md) · [Accounts](docs/accounts.md) · [Decisions](docs/decisions.md) · [Bot evaluation](docs/experiments/bot-evaluation.md)
+**Next:** guard the learned call model with the gate's safety rules, play-test the bots with real people, and time bot decisions under live traffic.
+
+[Architecture](docs/architecture.md) · [Bots](docs/bots.md) · [Bot evaluation](docs/experiments/bot-evaluation.md) · [Decisions](docs/decisions.md) · [Rules](docs/how-to-play.md) · [Accounts](docs/accounts.md)
